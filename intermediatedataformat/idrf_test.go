@@ -64,20 +64,6 @@ func TestNewColumnWithFK(t *testing.T) {
 	}
 }
 
-/*
-
-	columnNameCount := make(map[string]bool)
-	for _, columnInfo := range columns {
-		_, columnNameExists := columnNameCount[columnInfo.name]
-		if columnNameExists {
-			return nil, &IdrfError{"Duplicate column names found"}
-		}
-
-		columnNameCount[columnInfo.name] = true
-	}
-
-	return &DataSetInfo{dataSetName, columns}, nil
-*/
 func TestNewDataSet(t *testing.T) {
 	column, _ := NewColumn("Col 1", IDRFFloating)
 	columns := []ColumnInfo{*column}
