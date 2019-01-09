@@ -49,7 +49,7 @@ func TestNewColumnWithFK(t *testing.T) {
 	}
 	goodForeignKey, err := NewForeignKey(goodDataSet, foreignColumn)
 	if err != nil {
-		t.Fail()
+		t.Errorf("Unexpected error: %v", err)
 	}
 
 	if _, err := NewColumnWithFK("", IDRFFloating, goodForeignKey); err == nil {

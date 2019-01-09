@@ -21,13 +21,13 @@ func NewDataSet(dataSetName string, columns []ColumnInfo) (*DataSetInfo, error) 
 		return nil, fmt.Errorf("Data set must have at least one column")
 	}
 
-	columnNameCount := make(map[string]bool)
+	columnSet := make(map[string]bool)
 	for _, columnInfo := range columns {
-		if _, exists := columnNameCount[columnInfo.name]; exists {
+		if _, exists := columnSet[columnInfo.name]; exists {
 			return nil, fmt.Errorf("Duplicate column names found")
 		}
 
-		columnNameCount[columnInfo.name] = true
+		columnSet[columnInfo.name] = true
 	}
 
 	return &DataSetInfo{dataSetName, columns}, nil
