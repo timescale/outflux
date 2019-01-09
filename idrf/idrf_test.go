@@ -1,6 +1,7 @@
-package intermediatedataformat
+package idrf
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -51,15 +52,15 @@ func TestNewColumnWithFK(t *testing.T) {
 		t.Fail()
 	}
 
-	if _, err := NewColumnWithFK("", IDRFFloating, *goodForeignKey); err == nil {
+	if _, err := NewColumnWithFK("", IDRFFloating, goodForeignKey); err == nil {
 		t.Error("Empty column name should not be allowed")
 	}
 
-	if _, err := NewColumnWithFK("Col 2", IDRFInteger, *goodForeignKey); err == nil {
-		t.Error("Column type is not the same as the reference foreign column")
+	if _, err := NewColumnWithFK("Col 2", IDRFInteger, goodForeignKey); err == nil {
+		t.Error("Error because column type is not the same as the referenced foreign column")
 	}
 
-	if column, err := NewColumnWithFK("Col 2", IDRFFloating, *goodForeignKey); err != nil || column == nil {
+	if column, err := NewColumnWithFK("Col 2", IDRFFloating, goodForeignKey); err != nil || column == nil {
 		t.Error("Should have created the column")
 	}
 }
@@ -105,6 +106,10 @@ func TestColumnNamed(t *testing.T) {
 	}
 
 	if goodColumn.name != goodColumnName || goodColumn.dataType != expectedColumnType {
-		t.Error("Found column was not good")
+		t.Error(
+			fmt.Sprintf(
+				"Found column was not good. Expected: name <%s> and type <%s>. Got: name <%s> and type <%s>",
+				goodColumnName, expectedColumnType, goodColumn.name, goodColumn.dataType,
+			))
 	}
 }
