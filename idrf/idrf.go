@@ -11,6 +11,22 @@ type DataSetInfo struct {
 	columns     []ColumnInfo
 }
 
+func (set *DataSetInfo) String() string {
+	return fmt.Sprintf("DataSetInfo { dataSetName: %s, columns: %s }", set.dataSetName, set.columns)
+}
+
+// ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column
+// with that name exists in the data set
+func (set DataSetInfo) ColumnNamed(columnName string) *ColumnInfo {
+	for _, column := range set.columns {
+		if columnName == column.name {
+			return &column
+		}
+	}
+
+	return nil
+}
+
 // NewDataSet creates a new instance of DataSetInfo with checked arguments
 func NewDataSet(dataSetName string, columns []ColumnInfo) (*DataSetInfo, error) {
 	if len(dataSetName) == 0 {
@@ -33,23 +49,15 @@ func NewDataSet(dataSetName string, columns []ColumnInfo) (*DataSetInfo, error) 
 	return &DataSetInfo{dataSetName, columns}, nil
 }
 
-// ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column
-// with that name exists in the data set
-func (set *DataSetInfo) ColumnNamed(columnName string) *ColumnInfo {
-	for _, column := range set.columns {
-		if columnName == column.name {
-			return &column
-		}
-	}
-
-	return nil
-}
-
 // ColumnInfo represents DDL description of a single column in IDRF
 type ColumnInfo struct {
 	name       string
 	dataType   DataType
 	foreignKey *ForeignKeyDescription
+}
+
+func (c ColumnInfo) String() string {
+	return fmt.Sprintf("ColumnInfo { name: %s, dataType: %s, fk: %v}", c.name, c.dataType.String(), c.foreignKey)
 }
 
 // NewColumnWithFK creates a new ColumnInfo with a foreign key while checking the arguments
@@ -89,12 +97,13 @@ const (
 	IDRFInteger DataType = iota + 1
 	IDRFFloating
 	IDRFString
-	IDFRBoolean
+	IDRFBoolean
+	IDRFTimestamp
 )
 
 func (d DataType) String() string {
 	switch d {
-	case IDFRBoolean:
+	case IDRFBoolean:
 		return "IDRFBoolean"
 	case IDRFFloating:
 		return "IDRFFloating"
@@ -102,6 +111,8 @@ func (d DataType) String() string {
 		return "IDRFInteger"
 	case IDRFString:
 		return "IDRFString"
+	case IDRFTimestamp:
+		return "IDRFTimestamp"
 	default:
 		panic("Unexpected value")
 	}
