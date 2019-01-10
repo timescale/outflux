@@ -103,18 +103,18 @@ func (d DataType) String() string {
 	case IDRFString:
 		return "IDRFString"
 	default:
-		return fmt.Sprintf("%d", int(d))
+		panic("Unexpected value")
 	}
 }
 
 // ForeignKeyDescription describes a foreign key relationship to a IDRF data set's column
 type ForeignKeyDescription struct {
-	dataSet    DataSetInfo
+	dataSet    *DataSetInfo
 	columnName string
 }
 
 // NewForeignKey creates a new instance of ForeignKeyDescription with checked arguments
-func NewForeignKey(dataSet DataSetInfo, columnName string) (*ForeignKeyDescription, error) {
+func NewForeignKey(dataSet *DataSetInfo, columnName string) (*ForeignKeyDescription, error) {
 	columnExistsInDataSet := dataSet.ColumnNamed(columnName) != nil
 	if !columnExistsInDataSet {
 		return nil, fmt.Errorf("Column %s not part of data set %s", columnName, dataSet.dataSetName)

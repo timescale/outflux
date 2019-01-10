@@ -11,7 +11,7 @@ func TestNewForeignKey(t *testing.T) {
 	wrongColumnName := "Wrong Column"
 	goodColumnName := "Column 1"
 
-	foreignKey, error := NewForeignKey(dataSetNoColumns, wrongColumnName)
+	foreignKey, error := NewForeignKey(&dataSetNoColumns, wrongColumnName)
 	if error == nil || foreignKey != nil {
 		t.Error("Error should have been returned because column is not in data set")
 	}
@@ -20,12 +20,12 @@ func TestNewForeignKey(t *testing.T) {
 		ColumnInfo{name: goodColumnName, dataType: IDRFInteger},
 	}}
 
-	foreignKey, error = NewForeignKey(dataSetWithColumns, wrongColumnName)
+	foreignKey, error = NewForeignKey(&dataSetWithColumns, wrongColumnName)
 	if error == nil || foreignKey != nil {
 		t.Error("Error should have been returned because column is not in data set")
 	}
 
-	foreignKey, error = NewForeignKey(dataSetWithColumns, goodColumnName)
+	foreignKey, error = NewForeignKey(&dataSetWithColumns, goodColumnName)
 	if error != nil || foreignKey == nil {
 		t.Error("Error should not have been returned, column is in the data set")
 	}
@@ -47,7 +47,7 @@ func TestNewColumnWithFK(t *testing.T) {
 		dataSetName: "DSName",
 		columns:     []ColumnInfo{ColumnInfo{name: foreignColumn, dataType: IDRFFloating}},
 	}
-	goodForeignKey, err := NewForeignKey(goodDataSet, foreignColumn)
+	goodForeignKey, err := NewForeignKey(&goodDataSet, foreignColumn)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
