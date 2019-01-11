@@ -23,7 +23,7 @@ func CreateInfluxClient(connectionParams *ConnectionParams) (*influx.Client, err
 }
 
 // ExecuteInfluxQuery sends a command query to an InfluxDB server
-func ExecuteInfluxQuery(influxClient *influx.Client, databaseName string, command string) (res *[]influx.Result, err error) {
+func ExecuteInfluxQuery(influxClient *influx.Client, databaseName, command string) (res *[]influx.Result, err error) {
 	query := influx.Query{
 		Command:  command,
 		Database: databaseName,

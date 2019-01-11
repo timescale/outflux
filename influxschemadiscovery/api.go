@@ -102,7 +102,7 @@ func fetchAvailableMeasurements(influxClient *influx.Client, database string) (*
 	return &measureNames, nil
 }
 
-func fetchMeasurementFields(influxClient *influx.Client, database string, measurement string) (*[][2]string, error) {
+func fetchMeasurementFields(influxClient *influx.Client, database, measurement string) (*[][2]string, error) {
 	showFieldsQuery := "SHOW FIELD KEYS FROM " + measurement
 	values, err := executeShowQuery(influxClient, database, showFieldsQuery, dontAcceptEmptyResultFlag)
 
@@ -132,7 +132,7 @@ func fetchMeasurementFields(influxClient *influx.Client, database string, measur
 	return &fieldKeys, nil
 }
 
-func fetchMeasurementTags(influxClient *influx.Client, database string, measure string) (*[]string, error) {
+func fetchMeasurementTags(influxClient *influx.Client, database, measure string) (*[]string, error) {
 	showTagsQuery := "SHOW TAG KEYS FROM " + measure
 	values, err := executeShowQuery(influxClient, database, showTagsQuery, acceptEmptyResultFlag)
 
@@ -158,7 +158,7 @@ func fetchMeasurementTags(influxClient *influx.Client, database string, measure 
 	return &tagNames, nil
 }
 
-func executeShowQuery(influxClient *influx.Client, database string, query string, acceptEmpty bool) (*[][]interface{}, error) {
+func executeShowQuery(influxClient *influx.Client, database, query string, acceptEmpty bool) (*[][]interface{}, error) {
 	resultPtr, err := ExecuteInfluxQuery(influxClient, database, query)
 	if err != nil {
 		return nil, err
