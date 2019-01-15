@@ -1,4 +1,4 @@
-package influxschemadiscovery
+package schemadiscovery
 
 import (
 	"fmt"
