@@ -1,4 +1,4 @@
-package schemadiscovery
+package clientutils
 
 import (
 	"fmt"

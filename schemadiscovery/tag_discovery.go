@@ -3,8 +3,19 @@ package schemadiscovery
 import (
 	"fmt"
 
-	influx "github.com/influxdata/platform/chronograf/influx"
+	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/idrf"
+	"github.com/timescale/outflux/schemadiscovery/clientutils"
+)
+
+type tagDiscoveryFns struct {
+	executeShowQuery func(*influx.Client, string, string) (*clientutils.InfluxShowResult, error)
+}
+
+var (
+	tdFunctions = tagDiscoveryFns{
+		executeShowQuery: clientutils.ExecuteShowQuery,
+	}
 )
 
 // DiscoverMeasurementTags retrieves the tags for a given measurement and returns an IDRF representation for them.
@@ -20,32 +31,32 @@ func DiscoverMeasurementTags(influxClient *influx.Client, database, measure stri
 
 func fetchMeasurementTags(influxClient *influx.Client, database, measure string) ([]string, error) {
 	showTagsQuery := fmt.Sprintf(showTagsQueryTemplate, measure)
-	values, err := executeShowQuery(influxClient, database, showTagsQuery, acceptEmptyResultFlag)
+	result, err := tdFunctions.executeShowQuery(influxClient, database, showTagsQuery)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if len(values) == 0 {
+	if len(result.Values) == 0 {
 		return []string{}, nil
 	}
 
-	tagNames := make([]string, len(values))
-	for index, valuesRow := range values {
+	tagNames := make([]string, len(result.Values))
+	for index, valuesRow := range result.Values {
 		if len(valuesRow) != 1 {
 			errorString := "tag discovery query returned unexpected result. " +
 				"Tag names not represented in single column"
 			return nil, fmt.Errorf(errorString)
 		}
 
-		tagNames[index] = valuesRow[0].(string)
+		tagNames[index] = valuesRow[0]
 	}
 
 	return tagNames, nil
 }
 
 func convertTags(tags []string) ([]*idrf.ColumnInfo, error) {
-	columns := make([]idrf.ColumnInfo, len(tags))
+	columns := make([]*idrf.ColumnInfo, len(tags))
 	for i, tag := range tags {
 		idrfColumn, err := idrf.NewColumn(tag, idrf.IDRFString)
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/timescale/outflux/idrf"
+	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
 const (
@@ -16,15 +17,16 @@ const (
 )
 
 // InfluxDatabaseSchema will do something
-func InfluxDatabaseSchema(connectionParams *ConnectionParams, database string) ([]*idrf.DataSetInfo, error) {
+func InfluxDatabaseSchema(connectionParams *clientutils.ConnectionParams, database string) ([]*idrf.DataSetInfo, error) {
 
 	return nil, nil
 }
 
 // InfluxMeasurementSchema extracts the IDRF schema definition for a specified measure of a InfluxDB database
-func InfluxMeasurementSchema(connectionParams *ConnectionParams, database string, measure string) (*idrf.DataSetInfo, error) {
-	influxClient, err := CreateInfluxClient(connectionParams)
-	defer (influxClient).Close()
+func InfluxMeasurementSchema(connectionParams *clientutils.ConnectionParams, database, measure string) (*idrf.DataSetInfo, error) {
+
+	influxClient, err := clientutils.CreateInfluxClient(connectionParams)
+	defer (*influxClient).Close()
 
 	if err != nil {
 		return nil, err
@@ -47,7 +49,7 @@ func InfluxMeasurementSchema(connectionParams *ConnectionParams, database string
 		return nil, fmt.Errorf("measure '%s' not found in database '%s'", measure, database)
 	}
 
-	idrfTags, err := DisoverMeasurementTags(influxClient, database, measure)
+	idrfTags, err := DiscoverMeasurementTags(influxClient, database, measure)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +60,7 @@ func InfluxMeasurementSchema(connectionParams *ConnectionParams, database string
 	}
 
 	idrfTimeColumn, _ := idrf.NewColumn("time", idrf.IDRFTimestamp)
-	allColumns := []idrf.ColumnInfo{*idrfTimeColumn}
+	allColumns := []*idrf.ColumnInfo{idrfTimeColumn}
 	allColumns = append(allColumns, idrfTags...)
 	allColumns = append(allColumns, idrfFields...)
 	dataSet, err := idrf.NewDataSet(measure, allColumns)

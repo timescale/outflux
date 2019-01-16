@@ -1,4 +1,4 @@
-package schemadiscovery
+package clientutils
 
 import (
 	"fmt"
@@ -7,8 +7,9 @@ import (
 	influx "github.com/influxdata/influxdb/client/v2"
 )
 
-type InlfuxShowResult struct {
-	values [][]string
+// InfluxShowResult contains the results/values from an 'SHOW ' query
+type InfluxShowResult struct {
+	Values [][]string
 }
 
 // CreateInfluxClient creates a new HttpClient to an InfluxDB server
@@ -55,8 +56,8 @@ type ConnectionParams struct {
 }
 
 // ExecuteShowQuery executes a "SHOW ..." InfluxQL query
-func ExecuteShowQuery(influxClient *influx.Client, database, query string) (*InlfuxShowResult, error) {
-	if !strings.HasPrefix(query, "SHOW ") {
+func ExecuteShowQuery(influxClient *influx.Client, database, query string) (*InfluxShowResult, error) {
+	if !strings.HasPrefix(strings.ToUpper(query), "SHOW ") {
 		return nil, fmt.Errorf("show query must start with 'SHOW '")
 	}
 
@@ -73,24 +74,29 @@ func ExecuteShowQuery(influxClient *influx.Client, database, query string) (*Inl
 
 	series := result[0].Series
 	if len(series) == 0 {
-		return &InfluxShowResult{values: [][]string{}}, nil
+		return &InfluxShowResult{Values: [][]string{}}, nil
 	} else if len(series) > 1 {
 		errorString := "'SHOW' query returned unexpected results. More than one series found."
 		return nil, fmt.Errorf(errorString)
 	}
 
-	convertedValues := castShowResultValues(values[0].Values)
-	return &InfluxShowResult{values: convertedValues}, nil
+	convertedValues, err := castShowResultValues(series[0].Values)
+	if err != nil {
+		return nil, err
+	}
+
+	return &InfluxShowResult{Values: convertedValues}, nil
 }
 
 func castShowResultValues(returnedResults [][]interface{}) ([][]string, error) {
 	toReturn := make([][]string, len(returnedResults))
+	var err bool
 	for i, row := range returnedResults {
 		toReturn[i] = make([]string, len(row))
 		for j, value := range row {
 			toReturn[i][j], err = value.(string)
-			if err != nil {
-				return nil, fmt.Println("value from 'SHOW ' query could not be cast to string")
+			if !err {
+				return nil, fmt.Errorf("value from 'SHOW ' query could not be cast to string")
 			}
 		}
 	}
