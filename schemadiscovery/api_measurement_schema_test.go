@@ -10,6 +10,7 @@ import (
 	"github.com/timescale/outflux/idrf"
 )
 
+// Results or errors returned by the mocked functions
 type apiTestCase struct {
 	influxClientError      error
 	influxClient           *influx.Client
@@ -19,9 +20,9 @@ type apiTestCase struct {
 	discoveredTags         []*idrf.ColumnInfo
 	discoverFieldsError    error
 	discoveredFields       []*idrf.ColumnInfo
-	dataSet                *idrf.DataSetInfo
 	reqMeasure             string
-	errorExpected          bool
+	// flag to indicate whether an error was expected from this test case, or something went wrong
+	errorExpected bool
 }
 
 func TestInfluxMeasurementSchema(t *testing.T) {
@@ -33,6 +34,7 @@ func TestInfluxMeasurementSchema(t *testing.T) {
 	var mockClient influx.Client
 	mockClient = clientutils.MockClient{}
 
+	// START - Expected data set and it's columns
 	measures := []string{"a"}
 	tag, _ := idrf.NewColumn("tag1", idrf.IDRFString)
 	tags := []*idrf.ColumnInfo{
@@ -47,12 +49,16 @@ func TestInfluxMeasurementSchema(t *testing.T) {
 	time, _ := idrf.NewColumn("time", idrf.IDRFTimestamp)
 	columns := []*idrf.ColumnInfo{time, tag, field}
 	dataSet, _ := idrf.NewDataSet("a", columns)
+	// END - Expected data set and it's columns
 
 	// Test cases
 	cases := []apiTestCase{
-		{influxClientError: genericError, errorExpected: true},                                                    // client is not created
-		{influxClient: &mockClient, fetchMeasurementsError: genericError, errorExpected: true},                    // couldn't fetch measurements
-		{influxClient: &mockClient, fetchedMeasurements: []string{"wrong"}, reqMeasure: "a", errorExpected: true}, // required measurement not in db
+		// client is not created
+		{influxClientError: genericError, errorExpected: true},
+		// couldn't fetch measurements
+		{influxClient: &mockClient, fetchMeasurementsError: genericError, errorExpected: true},
+		// required measurement not in db
+		{influxClient: &mockClient, fetchedMeasurements: []string{"wrong"}, reqMeasure: "a", errorExpected: true},
 		{ // error fetching tags
 			influxClient:        &mockClient,
 			fetchedMeasurements: measures,
@@ -72,7 +78,6 @@ func TestInfluxMeasurementSchema(t *testing.T) {
 			reqMeasure:          "a",
 			discoveredTags:      tags,
 			discoveredFields:    fields,
-			dataSet:             dataSet,
 			errorExpected:       false,
 		},
 	}

@@ -9,15 +9,16 @@ import (
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
+// Results or errors returned by the mocked functions
 type apiDbTestCase struct {
 	influxClientError     error
 	influxClient          *influx.Client
 	fetchedMeasurements   []string
 	discoveredTags        []*idrf.ColumnInfo
 	discoveredFields      []*idrf.ColumnInfo
-	dataSets              []*idrf.DataSetInfo
 	constructDataSetError error
-	errorExpected         bool
+	// flag to indicate whether an error was expected from this test case, or something went wrong
+	errorExpected bool
 }
 
 func TestInfluxDatabaseSchema(t *testing.T) {
@@ -47,14 +48,15 @@ func TestInfluxDatabaseSchema(t *testing.T) {
 	dataSets := []*idrf.DataSetInfo{dataSetA, dataSetB}
 	// Test cases
 	cases := []apiDbTestCase{
-		{influxClientError: genericError, errorExpected: true},                                // client is not created
-		{influxClient: &mockClient, constructDataSetError: genericError, errorExpected: true}, // couldn't construct data set
+		// client is not created
+		{influxClientError: genericError, errorExpected: true},
+		// couldn't construct data set
+		{influxClient: &mockClient, constructDataSetError: genericError, errorExpected: true},
 		{ // proper response
 			influxClient:        &mockClient,
 			fetchedMeasurements: measures,
 			discoveredTags:      tags,
 			discoveredFields:    fields,
-			dataSets:            dataSets,
 			errorExpected:       false,
 		},
 	}
