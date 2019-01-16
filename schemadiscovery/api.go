@@ -3,6 +3,7 @@ package schemadiscovery
 import (
 	"fmt"
 
+	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/idrf"
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
@@ -16,23 +17,59 @@ const (
 	showTagsQueryTemplate     = "SHOW TAG KEYS FROM %s"
 )
 
-// InfluxDatabaseSchema will do something
-func InfluxDatabaseSchema(connectionParams *clientutils.ConnectionParams, database string) ([]*idrf.DataSetInfo, error) {
-
-	return nil, nil
+type apiFn struct {
+	createInfluxClient func(*clientutils.ConnectionParams) (*influx.Client, error)
+	fetchMeasurements  func(*influx.Client, string) ([]string, error)
+	discoverTags       func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error)
+	discoverFields     func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error)
 }
 
-// InfluxMeasurementSchema extracts the IDRF schema definition for a specified measure of a InfluxDB database
-func InfluxMeasurementSchema(connectionParams *clientutils.ConnectionParams, database, measure string) (*idrf.DataSetInfo, error) {
+var (
+	apiFunctions = apiFn{
+		createInfluxClient: clientutils.CreateInfluxClient,
+		fetchMeasurements:  FetchAvailableMeasurements,
+		discoverFields:     DiscoverMeasurementFields,
+		discoverTags:       DiscoverMeasurementTags,
+	}
+)
 
-	influxClient, err := clientutils.CreateInfluxClient(connectionParams)
-	defer (*influxClient).Close()
+// InfluxDatabaseSchema extracts the IDRF schema definitions for all measures of a specified InfluxDB database
+func InfluxDatabaseSchema(connectionParams *clientutils.ConnectionParams, database string) ([]*idrf.DataSetInfo, error) {
+	influxClient, err := apiFunctions.createInfluxClient(connectionParams)
 
 	if err != nil {
 		return nil, err
 	}
 
-	measurements, err := FetchAvailableMeasurements(influxClient, database)
+	defer (*influxClient).Close()
+
+	measurements, err := apiFunctions.fetchMeasurements(influxClient, database)
+	if err != nil {
+		return nil, err
+	}
+
+	dataSets := make([]*idrf.DataSetInfo, len(measurements))
+	for i, measure := range measurements {
+		dataSets[i], err = constructDataSet(influxClient, database, measure)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return dataSets, nil
+}
+
+// InfluxMeasurementSchema extracts the IDRF schema definition for a specified measure of a InfluxDB database
+func InfluxMeasurementSchema(connectionParams *clientutils.ConnectionParams, database, measure string) (*idrf.DataSetInfo, error) {
+	influxClient, err := apiFunctions.createInfluxClient(connectionParams)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer (*influxClient).Close()
+
+	measurements, err := apiFunctions.fetchMeasurements(influxClient, database)
 	if err != nil {
 		return nil, err
 	}
@@ -49,12 +86,16 @@ func InfluxMeasurementSchema(connectionParams *clientutils.ConnectionParams, dat
 		return nil, fmt.Errorf("measure '%s' not found in database '%s'", measure, database)
 	}
 
-	idrfTags, err := DiscoverMeasurementTags(influxClient, database, measure)
+	return constructDataSet(influxClient, database, measure)
+}
+
+func constructDataSet(influxClient *influx.Client, database, measure string) (*idrf.DataSetInfo, error) {
+	idrfTags, err := apiFunctions.discoverTags(influxClient, database, measure)
 	if err != nil {
 		return nil, err
 	}
 
-	idrfFields, err := DiscoverMeasurementFields(influxClient, database, measure)
+	idrfFields, err := apiFunctions.discoverFields(influxClient, database, measure)
 	if err != nil {
 		return nil, err
 	}

@@ -7,18 +7,18 @@ import "fmt"
 
 // DataSetInfo represents DDL description of a single data set (table, measurement) in IDRF
 type DataSetInfo struct {
-	dataSetName string
-	columns     []*ColumnInfo
+	DataSetName string
+	Columns     []*ColumnInfo
 }
 
 func (set *DataSetInfo) String() string {
-	return fmt.Sprintf("DataSetInfo { dataSetName: %s, columns: %s }", set.dataSetName, set.columns)
+	return fmt.Sprintf("DataSetInfo { dataSetName: %s, columns: %s }", set.DataSetName, set.Columns)
 }
 
 // ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column
 // with that name exists in the data set
 func (set DataSetInfo) ColumnNamed(columnName string) *ColumnInfo {
-	for _, column := range set.columns {
+	for _, column := range set.Columns {
 		if columnName == column.Name {
 			return column
 		}
@@ -128,7 +128,7 @@ type ForeignKeyDescription struct {
 func NewForeignKey(dataSet *DataSetInfo, columnName string) (*ForeignKeyDescription, error) {
 	columnExistsInDataSet := dataSet.ColumnNamed(columnName) != nil
 	if !columnExistsInDataSet {
-		return nil, fmt.Errorf("Column %s not part of data set %s", columnName, dataSet.dataSetName)
+		return nil, fmt.Errorf("Column %s not part of data set %s", columnName, dataSet.DataSetName)
 	}
 
 	return &ForeignKeyDescription{dataSet, columnName}, nil

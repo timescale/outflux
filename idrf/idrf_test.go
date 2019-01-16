@@ -7,7 +7,7 @@ import (
 
 func TestNewForeignKey(t *testing.T) {
 	// If column doesn't exist in data set error is returned
-	dataSetNoColumns := DataSetInfo{dataSetName: "ds", columns: []*ColumnInfo{}}
+	dataSetNoColumns := DataSetInfo{DataSetName: "ds", Columns: []*ColumnInfo{}}
 	wrongColumnName := "Wrong Column"
 	goodColumnName := "Column 1"
 
@@ -16,7 +16,7 @@ func TestNewForeignKey(t *testing.T) {
 		t.Error("Error should have been returned because column is not in data set")
 	}
 
-	dataSetWithColumns := DataSetInfo{dataSetName: "ds", columns: []*ColumnInfo{
+	dataSetWithColumns := DataSetInfo{DataSetName: "ds", Columns: []*ColumnInfo{
 		&ColumnInfo{Name: goodColumnName, DataType: IDRFInteger},
 	}}
 
@@ -44,8 +44,8 @@ func TestNewColumn(t *testing.T) {
 func TestNewColumnWithFK(t *testing.T) {
 	foreignColumn := "Col1"
 	goodDataSet := DataSetInfo{
-		dataSetName: "DSName",
-		columns:     []*ColumnInfo{&ColumnInfo{Name: foreignColumn, DataType: IDRFFloating}},
+		DataSetName: "DSName",
+		Columns:     []*ColumnInfo{&ColumnInfo{Name: foreignColumn, DataType: IDRFFloating}},
 	}
 	goodForeignKey, err := NewForeignKey(&goodDataSet, foreignColumn)
 	if err != nil {
