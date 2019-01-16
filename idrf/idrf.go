@@ -7,12 +7,28 @@ import "fmt"
 
 // DataSetInfo represents DDL description of a single data set (table, measurement) in IDRF
 type DataSetInfo struct {
-	dataSetName string
-	columns     []ColumnInfo
+	DataSetName string
+	Columns     []*ColumnInfo
+}
+
+func (set *DataSetInfo) String() string {
+	return fmt.Sprintf("DataSetInfo { dataSetName: %s, columns: %s }", set.DataSetName, set.Columns)
+}
+
+// ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column
+// with that name exists in the data set
+func (set DataSetInfo) ColumnNamed(columnName string) *ColumnInfo {
+	for _, column := range set.Columns {
+		if columnName == column.Name {
+			return column
+		}
+	}
+
+	return nil
 }
 
 // NewDataSet creates a new instance of DataSetInfo with checked arguments
-func NewDataSet(dataSetName string, columns []ColumnInfo) (*DataSetInfo, error) {
+func NewDataSet(dataSetName string, columns []*ColumnInfo) (*DataSetInfo, error) {
 	if len(dataSetName) == 0 {
 		return nil, fmt.Errorf("Data set name can't be empty")
 	}
@@ -23,33 +39,25 @@ func NewDataSet(dataSetName string, columns []ColumnInfo) (*DataSetInfo, error) 
 
 	columnSet := make(map[string]bool)
 	for _, columnInfo := range columns {
-		if _, exists := columnSet[columnInfo.name]; exists {
+		if _, exists := columnSet[columnInfo.Name]; exists {
 			return nil, fmt.Errorf("Duplicate column names found")
 		}
 
-		columnSet[columnInfo.name] = true
+		columnSet[columnInfo.Name] = true
 	}
 
 	return &DataSetInfo{dataSetName, columns}, nil
 }
 
-// ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column
-// with that name exists in the data set
-func (set *DataSetInfo) ColumnNamed(columnName string) *ColumnInfo {
-	for _, column := range set.columns {
-		if columnName == column.name {
-			return &column
-		}
-	}
-
-	return nil
-}
-
 // ColumnInfo represents DDL description of a single column in IDRF
 type ColumnInfo struct {
-	name       string
-	dataType   DataType
-	foreignKey *ForeignKeyDescription
+	Name       string
+	DataType   DataType
+	ForeignKey *ForeignKeyDescription
+}
+
+func (c ColumnInfo) String() string {
+	return fmt.Sprintf("ColumnInfo { name: %s, dataType: %s, fk: %v}", c.Name, c.DataType.String(), c.ForeignKey)
 }
 
 // NewColumnWithFK creates a new ColumnInfo with a foreign key while checking the arguments
@@ -64,11 +72,11 @@ func NewColumnWithFK(columnName string, dataType DataType, foreignKey *ForeignKe
 		return nil, fmt.Errorf("Foreign key is invalid, column not found in data set")
 	}
 
-	if foreignColumn.dataType != dataType {
+	if foreignColumn.DataType != dataType {
 		return nil, fmt.Errorf("Foreign key remote column is of different type")
 	}
 
-	column.foreignKey = foreignKey
+	column.ForeignKey = foreignKey
 	return column, nil
 }
 
@@ -89,12 +97,13 @@ const (
 	IDRFInteger DataType = iota + 1
 	IDRFFloating
 	IDRFString
-	IDFRBoolean
+	IDRFBoolean
+	IDRFTimestamp
 )
 
 func (d DataType) String() string {
 	switch d {
-	case IDFRBoolean:
+	case IDRFBoolean:
 		return "IDRFBoolean"
 	case IDRFFloating:
 		return "IDRFFloating"
@@ -102,6 +111,8 @@ func (d DataType) String() string {
 		return "IDRFInteger"
 	case IDRFString:
 		return "IDRFString"
+	case IDRFTimestamp:
+		return "IDRFTimestamp"
 	default:
 		panic("Unexpected value")
 	}
@@ -117,7 +128,7 @@ type ForeignKeyDescription struct {
 func NewForeignKey(dataSet *DataSetInfo, columnName string) (*ForeignKeyDescription, error) {
 	columnExistsInDataSet := dataSet.ColumnNamed(columnName) != nil
 	if !columnExistsInDataSet {
-		return nil, fmt.Errorf("Column %s not part of data set %s", columnName, dataSet.dataSetName)
+		return nil, fmt.Errorf("Column %s not part of data set %s", columnName, dataSet.DataSetName)
 	}
 
 	return &ForeignKeyDescription{dataSet, columnName}, nil

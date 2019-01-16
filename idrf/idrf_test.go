@@ -7,7 +7,7 @@ import (
 
 func TestNewForeignKey(t *testing.T) {
 	// If column doesn't exist in data set error is returned
-	dataSetNoColumns := DataSetInfo{dataSetName: "ds", columns: []ColumnInfo{}}
+	dataSetNoColumns := DataSetInfo{DataSetName: "ds", Columns: []*ColumnInfo{}}
 	wrongColumnName := "Wrong Column"
 	goodColumnName := "Column 1"
 
@@ -16,8 +16,8 @@ func TestNewForeignKey(t *testing.T) {
 		t.Error("Error should have been returned because column is not in data set")
 	}
 
-	dataSetWithColumns := DataSetInfo{dataSetName: "ds", columns: []ColumnInfo{
-		ColumnInfo{name: goodColumnName, dataType: IDRFInteger},
+	dataSetWithColumns := DataSetInfo{DataSetName: "ds", Columns: []*ColumnInfo{
+		&ColumnInfo{Name: goodColumnName, DataType: IDRFInteger},
 	}}
 
 	foreignKey, error = NewForeignKey(&dataSetWithColumns, wrongColumnName)
@@ -44,8 +44,8 @@ func TestNewColumn(t *testing.T) {
 func TestNewColumnWithFK(t *testing.T) {
 	foreignColumn := "Col1"
 	goodDataSet := DataSetInfo{
-		dataSetName: "DSName",
-		columns:     []ColumnInfo{ColumnInfo{name: foreignColumn, dataType: IDRFFloating}},
+		DataSetName: "DSName",
+		Columns:     []*ColumnInfo{&ColumnInfo{Name: foreignColumn, DataType: IDRFFloating}},
 	}
 	goodForeignKey, err := NewForeignKey(&goodDataSet, foreignColumn)
 	if err != nil {
@@ -67,17 +67,17 @@ func TestNewColumnWithFK(t *testing.T) {
 
 func TestNewDataSet(t *testing.T) {
 	column, _ := NewColumn("Col 1", IDRFFloating)
-	columns := []ColumnInfo{*column}
+	columns := []*ColumnInfo{column}
 	if _, error := NewDataSet("", columns); error == nil {
 		t.Error("Should not be able to create a data set with an empty name")
 	}
 
-	noColumns := []ColumnInfo{}
+	noColumns := []*ColumnInfo{}
 	if _, error := NewDataSet("Data Set", noColumns); error == nil {
 		t.Error("Should not be able to create a data set without columns")
 	}
 
-	duplicateColumns := []ColumnInfo{*column, *column}
+	duplicateColumns := []*ColumnInfo{column, column}
 	if _, error := NewDataSet("data set", duplicateColumns); error == nil {
 		t.Error("Should not be able to create a data set with duplicate columns")
 	}
@@ -93,7 +93,7 @@ func TestColumnNamed(t *testing.T) {
 	expectedColumnType := IDRFFloating
 
 	column, _ := NewColumn(goodColumnName, expectedColumnType)
-	columns := []ColumnInfo{*column}
+	columns := []*ColumnInfo{column}
 	dataSet, _ := NewDataSet("Data Set", columns)
 
 	goodColumn := dataSet.ColumnNamed(goodColumnName)
@@ -105,11 +105,11 @@ func TestColumnNamed(t *testing.T) {
 		t.Error("Column name should not have been found")
 	}
 
-	if goodColumn.name != goodColumnName || goodColumn.dataType != expectedColumnType {
+	if goodColumn.Name != goodColumnName || goodColumn.DataType != expectedColumnType {
 		t.Error(
 			fmt.Sprintf(
 				"Found column was not good. Expected: name <%s> and type <%s>. Got: name <%s> and type <%s>",
-				goodColumnName, expectedColumnType, goodColumn.name, goodColumn.dataType,
+				goodColumnName, expectedColumnType, goodColumn.Name, goodColumn.DataType,
 			))
 	}
 }
