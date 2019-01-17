@@ -29,10 +29,14 @@
   name = "github.com/influxdata/influxdb"
   version = "1.7.2"
 
-[[constraint]]
+[[override]]
   branch = "master"
   name = "github.com/influxdata/platform"
 
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/go-yaml/yaml"
+  version = "2.2.2"

@@ -19,9 +19,9 @@ func CreateInfluxClient(connectionParams *ConnectionParams) (*influx.Client, err
 	}
 
 	clientConfig := influx.HTTPConfig{
-		Addr:     connectionParams.server,
-		Username: connectionParams.username,
-		Password: connectionParams.password,
+		Addr:     connectionParams.Server,
+		Username: connectionParams.Username,
+		Password: connectionParams.Password,
 	}
 
 	newClient, err := influx.NewHTTPClient(clientConfig)
@@ -50,9 +50,9 @@ func ExecuteInfluxQuery(influxClient *influx.Client, databaseName, command strin
 
 // ConnectionParams represents the parameters required to open a InfluxDB connection
 type ConnectionParams struct {
-	server   string
-	username string
-	password string
+	Server   string
+	Username string
+	Password string
 }
 
 // ExecuteShowQuery executes a "SHOW ..." InfluxQL query

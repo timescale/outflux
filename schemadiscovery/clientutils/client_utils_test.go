@@ -15,9 +15,9 @@ func TestCreateInfluxClient(t *testing.T) {
 	}
 
 	serverParams := ConnectionParams{
-		server:   "",
-		username: "",
-		password: "",
+		Server:   "",
+		Username: "",
+		Password: "",
 	}
 
 	_, err = CreateInfluxClient(&serverParams)
@@ -25,7 +25,7 @@ func TestCreateInfluxClient(t *testing.T) {
 		t.Error("Server address should not be accepted")
 	}
 
-	serverParams.server = "http://someaddress"
+	serverParams.Server = "http://someaddress"
 	influxClient, err := CreateInfluxClient(&serverParams)
 
 	if err != nil || influxClient == nil {
