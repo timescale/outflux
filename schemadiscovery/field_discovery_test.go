@@ -11,7 +11,7 @@ import (
 
 func TestDiscoverMeasurementFields(t *testing.T) {
 	var mockClient influx.Client
-	mockClient = clientutils.MockClient{}
+	mockClient = &clientutils.MockClient{}
 	database := "database"
 	measure := "measure"
 
@@ -55,7 +55,7 @@ func TestDiscoverMeasurementFields(t *testing.T) {
 	oldExecuteQueryFn := fdFunctions.executeShowQuery
 
 	for _, testCase := range cases {
-		fdFunctions.executeShowQuery = func(influxClient *influx.Client, database, query string) (*clientutils.InfluxShowResult, error) {
+		fdFunctions.executeShowQuery = func(influxClient influx.Client, database, query string) (*clientutils.InfluxShowResult, error) {
 			if testCase.showQueryResult != nil {
 				return testCase.showQueryResult, nil
 			}
@@ -63,7 +63,7 @@ func TestDiscoverMeasurementFields(t *testing.T) {
 			return nil, testCase.showQueryError
 		}
 
-		result, err := DiscoverMeasurementFields(&mockClient, database, measure)
+		result, err := DiscoverMeasurementFields(mockClient, database, measure)
 		if err != nil && testCase.showQueryError == nil {
 			t.Errorf("еxpected error to be '%v' got '%v' instead", testCase.showQueryError, err)
 		} else if err == nil && testCase.showQueryError != nil {

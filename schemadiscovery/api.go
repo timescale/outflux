@@ -18,10 +18,10 @@ const (
 )
 
 type apiFn struct {
-	createInfluxClient func(*clientutils.ConnectionParams) (*influx.Client, error)
-	fetchMeasurements  func(*influx.Client, string) ([]string, error)
-	discoverTags       func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error)
-	discoverFields     func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error)
+	createInfluxClient func(*clientutils.ConnectionParams) (influx.Client, error)
+	fetchMeasurements  func(influx.Client, string) ([]string, error)
+	discoverTags       func(influx.Client, string, string) ([]*idrf.ColumnInfo, error)
+	discoverFields     func(influx.Client, string, string) ([]*idrf.ColumnInfo, error)
 }
 
 var (
@@ -41,7 +41,7 @@ func InfluxDatabaseSchema(connectionParams *clientutils.ConnectionParams, databa
 		return nil, err
 	}
 
-	defer (*influxClient).Close()
+	defer influxClient.Close()
 
 	measurements, err := apiFunctions.fetchMeasurements(influxClient, database)
 	if err != nil {
@@ -67,7 +67,7 @@ func InfluxMeasurementSchema(connectionParams *clientutils.ConnectionParams, dat
 		return nil, err
 	}
 
-	defer (*influxClient).Close()
+	defer influxClient.Close()
 
 	measurements, err := apiFunctions.fetchMeasurements(influxClient, database)
 	if err != nil {
@@ -89,7 +89,7 @@ func InfluxMeasurementSchema(connectionParams *clientutils.ConnectionParams, dat
 	return constructDataSet(influxClient, database, measure)
 }
 
-func constructDataSet(influxClient *influx.Client, database, measure string) (*idrf.DataSetInfo, error) {
+func constructDataSet(influxClient influx.Client, database, measure string) (*idrf.DataSetInfo, error) {
 	idrfTags, err := apiFunctions.discoverTags(influxClient, database, measure)
 	if err != nil {
 		return nil, err

@@ -67,8 +67,8 @@ func TestExecuteInfluxQuery(t *testing.T) {
 	expectedDatabaseName := "database name"
 	for _, mockClient := range cases {
 		var client influx.Client
-		client = mockClient
-		response, err := ExecuteInfluxQuery(&client, expectedDatabaseName, mockClient.expectedQuery)
+		client = &mockClient
+		response, err := ExecuteInfluxQuery(client, expectedDatabaseName, mockClient.expectedQuery)
 		if mockClient.expectedError != nil && err != mockClient.expectedError {
 			// An error was expected, not from the content of the Response
 			t.Errorf("Expected to fail with: <%v>, received error was: <%v>", mockClient.expectedError, err)
@@ -146,8 +146,8 @@ func TestExecuteShowQueryWithFailure(t *testing.T) {
 
 	for _, badCase := range badCases {
 		var client influx.Client
-		client = badCase
-		_, err := ExecuteShowQuery(&client, database, badCase.expectedQuery)
+		client = &badCase
+		_, err := ExecuteShowQuery(client, database, badCase.expectedQuery)
 		if err == nil {
 			t.Error("error not returned when expecting ")
 		}
@@ -160,7 +160,7 @@ func TestExecuteShowQueryWithOkResults(t *testing.T) {
 	goodQuery := "SHOW something"
 	goodValue := "1"
 	var goodCaseWithResults influx.Client
-	goodCaseWithResults = MockClient{
+	goodCaseWithResults = &MockClient{
 		t:             t,
 		expectedQuery: goodQuery,
 		expectedResponse: &influx.Response{
@@ -176,7 +176,7 @@ func TestExecuteShowQueryWithOkResults(t *testing.T) {
 		},
 	}
 
-	response, err := ExecuteShowQuery(&goodCaseWithResults, database, goodQuery)
+	response, err := ExecuteShowQuery(goodCaseWithResults, database, goodQuery)
 	if err != nil {
 		t.Errorf("Expected no error to happen. Got '%s'", err.Error())
 	}
@@ -191,7 +191,7 @@ func TestExecuteShowQueryWithOkResults(t *testing.T) {
 	}
 
 	var goodCaseNoResults influx.Client
-	goodCaseNoResults = MockClient{
+	goodCaseNoResults = &MockClient{
 		t:             t,
 		expectedQuery: goodQuery,
 		expectedResponse: &influx.Response{
@@ -203,7 +203,7 @@ func TestExecuteShowQueryWithOkResults(t *testing.T) {
 		},
 	}
 
-	response, err = ExecuteShowQuery(&goodCaseNoResults, database, goodQuery)
+	response, err = ExecuteShowQuery(goodCaseNoResults, database, goodQuery)
 	if err != nil {
 		t.Errorf("Expected no error to happen. Got '%s'", err.Error())
 	}

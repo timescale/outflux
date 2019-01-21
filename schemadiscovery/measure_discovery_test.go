@@ -10,7 +10,7 @@ import (
 
 func TestFetchAvailableMeasurements(t *testing.T) {
 	var mockClient influx.Client
-	mockClient = clientutils.MockClient{}
+	mockClient = &clientutils.MockClient{}
 	database := "database"
 
 	cases := []struct {
@@ -44,7 +44,7 @@ func TestFetchAvailableMeasurements(t *testing.T) {
 
 	oldExecuteQueryFn := mdFunctions.executeShowQuery
 	for _, testCase := range cases {
-		mdFunctions.executeShowQuery = func(influxClient *influx.Client, database, query string) (*clientutils.InfluxShowResult, error) {
+		mdFunctions.executeShowQuery = func(influxClient influx.Client, database, query string) (*clientutils.InfluxShowResult, error) {
 			if testCase.showQueryResult != nil {
 				return testCase.showQueryResult, nil
 			}
@@ -52,7 +52,7 @@ func TestFetchAvailableMeasurements(t *testing.T) {
 			return nil, testCase.showQueryError
 		}
 
-		result, err := FetchAvailableMeasurements(&mockClient, database)
+		result, err := FetchAvailableMeasurements(mockClient, database)
 		if err != nil && testCase.showQueryError == nil {
 			t.Errorf("еxpected error to be '%v' got '%v' instead", testCase.showQueryError, err)
 		} else if err == nil && testCase.showQueryError != nil {
@@ -72,27 +72,3 @@ func TestFetchAvailableMeasurements(t *testing.T) {
 	}
 	mdFunctions.executeShowQuery = oldExecuteQueryFn
 }
-
-/*
-func FetchAvailableMeasurements(influxClient *influx.Client, database string) ([]string, error) {
-	result, err := mdFunctions.executeShowQuery(influxClient, database, showMeasurementsQuery)
-
-	if err != nil {
-		return nil, err
-	}
-
-	measureNames := make([]string, len(result.Values))
-	for index, valuesRow := range result.Values {
-		if len(valuesRow) != 1 {
-			errorString := "measurement discovery query returned unexpected result. " +
-				"measurement names not represented in single column"
-			return nil, fmt.Errorf(errorString)
-		}
-
-		measureNames[index] = valuesRow[0]
-	}
-
-	return measureNames, nil
-}
-
-*/

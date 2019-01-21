@@ -13,7 +13,7 @@ type InfluxShowResult struct {
 }
 
 // CreateInfluxClient creates a new HttpClient to an InfluxDB server
-func CreateInfluxClient(connectionParams *ConnectionParams) (*influx.Client, error) {
+func CreateInfluxClient(connectionParams *ConnectionParams) (influx.Client, error) {
 	if connectionParams == nil {
 		return nil, fmt.Errorf("Connection params shouldn't be nil")
 	}
@@ -25,17 +25,17 @@ func CreateInfluxClient(connectionParams *ConnectionParams) (*influx.Client, err
 	}
 
 	newClient, err := influx.NewHTTPClient(clientConfig)
-	return &newClient, err
+	return newClient, err
 }
 
 // ExecuteInfluxQuery sends a command query to an InfluxDB server
-func ExecuteInfluxQuery(influxClient *influx.Client, databaseName, command string) (res *[]influx.Result, err error) {
+func ExecuteInfluxQuery(influxClient influx.Client, databaseName, command string) (res *[]influx.Result, err error) {
 	query := influx.Query{
 		Command:  command,
 		Database: databaseName,
 	}
 
-	if response, err := (*influxClient).Query(query); err == nil {
+	if response, err := influxClient.Query(query); err == nil {
 		if response.Error() != nil {
 			return res, response.Error()
 		}
@@ -56,7 +56,7 @@ type ConnectionParams struct {
 }
 
 // ExecuteShowQuery executes a "SHOW ..." InfluxQL query
-func ExecuteShowQuery(influxClient *influx.Client, database, query string) (*InfluxShowResult, error) {
+func ExecuteShowQuery(influxClient influx.Client, database, query string) (*InfluxShowResult, error) {
 	if !strings.HasPrefix(strings.ToUpper(query), "SHOW ") {
 		return nil, fmt.Errorf("show query must start with 'SHOW '")
 	}

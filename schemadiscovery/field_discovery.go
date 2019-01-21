@@ -9,7 +9,7 @@ import (
 )
 
 type fieldDiscoveryFns struct {
-	executeShowQuery func(*influx.Client, string, string) (*clientutils.InfluxShowResult, error)
+	executeShowQuery func(influx.Client, string, string) (*clientutils.InfluxShowResult, error)
 }
 
 var (
@@ -19,7 +19,7 @@ var (
 )
 
 // DiscoverMeasurementFields creates the ColumnInfo for the Fields of a given measurement
-func DiscoverMeasurementFields(influxClient *influx.Client, database, measurement string) ([]*idrf.ColumnInfo, error) {
+func DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.ColumnInfo, error) {
 	fields, err := fetchMeasurementFields(influxClient, database, measurement)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func DiscoverMeasurementFields(influxClient *influx.Client, database, measuremen
 	return convertFields(fields)
 }
 
-func fetchMeasurementFields(influxClient *influx.Client, database, measurement string) ([][2]string, error) {
+func fetchMeasurementFields(influxClient influx.Client, database, measurement string) ([][2]string, error) {
 	showFieldsQuery := fmt.Sprintf(showFieldsQueryTemplate, measurement)
 	result, err := fdFunctions.executeShowQuery(influxClient, database, showFieldsQuery)
 

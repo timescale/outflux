@@ -13,7 +13,7 @@ import (
 // Results or errors returned by the mocked functions
 type apiTestCase struct {
 	influxClientError      error
-	influxClient           *influx.Client
+	influxClient           influx.Client
 	fetchMeasurementsError error
 	fetchedMeasurements    []string
 	discoverTagsError      error
@@ -32,7 +32,7 @@ func TestInfluxMeasurementSchema(t *testing.T) {
 	genericError := fmt.Errorf("generic error")
 
 	var mockClient influx.Client
-	mockClient = clientutils.MockClient{}
+	mockClient = &clientutils.MockClient{}
 
 	// START - Expected data set and it's columns
 	measures := []string{"a"}
@@ -56,24 +56,24 @@ func TestInfluxMeasurementSchema(t *testing.T) {
 		// client is not created
 		{influxClientError: genericError, errorExpected: true},
 		// couldn't fetch measurements
-		{influxClient: &mockClient, fetchMeasurementsError: genericError, errorExpected: true},
+		{influxClient: mockClient, fetchMeasurementsError: genericError, errorExpected: true},
 		// required measurement not in db
-		{influxClient: &mockClient, fetchedMeasurements: []string{"wrong"}, reqMeasure: "a", errorExpected: true},
+		{influxClient: mockClient, fetchedMeasurements: []string{"wrong"}, reqMeasure: "a", errorExpected: true},
 		{ // error fetching tags
-			influxClient:        &mockClient,
+			influxClient:        mockClient,
 			fetchedMeasurements: measures,
 			reqMeasure:          "a",
 			discoverTagsError:   genericError,
 			errorExpected:       true,
 		}, { // error fetching fields
-			influxClient:        &mockClient,
+			influxClient:        mockClient,
 			fetchedMeasurements: measures,
 			reqMeasure:          "a",
 			discoveredTags:      tags,
 			discoverFieldsError: genericError,
 			errorExpected:       true,
 		}, { // proper response
-			influxClient:        &mockClient,
+			influxClient:        mockClient,
 			fetchedMeasurements: measures,
 			reqMeasure:          "a",
 			discoveredTags:      tags,
@@ -120,26 +120,26 @@ func TestInfluxMeasurementSchema(t *testing.T) {
 	apiFunctions.discoverTags = oldDiscoverTags
 }
 
-func mockCreateClient(testCase *apiTestCase) func(*clientutils.ConnectionParams) (*influx.Client, error) {
-	return func(*clientutils.ConnectionParams) (*influx.Client, error) {
+func mockCreateClient(testCase *apiTestCase) func(*clientutils.ConnectionParams) (influx.Client, error) {
+	return func(*clientutils.ConnectionParams) (influx.Client, error) {
 		return testCase.influxClient, testCase.influxClientError
 	}
 }
 
-func mockFetchMeasurements(testCase *apiTestCase) func(*influx.Client, string) ([]string, error) {
-	return func(*influx.Client, string) ([]string, error) {
+func mockFetchMeasurements(testCase *apiTestCase) func(influx.Client, string) ([]string, error) {
+	return func(influx.Client, string) ([]string, error) {
 		return testCase.fetchedMeasurements, testCase.fetchMeasurementsError
 	}
 }
 
-func mockDiscoverTags(testCase *apiTestCase) func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
-	return func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
+func mockDiscoverTags(testCase *apiTestCase) func(influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
+	return func(influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
 		return testCase.discoveredTags, testCase.discoverTagsError
 	}
 }
 
-func mockDiscoverFields(testCase *apiTestCase) func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
-	return func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
+func mockDiscoverFields(testCase *apiTestCase) func(influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
+	return func(influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
 		return testCase.discoveredFields, testCase.discoverFieldsError
 	}
 }

@@ -9,7 +9,7 @@ import (
 )
 
 type tagDiscoveryFns struct {
-	executeShowQuery func(*influx.Client, string, string) (*clientutils.InfluxShowResult, error)
+	executeShowQuery func(influx.Client, string, string) (*clientutils.InfluxShowResult, error)
 }
 
 var (
@@ -19,7 +19,7 @@ var (
 )
 
 // DiscoverMeasurementTags retrieves the tags for a given measurement and returns an IDRF representation for them.
-func DiscoverMeasurementTags(influxClient *influx.Client, database, measure string) ([]*idrf.ColumnInfo, error) {
+func DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.ColumnInfo, error) {
 	tags, err := fetchMeasurementTags(influxClient, database, measure)
 
 	if err != nil {
@@ -29,7 +29,7 @@ func DiscoverMeasurementTags(influxClient *influx.Client, database, measure stri
 	return convertTags(tags)
 }
 
-func fetchMeasurementTags(influxClient *influx.Client, database, measure string) ([]string, error) {
+func fetchMeasurementTags(influxClient influx.Client, database, measure string) ([]string, error) {
 	showTagsQuery := fmt.Sprintf(showTagsQueryTemplate, measure)
 	result, err := tdFunctions.executeShowQuery(influxClient, database, showTagsQuery)
 

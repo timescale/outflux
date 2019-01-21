@@ -19,17 +19,17 @@ type MockClient struct {
 }
 
 // Ping mock
-func (mc MockClient) Ping(timeout time.Duration) (time.Duration, string, error) {
+func (mc *MockClient) Ping(timeout time.Duration) (time.Duration, string, error) {
 	return timeout, "", nil
 }
 
 // Write mock
-func (mc MockClient) Write(bp influx.BatchPoints) error {
+func (mc *MockClient) Write(bp influx.BatchPoints) error {
 	return nil
 }
 
 // Query mock
-func (mc MockClient) Query(q influx.Query) (*influx.Response, error) {
+func (mc *MockClient) Query(q influx.Query) (*influx.Response, error) {
 	if q.Command != mc.expectedQuery {
 		errorString := fmt.Sprintf("Expected <%s> as a query command, got: <%s>", mc.expectedQuery, q.Command)
 		mc.t.Error(errorString)
@@ -40,12 +40,12 @@ func (mc MockClient) Query(q influx.Query) (*influx.Response, error) {
 }
 
 // QueryAsChunk mock
-func (mc MockClient) QueryAsChunk(q influx.Query) (*influx.ChunkedResponse, error) {
+func (mc *MockClient) QueryAsChunk(q influx.Query) (*influx.ChunkedResponse, error) {
 	return nil, nil
 }
 
 // Close mock
-func (mc MockClient) Close() error {
+func (mc *MockClient) Close() error {
 	mc.closeCalled = true
 	return nil
 }

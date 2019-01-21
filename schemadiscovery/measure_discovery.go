@@ -10,7 +10,7 @@ import (
 
 // MeasureDiscoveryFns contains the functions that can be swapped out during testing
 type MeasureDiscoveryFns struct {
-	executeShowQuery func(*influx.Client, string, string) (*clientutils.InfluxShowResult, error)
+	executeShowQuery func(influx.Client, string, string) (*clientutils.InfluxShowResult, error)
 }
 
 var (
@@ -21,7 +21,7 @@ var (
 
 // FetchAvailableMeasurements returns the names of all available measurements for a given database,
 // or an error if the query could not be executed, or the result was in an unexpected format
-func FetchAvailableMeasurements(influxClient *influx.Client, database string) ([]string, error) {
+func FetchAvailableMeasurements(influxClient influx.Client, database string) ([]string, error) {
 	result, err := mdFunctions.executeShowQuery(influxClient, database, showMeasurementsQuery)
 
 	if err != nil {

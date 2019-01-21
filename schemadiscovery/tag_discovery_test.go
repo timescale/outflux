@@ -12,7 +12,7 @@ import (
 
 func TestDiscoverMeasurementTags(t *testing.T) {
 	var mockClient influx.Client
-	mockClient = clientutils.MockClient{}
+	mockClient = &clientutils.MockClient{}
 	database := "database"
 	measure := "measure"
 
@@ -52,7 +52,7 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 	oldExecuteQueryFn := tdFunctions.executeShowQuery
 
 	for _, testCase := range cases {
-		tdFunctions.executeShowQuery = func(influxClient *influx.Client, database, query string) (*clientutils.InfluxShowResult, error) {
+		tdFunctions.executeShowQuery = func(influxClient influx.Client, database, query string) (*clientutils.InfluxShowResult, error) {
 			if testCase.showQueryResult != nil {
 				return testCase.showQueryResult, nil
 			}
@@ -60,7 +60,7 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 			return nil, testCase.showQueryError
 		}
 
-		result, err := DiscoverMeasurementTags(&mockClient, database, measure)
+		result, err := DiscoverMeasurementTags(mockClient, database, measure)
 		if err != nil && testCase.showQueryError == nil {
 			t.Errorf("еxpected error to be '%v' got '%v' instead", testCase.showQueryError, err)
 		} else if err == nil && testCase.showQueryError != nil {

@@ -4,21 +4,20 @@ import (
 	"fmt"
 	"testing"
 
-	conf "github.com/timescale/outflux/extraction/config"
+	"github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/extraction/extractors"
-	"github.com/timescale/outflux/idrf"
-	utils "github.com/timescale/outflux/schemadiscovery/clientutils"
+	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
-type measureConf = conf.MeasureExtraction
-type connParams = utils.ConnectionParams
-type extractorConf = conf.ExtractorConfig
+type measureConf = config.MeasureExtraction
+type connParams = clientutils.ConnectionParams
+type extractorConf = config.ExtractorConfig
 
 func TestCreateExtractors(t *testing.T) {
 	cases := []struct {
 		arg           extractorConf
 		expectedError bool
-		generator     NewExtractorFn
+		generator     extractors.GenerateExtractorFn
 	}{
 		{ //No measures, no extractors created, no error expected
 			arg: extractorConf{
@@ -44,7 +43,7 @@ func TestCreateExtractors(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		api := apiImpl{extractorGenerator: testCase.generator}
+		api := defaultExtractorGenerator{generate: testCase.generator}
 
 		result, err := api.CreateExtractors(&testCase.arg)
 		errorReturned := err != nil
@@ -76,7 +75,7 @@ func TestCreateExtractors(t *testing.T) {
 }
 
 // Creates a mock Extractor Generator function that fails the test if called
-func failIfCalledGenerator(t *testing.T) NewExtractorFn {
+func failIfCalledGenerator(t *testing.T) extractors.GenerateExtractorFn {
 	return func(*measureConf, *connParams) (extractors.InfluxExtractor, error) {
 		t.Errorf("extractor generator should not have been called")
 		return nil, nil
@@ -99,7 +98,7 @@ type mockExtractor struct {
 	calledWith *measureConf
 }
 
-func (e *mockExtractor) Start(rowChannel chan idrf.Row) (*idrf.DataSetInfo, error) {
+func (e *mockExtractor) Start() (*extractors.ExtractedInfo, error) {
 	return nil, nil
 }
 
