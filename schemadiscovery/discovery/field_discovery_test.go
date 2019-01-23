@@ -1,4 +1,4 @@
-package schemadiscovery
+package discovery
 
 import (
 	"fmt"
@@ -9,17 +9,21 @@ import (
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
+type showQueryFnAlias = func(influxClient influx.Client, database, query string) (*clientutils.InfluxShowResult, error)
+
+type testCaseFD struct {
+	showQueryResult *clientutils.InfluxShowResult
+	showQueryError  error
+	expectedResult  []*idrf.ColumnInfo
+}
+
 func TestDiscoverMeasurementFields(t *testing.T) {
 	var mockClient influx.Client
-	mockClient = clientutils.MockClient{}
+	mockClient = &clientutils.MockClient{}
 	database := "database"
 	measure := "measure"
 
-	cases := []struct {
-		showQueryResult *clientutils.InfluxShowResult
-		showQueryError  error
-		expectedResult  []*idrf.ColumnInfo
-	}{
+	cases := []testCaseFD{
 		{
 			showQueryError: fmt.Errorf("error executing query"),
 		}, { // empty result returned, error should be result, must have fields
@@ -52,18 +56,11 @@ func TestDiscoverMeasurementFields(t *testing.T) {
 		},
 	}
 
-	oldExecuteQueryFn := fdFunctions.executeShowQuery
-
 	for _, testCase := range cases {
-		fdFunctions.executeShowQuery = func(influxClient *influx.Client, database, query string) (*clientutils.InfluxShowResult, error) {
-			if testCase.showQueryResult != nil {
-				return testCase.showQueryResult, nil
-			}
-
-			return nil, testCase.showQueryError
+		fieldExplorer := defaultFieldExplorer{
+			utils: clientutils.NewUtilsWith(nil, mockShowExecutorFD(testCase)),
 		}
-
-		result, err := DiscoverMeasurementFields(&mockClient, database, measure)
+		result, err := fieldExplorer.DiscoverMeasurementFields(mockClient, database, measure)
 		if err != nil && testCase.showQueryError == nil {
 			t.Errorf("еxpected error to be '%v' got '%v' instead", testCase.showQueryError, err)
 		} else if err == nil && testCase.showQueryError != nil {
@@ -81,5 +78,23 @@ func TestDiscoverMeasurementFields(t *testing.T) {
 			}
 		}
 	}
-	fdFunctions.executeShowQuery = oldExecuteQueryFn
+}
+
+type mockShowExecutor struct {
+	resToReturn *clientutils.InfluxShowResult
+	errToReturn error
+}
+
+func (mse *mockShowExecutor) ExecuteShowQuery(
+	influxClient influx.Client, database, query string,
+) (*clientutils.InfluxShowResult, error) {
+	return mse.resToReturn, mse.errToReturn
+}
+
+func mockShowExecutorFD(testCase testCaseFD) *mockShowExecutor {
+	if testCase.showQueryResult != nil {
+		return &mockShowExecutor{testCase.showQueryResult, nil}
+	}
+
+	return &mockShowExecutor{nil, testCase.showQueryError}
 }

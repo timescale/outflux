@@ -1,4 +1,4 @@
-package schemadiscovery
+package discovery
 
 import (
 	"fmt"
@@ -8,19 +8,27 @@ import (
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
-type fieldDiscoveryFns struct {
-	executeShowQuery func(*influx.Client, string, string) (*clientutils.InfluxShowResult, error)
-}
-
-var (
-	fdFunctions = fieldDiscoveryFns{
-		executeShowQuery: clientutils.ExecuteShowQuery,
-	}
+const (
+	showFieldsQueryTemplate = "SHOW FIELD KEYS FROM \"%s\""
 )
 
-// DiscoverMeasurementFields creates the ColumnInfo for the Fields of a given measurement
-func DiscoverMeasurementFields(influxClient *influx.Client, database, measurement string) ([]*idrf.ColumnInfo, error) {
-	fields, err := fetchMeasurementFields(influxClient, database, measurement)
+// FieldExplorer defines an API for discoering InfluxDB fields of a specified measurement
+type FieldExplorer interface {
+	// DiscoverMeasurementFields creates the ColumnInfo for the Fields of a given measurement
+	DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.ColumnInfo, error)
+}
+
+type defaultFieldExplorer struct {
+	utils clientutils.ClientUtils
+}
+
+// NewFieldExplorer creates a new instance of the Field discovert API
+func NewFieldExplorer() FieldExplorer {
+	return &defaultFieldExplorer{utils: clientutils.NewUtils()}
+}
+
+func (fe *defaultFieldExplorer) DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.ColumnInfo, error) {
+	fields, err := fe.fetchMeasurementFields(influxClient, database, measurement)
 	if err != nil {
 		return nil, err
 	}
@@ -28,9 +36,9 @@ func DiscoverMeasurementFields(influxClient *influx.Client, database, measuremen
 	return convertFields(fields)
 }
 
-func fetchMeasurementFields(influxClient *influx.Client, database, measurement string) ([][2]string, error) {
+func (fe *defaultFieldExplorer) fetchMeasurementFields(influxClient influx.Client, database, measurement string) ([][2]string, error) {
 	showFieldsQuery := fmt.Sprintf(showFieldsQueryTemplate, measurement)
-	result, err := fdFunctions.executeShowQuery(influxClient, database, showFieldsQuery)
+	result, err := fe.utils.ExecuteShowQuery(influxClient, database, showFieldsQuery)
 
 	if err != nil {
 		return nil, err

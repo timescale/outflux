@@ -12,7 +12,7 @@ import (
 // Results or errors returned by the mocked functions
 type apiDbTestCase struct {
 	influxClientError     error
-	influxClient          *influx.Client
+	influxClient          influx.Client
 	fetchedMeasurements   []string
 	discoveredTags        []*idrf.ColumnInfo
 	discoveredFields      []*idrf.ColumnInfo
@@ -28,7 +28,7 @@ func TestInfluxDatabaseSchema(t *testing.T) {
 	genericError := fmt.Errorf("generic error")
 
 	var mockClient influx.Client
-	mockClient = clientutils.MockClient{}
+	mockClient = &clientutils.MockClient{}
 
 	measures := []string{"a", "b"}
 	tag, _ := idrf.NewColumn("tag1", idrf.IDRFString)
@@ -51,9 +51,9 @@ func TestInfluxDatabaseSchema(t *testing.T) {
 		// client is not created
 		{influxClientError: genericError, errorExpected: true},
 		// couldn't construct data set
-		{influxClient: &mockClient, constructDataSetError: genericError, errorExpected: true},
+		{influxClient: mockClient, constructDataSetError: genericError, errorExpected: true},
 		{ // proper response
-			influxClient:        &mockClient,
+			influxClient:        mockClient,
 			fetchedMeasurements: measures,
 			discoveredTags:      tags,
 			discoveredFields:    fields,
@@ -61,18 +61,21 @@ func TestInfluxDatabaseSchema(t *testing.T) {
 		},
 	}
 
-	oldCreateInfluxClient := apiFunctions.createInfluxClient
-	oldFetchMeasurements := apiFunctions.fetchMeasurements
-	oldDiscoverFields := apiFunctions.discoverFields
-	oldDiscoverTags := apiFunctions.discoverTags
-
 	for _, testCase := range cases {
-		apiFunctions.createInfluxClient = dbMockCreateClient(&testCase)
-		apiFunctions.fetchMeasurements = dbMockFetchMeasurements(&testCase)
-		apiFunctions.discoverTags = dbMockColumns(testCase.discoveredTags)
-		apiFunctions.discoverFields = dbMockColumns(testCase.discoveredFields)
+		mockMock := &mockExplorer{
+			measures: dbMockFetchMeasurements(testCase),
+			fields:   dbMockColumns(testCase.discoveredFields),
+			tags:     dbMockColumns(testCase.discoveredTags),
+			client:   dbMockClient(testCase.influxClient, testCase.influxClientError),
+		}
+		explorer := defaultInfluxDatabaseSchemaExplorer{
+			clientUtils:     clientutils.NewUtilsWith(mockMock, nil),
+			measureExplorer: mockMock,
+			tagExplorer:     mockMock,
+			fieldExplorer:   mockMock,
+		}
 
-		results, err := InfluxDatabaseSchema(&connectionParams, database)
+		results, err := explorer.InfluxDatabaseSchema(&connectionParams, database)
 		if testCase.errorExpected && err == nil {
 			t.Error("expected test case to have an error, no error returned")
 		} else if testCase.errorExpected && err != nil {
@@ -97,26 +100,55 @@ func TestInfluxDatabaseSchema(t *testing.T) {
 		}
 	}
 
-	apiFunctions.createInfluxClient = oldCreateInfluxClient
-	apiFunctions.fetchMeasurements = oldFetchMeasurements
-	apiFunctions.discoverFields = oldDiscoverFields
-	apiFunctions.discoverTags = oldDiscoverTags
 }
 
-func dbMockCreateClient(testCase *apiDbTestCase) func(*clientutils.ConnectionParams) (*influx.Client, error) {
-	return func(*clientutils.ConnectionParams) (*influx.Client, error) {
+func dbMockCreateClient(testCase *apiDbTestCase) func(*clientutils.ConnectionParams) (influx.Client, error) {
+	return func(*clientutils.ConnectionParams) (influx.Client, error) {
 		return testCase.influxClient, testCase.influxClientError
 	}
 }
 
-func dbMockFetchMeasurements(testCase *apiDbTestCase) func(*influx.Client, string) ([]string, error) {
-	return func(*influx.Client, string) ([]string, error) {
+type mockExplorer struct {
+	measures func() ([]string, error)
+	fields   func() ([]*idrf.ColumnInfo, error)
+	tags     func() ([]*idrf.ColumnInfo, error)
+	client   func() (influx.Client, error)
+}
+
+func (me *mockExplorer) FetchAvailableMeasurements(influxClient influx.Client, database string) ([]string, error) {
+	return me.measures()
+}
+
+func (me *mockExplorer) DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.ColumnInfo, error) {
+	return me.tags()
+}
+
+func (me *mockExplorer) DiscoverMeasurementFields(
+	influxClient influx.Client,
+	database string,
+	measurement string,
+) ([]*idrf.ColumnInfo, error) {
+	return me.fields()
+}
+
+func (me *mockExplorer) CreateInfluxClient(params *clientutils.ConnectionParams) (influx.Client, error) {
+	return me.client()
+}
+
+func dbMockFetchMeasurements(testCase apiDbTestCase) func() ([]string, error) {
+	return func() ([]string, error) {
 		return testCase.fetchedMeasurements, testCase.constructDataSetError
 	}
 }
 
-func dbMockColumns(toReturn []*idrf.ColumnInfo) func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
-	return func(*influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
+func dbMockColumns(toReturn []*idrf.ColumnInfo) func() ([]*idrf.ColumnInfo, error) {
+	return func() ([]*idrf.ColumnInfo, error) {
 		return toReturn, nil
+	}
+}
+
+func dbMockClient(toReturn influx.Client, errToReturn error) func() (influx.Client, error) {
+	return func() (influx.Client, error) {
+		return toReturn, errToReturn
 	}
 }

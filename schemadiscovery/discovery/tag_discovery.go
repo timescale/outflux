@@ -1,4 +1,4 @@
-package schemadiscovery
+package discovery
 
 import (
 	"fmt"
@@ -8,19 +8,29 @@ import (
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
-type tagDiscoveryFns struct {
-	executeShowQuery func(*influx.Client, string, string) (*clientutils.InfluxShowResult, error)
-}
-
-var (
-	tdFunctions = tagDiscoveryFns{
-		executeShowQuery: clientutils.ExecuteShowQuery,
-	}
+const (
+	showTagsQueryTemplate = "SHOW TAG KEYS FROM %s"
 )
 
+// TagExplorer Defines an API for discovering the tags of an InfluxDB measurement
+type TagExplorer interface {
+	DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.ColumnInfo, error)
+}
+
+type defaultTagExplorer struct {
+	utils clientutils.ClientUtils
+}
+
+// NewTagExplorer creates a new implementation of that can discover the tags of an influx measurement
+func NewTagExplorer() TagExplorer {
+	return &defaultTagExplorer{
+		utils: clientutils.NewUtils(),
+	}
+}
+
 // DiscoverMeasurementTags retrieves the tags for a given measurement and returns an IDRF representation for them.
-func DiscoverMeasurementTags(influxClient *influx.Client, database, measure string) ([]*idrf.ColumnInfo, error) {
-	tags, err := fetchMeasurementTags(influxClient, database, measure)
+func (te *defaultTagExplorer) DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.ColumnInfo, error) {
+	tags, err := te.fetchMeasurementTags(influxClient, database, measure)
 
 	if err != nil {
 		return nil, err
@@ -29,9 +39,9 @@ func DiscoverMeasurementTags(influxClient *influx.Client, database, measure stri
 	return convertTags(tags)
 }
 
-func fetchMeasurementTags(influxClient *influx.Client, database, measure string) ([]string, error) {
+func (te *defaultTagExplorer) fetchMeasurementTags(influxClient influx.Client, database, measure string) ([]string, error) {
 	showTagsQuery := fmt.Sprintf(showTagsQueryTemplate, measure)
-	result, err := tdFunctions.executeShowQuery(influxClient, database, showTagsQuery)
+	result, err := te.utils.ExecuteShowQuery(influxClient, database, showTagsQuery)
 
 	if err != nil {
 		return nil, err
