@@ -1,4 +1,4 @@
-package schemadiscovery
+package discovery
 
 import (
 	"fmt"
@@ -10,17 +10,21 @@ import (
 	influx "github.com/influxdata/influxdb/client/v2"
 )
 
+type testCase struct {
+	showQueryResult *clientutils.InfluxShowResult
+	showQueryError  error
+	expectedResult  []*idrf.ColumnInfo
+}
+
+type showQueryFnAliasTD = func(influxClient influx.Client, database, query string) (*clientutils.InfluxShowResult, error)
+
 func TestDiscoverMeasurementTags(t *testing.T) {
 	var mockClient influx.Client
 	mockClient = &clientutils.MockClient{}
 	database := "database"
 	measure := "measure"
 
-	cases := []struct {
-		showQueryResult *clientutils.InfluxShowResult
-		showQueryError  error
-		expectedResult  []*idrf.ColumnInfo
-	}{
+	cases := []testCase{
 		{
 			showQueryError: fmt.Errorf("error executing query"),
 		}, { // empty result returned
@@ -49,18 +53,12 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 		},
 	}
 
-	oldExecuteQueryFn := tdFunctions.executeShowQuery
-
 	for _, testCase := range cases {
-		tdFunctions.executeShowQuery = func(influxClient influx.Client, database, query string) (*clientutils.InfluxShowResult, error) {
-			if testCase.showQueryResult != nil {
-				return testCase.showQueryResult, nil
-			}
-
-			return nil, testCase.showQueryError
+		tagExplorer := defaultTagExplorer{
+			utils: clientutils.NewUtilsWith(nil, mockExecuteShow(testCase)),
 		}
 
-		result, err := DiscoverMeasurementTags(mockClient, database, measure)
+		result, err := tagExplorer.DiscoverMeasurementTags(mockClient, database, measure)
 		if err != nil && testCase.showQueryError == nil {
 			t.Errorf("еxpected error to be '%v' got '%v' instead", testCase.showQueryError, err)
 		} else if err == nil && testCase.showQueryError != nil {
@@ -78,5 +76,17 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 			}
 		}
 	}
-	tdFunctions.executeShowQuery = oldExecuteQueryFn
+}
+
+type mocksShowExecutorTD struct {
+	res *clientutils.InfluxShowResult
+	err error
+}
+
+func (se *mocksShowExecutorTD) ExecuteShowQuery(client influx.Client, db string, q string,
+) (*clientutils.InfluxShowResult, error) {
+	return se.res, se.err
+}
+func mockExecuteShow(testCase testCase) *mocksShowExecutorTD {
+	return &mocksShowExecutorTD{testCase.showQueryResult, testCase.showQueryError}
 }

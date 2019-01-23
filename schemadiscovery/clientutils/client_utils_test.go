@@ -9,7 +9,8 @@ import (
 )
 
 func TestCreateInfluxClient(t *testing.T) {
-	_, err := CreateInfluxClient(nil)
+	clientGenerator := &defaultClientGenerator{}
+	_, err := clientGenerator.CreateInfluxClient(nil)
 	if err == nil {
 		t.Error("Should not be able to create a client without connection params")
 	}
@@ -20,13 +21,13 @@ func TestCreateInfluxClient(t *testing.T) {
 		Password: "",
 	}
 
-	_, err = CreateInfluxClient(&serverParams)
+	_, err = clientGenerator.CreateInfluxClient(&serverParams)
 	if err == nil {
 		t.Error("Server address should not be accepted")
 	}
 
 	serverParams.Server = "http://someaddress"
-	influxClient, err := CreateInfluxClient(&serverParams)
+	influxClient, err := clientGenerator.CreateInfluxClient(&serverParams)
 
 	if err != nil || influxClient == nil {
 		t.Error("Client should have been created without errors")
@@ -65,10 +66,11 @@ func TestExecuteInfluxQuery(t *testing.T) {
 		}}
 
 	expectedDatabaseName := "database name"
+	queryExecutor := &defaultQueryExecutor{}
 	for _, mockClient := range cases {
 		var client influx.Client
 		client = &mockClient
-		response, err := ExecuteInfluxQuery(client, expectedDatabaseName, mockClient.expectedQuery)
+		response, err := queryExecutor.ExecuteInfluxQuery(client, expectedDatabaseName, mockClient.expectedQuery)
 		if mockClient.expectedError != nil && err != mockClient.expectedError {
 			// An error was expected, not from the content of the Response
 			t.Errorf("Expected to fail with: <%v>, received error was: <%v>", mockClient.expectedError, err)
@@ -76,19 +78,23 @@ func TestExecuteInfluxQuery(t *testing.T) {
 
 		if mockClient.errorInResponse != "" && err.Error() != mockClient.errorInResponse {
 			// An error was expected from Response.Error() to be returned
-			t.Errorf("Expected to fail with: <%v>, received error was: <%v>", mockClient.errorInResponse, err)
+			t.Errorf("expected to fail with: %v, received error was: %v", mockClient.errorInResponse, err)
 		}
 
 		// No response shold have been returned
 		if mockClient.expectedResponse == nil && response != nil {
-			t.Errorf("Expected response: nil, receivedResponse: <%v>", response)
+			t.Errorf("expected response: nil, receivedResponse: %v", response)
 		} else if mockClient.expectedResponse != nil && response == nil && mockClient.errorInResponse == "" {
 			// It was expected that no response be returned, but not because of an error in the Response content
-			t.Errorf("Expected response: <%v>, received: nil", mockClient.expectedResponse)
+			t.Errorf("expected response: %v, received: nil", mockClient.expectedResponse)
 		} else if response != nil && mockClient.expectedResponse != nil {
 			// It was expected that the same object was returned as a response as the expectedResponse
-			if response != &mockClient.expectedResponse.Results {
-				t.Errorf("Expected response: <%v>, received response: <%v>", mockClient.expectedResponse, response)
+			if len(response) != len(mockClient.expectedResponse.Results) {
+				t.Errorf(
+					"expected response length: %d, received response length: %d",
+					len(mockClient.expectedResponse.Results),
+					len(response),
+				)
 			}
 		}
 	}
@@ -96,7 +102,9 @@ func TestExecuteInfluxQuery(t *testing.T) {
 
 func TestExecuteShowQueryWithFailure(t *testing.T) {
 	database := "database"
-	_, err := ExecuteShowQuery(nil, database, "NO SHOW query")
+	queryExecutor := &defaultQueryExecutor{}
+	showExecutor := &defaultShowExecutor{queryExecutor}
+	_, err := showExecutor.ExecuteShowQuery(nil, database, "NO SHOW query")
 	if err == nil {
 		t.Error("expected to fail because query didn't start with 'SHOW '")
 	}
@@ -147,7 +155,7 @@ func TestExecuteShowQueryWithFailure(t *testing.T) {
 	for _, badCase := range badCases {
 		var client influx.Client
 		client = &badCase
-		_, err := ExecuteShowQuery(client, database, badCase.expectedQuery)
+		_, err := showExecutor.ExecuteShowQuery(client, database, badCase.expectedQuery)
 		if err == nil {
 			t.Error("error not returned when expecting ")
 		}
@@ -176,7 +184,10 @@ func TestExecuteShowQueryWithOkResults(t *testing.T) {
 		},
 	}
 
-	response, err := ExecuteShowQuery(goodCaseWithResults, database, goodQuery)
+	queryExecutor := &defaultQueryExecutor{}
+	showExecutor := &defaultShowExecutor{queryExecutor}
+
+	response, err := showExecutor.ExecuteShowQuery(goodCaseWithResults, database, goodQuery)
 	if err != nil {
 		t.Errorf("Expected no error to happen. Got '%s'", err.Error())
 	}
@@ -203,7 +214,7 @@ func TestExecuteShowQueryWithOkResults(t *testing.T) {
 		},
 	}
 
-	response, err = ExecuteShowQuery(goodCaseNoResults, database, goodQuery)
+	response, err = showExecutor.ExecuteShowQuery(goodCaseNoResults, database, goodQuery)
 	if err != nil {
 		t.Errorf("Expected no error to happen. Got '%s'", err.Error())
 	}
@@ -216,4 +227,9 @@ func TestExecuteShowQueryWithOkResults(t *testing.T) {
 	if len(values) != 0 {
 		t.Errorf("Expected an empty values matrix, but got '%v'", response)
 	}
+}
+
+func TestTest(t *testing.T) {
+	fk := NewUtils()
+	fk.CreateInfluxClient(nil)
 }

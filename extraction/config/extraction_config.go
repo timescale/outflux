@@ -27,12 +27,7 @@ type MeasureExtraction struct {
 }
 
 // NewMeasureExtractionConfig creates a new instance of MeasureExtraction while validating the fields
-func NewMeasureExtractionConfig(
-	database string,
-	measure string,
-	from string,
-	to string,
-	chunkSize int) (*MeasureExtraction, error) {
+func NewMeasureExtractionConfig(database, measure, from, to string, chunkSize int) (*MeasureExtraction, error) {
 	if database == "" || measure == "" {
 		return nil, fmt.Errorf("database and measure can't be empty")
 	}

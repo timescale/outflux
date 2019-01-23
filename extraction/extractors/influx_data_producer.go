@@ -8,72 +8,45 @@ import (
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/idrf"
-	"github.com/timescale/outflux/schemadiscovery"
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
-const (
-	selectQueryDoubleBoundTemplate = "SELECT %s FROM \"%s\" WHERE time >= '%s' AND time <= '%s'"
-	selectQueryLowerBoundTemplate  = "SELECT %s FROM \"%s\" WHERE time >= '%s'"
-	selectQueryUpperBoundTemplate  = "SELECT %s FROM \"%s\" WHERE time <= '%s'"
-	selectQueryNoBoundTemplate     = "SELECT %s FROM \"%s\""
-)
-
-// NewInfluxExtractor creates an implementation of the InfluxExtractor interface while checking the arguments
-func NewInfluxExtractor(config *config.MeasureExtraction, connection *clientutils.ConnectionParams) (InfluxExtractor, error) {
-	if config == nil || connection == nil {
-		return nil, fmt.Errorf("nil not allowed for config or connection")
-	}
-
-	return &influxExtractorImpl{config: config, connection: connection}, nil
+// DataProducer populates a data channel with the results from an influx query
+type DataProducer interface {
+	Fetch(connectionParams *clientutils.ConnectionParams,
+		dataChannel chan idrf.Row,
+		errorChannel chan error,
+		query influx.Query)
 }
 
-// InfluxExtractorImpl is an implementation of the extractor interface.
-type influxExtractorImpl struct {
-	config     *config.MeasureExtraction
-	connection *clientutils.ConnectionParams
+type defaultDataProducer struct {
+	influxUtils clientutils.ClientUtils
 }
 
-// Start returns the schema info for a Influx Measurement and produces the the points as IDRFRows
-// to a supplied channel
-func (ie *influxExtractorImpl) Start() (*ExtractedInfo, error) {
-
-	dataSetInfo, err := schemadiscovery.InfluxMeasurementSchema(ie.connection, ie.config.Database, ie.config.Measure)
-	if err != nil {
-		return nil, err
+// NewDataProducer creates a new implementation of the data producer
+func NewDataProducer() DataProducer {
+	return &defaultDataProducer{
+		influxUtils: clientutils.NewUtils(),
 	}
-
-	query := influx.Query{
-		Command:   buildSelectCommand(ie.config, dataSetInfo.Columns),
-		Database:  ie.config.Database,
-		Chunked:   true,
-		ChunkSize: ie.config.ChunkSize,
-	}
-
-	dataChannel := make(chan idrf.Row)
-	errorChannel := make(chan error)
-
-	go fetchData(dataChannel, errorChannel, ie.connection, query)
-
-	return &ExtractedInfo{
-		dataSetSchema: dataSetInfo,
-		dataChannel:   dataChannel,
-		errorChannel:  errorChannel,
-	}, nil
 }
 
-// Goroutine that executes the select query and receives the chunked response, piping it to a data channel.
+// NewDataProducerWith creates a new implementation of the data producer with a supplied client utils
+func NewDataProducerWith(influxUtils clientutils.ClientUtils) DataProducer {
+	return &defaultDataProducer{
+		influxUtils: influxUtils,
+	}
+}
+
+// Executes the select query and receives the chunked response, piping it to a data channel.
 // If an error occurs a single error is sent to the error channel. Both channels are closed at the end of the routine.
-func fetchData(
+func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionParams,
 	dataChannel chan idrf.Row,
 	errorChannel chan error,
-	connection *clientutils.ConnectionParams,
 	query influx.Query) {
-
 	defer close(dataChannel)
 	defer close(errorChannel)
 
-	client, err := clientutils.CreateInfluxClient(connection)
+	client, err := dp.influxUtils.CreateInfluxClient(connectionParams)
 
 	if err != nil {
 		errorChannel <- err
@@ -85,6 +58,7 @@ func fetchData(
 	chunkResponse, err := client.QueryAsChunk(query)
 	if err != nil {
 		errorChannel <- err
+		return
 	}
 
 	defer chunkResponse.Close()

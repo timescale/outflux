@@ -82,18 +82,22 @@ func TestInfluxMeasurementSchema(t *testing.T) {
 		},
 	}
 
-	oldCreateInfluxClient := apiFunctions.createInfluxClient
-	oldFetchMeasurements := apiFunctions.fetchMeasurements
-	oldDiscoverFields := apiFunctions.discoverFields
-	oldDiscoverTags := apiFunctions.discoverTags
-
 	for _, testCase := range cases {
-		apiFunctions.createInfluxClient = mockCreateClient(&testCase)
-		apiFunctions.fetchMeasurements = mockFetchMeasurements(&testCase)
-		apiFunctions.discoverTags = mockDiscoverTags(&testCase)
-		apiFunctions.discoverFields = mockDiscoverFields(&testCase)
+		mockExplorer := mockAllExplorer{
+			measures: mockFetchMeasurements(&testCase),
+			fields:   mockDiscoverFields(&testCase),
+			tags:     mockDiscoverTags(&testCase),
+			client:   mockClientME(testCase.influxClient, testCase.influxClientError),
+		}
 
-		result, err := InfluxMeasurementSchema(&connectionParams, database, testCase.reqMeasure)
+		schemaExplorer := defaultInfluxMeasurementSchemaExplorer{
+			clientUtils:     clientutils.NewUtilsWith(&mockExplorer, nil),
+			measureExplorer: &mockExplorer,
+			tagExplorer:     &mockExplorer,
+			fieldExplorer:   &mockExplorer,
+		}
+
+		result, err := schemaExplorer.InfluxMeasurementSchema(&connectionParams, database, testCase.reqMeasure)
 		if testCase.errorExpected && err == nil {
 			t.Error("expected test case to have an error, no error returned")
 		} else if testCase.errorExpected && err != nil {
@@ -114,32 +118,60 @@ func TestInfluxMeasurementSchema(t *testing.T) {
 		}
 	}
 
-	apiFunctions.createInfluxClient = oldCreateInfluxClient
-	apiFunctions.fetchMeasurements = oldFetchMeasurements
-	apiFunctions.discoverFields = oldDiscoverFields
-	apiFunctions.discoverTags = oldDiscoverTags
 }
 
+type mockAllExplorer struct {
+	fields   func() ([]*idrf.ColumnInfo, error)
+	tags     func() ([]*idrf.ColumnInfo, error)
+	measures func() ([]string, error)
+	client   func() (influx.Client, error)
+}
+
+func (me *mockAllExplorer) FetchAvailableMeasurements(influxClient influx.Client, database string) ([]string, error) {
+	return me.measures()
+}
+
+func (me *mockAllExplorer) DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.ColumnInfo, error) {
+	return me.tags()
+}
+
+func (me *mockAllExplorer) DiscoverMeasurementFields(
+	influxClient influx.Client,
+	database string,
+	measurement string,
+) ([]*idrf.ColumnInfo, error) {
+	return me.fields()
+}
+
+func (me *mockAllExplorer) CreateInfluxClient(params *clientutils.ConnectionParams) (influx.Client, error) {
+	return me.client()
+}
 func mockCreateClient(testCase *apiTestCase) func(*clientutils.ConnectionParams) (influx.Client, error) {
 	return func(*clientutils.ConnectionParams) (influx.Client, error) {
 		return testCase.influxClient, testCase.influxClientError
 	}
 }
 
-func mockFetchMeasurements(testCase *apiTestCase) func(influx.Client, string) ([]string, error) {
-	return func(influx.Client, string) ([]string, error) {
+func mockFetchMeasurements(testCase *apiTestCase) func() ([]string, error) {
+	return func() ([]string, error) {
 		return testCase.fetchedMeasurements, testCase.fetchMeasurementsError
 	}
 }
 
-func mockDiscoverTags(testCase *apiTestCase) func(influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
-	return func(influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
+func mockDiscoverTags(testCase *apiTestCase) func() ([]*idrf.ColumnInfo, error) {
+	return func() ([]*idrf.ColumnInfo, error) {
 		return testCase.discoveredTags, testCase.discoverTagsError
 	}
 }
 
-func mockDiscoverFields(testCase *apiTestCase) func(influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
-	return func(influx.Client, string, string) ([]*idrf.ColumnInfo, error) {
+func mockDiscoverFields(testCase *apiTestCase) func() ([]*idrf.ColumnInfo, error) {
+	return func() ([]*idrf.ColumnInfo, error) {
 		return testCase.discoveredFields, testCase.discoverFieldsError
+	}
+}
+
+func mockClientME(toReturn influx.Client, errToReturn error) func() (influx.Client, error) {
+	return func() (influx.Client, error) {
+		return toReturn, errToReturn
 	}
 }

@@ -6,7 +6,7 @@ import (
 )
 
 type defaultExtractorGenerator struct {
-	generate extractors.GenerateExtractorFn
+	generator extractors.InfluxExtractorGenerator
 }
 
 func (api *defaultExtractorGenerator) CreateExtractors(config *config.ExtractorConfig) ([]extractors.InfluxExtractor, error) {
@@ -14,7 +14,7 @@ func (api *defaultExtractorGenerator) CreateExtractors(config *config.ExtractorC
 	extractors := make([]extractors.InfluxExtractor, len(config.Measures))
 	for index, measureConfig := range config.Measures {
 		var err error
-		extractors[index], err = api.generate(measureConfig, connectionParams)
+		extractors[index], err = api.generator.Generate(measureConfig, connectionParams)
 		if err != nil {
 			return nil, err
 		}
@@ -27,6 +27,13 @@ func (api *defaultExtractorGenerator) CreateExtractors(config *config.ExtractorC
 // NewExtractorGenerator returns an implementation of the extraction api
 func NewExtractorGenerator() ExtractorGenerator {
 	return &defaultExtractorGenerator{
-		generate: extractors.NewInfluxExtractor,
+		generator: extractors.NewInfluxExtractorGenerator(),
+	}
+}
+
+// NewExtractorGeneratorWith returns an implementation of the extraction api, with supplied dependencies
+func NewExtractorGeneratorWith(generator extractors.InfluxExtractorGenerator) ExtractorGenerator {
+	return &defaultExtractorGenerator{
+		generator: generator,
 	}
 }
