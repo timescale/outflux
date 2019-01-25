@@ -13,11 +13,11 @@ import (
 // InfluxExtractor defines an interface for an Extractor that can connect to an InfluxDB
 // discover the schema and produces the rows to a channel
 type InfluxExtractor interface {
-	Start() (*ExtractionInfo, error)
+	Start() (*ExtractedInfo, error)
 }
 
-// ExtractionInfo returned when starting an extractor. Contains the data, error channels and schema
-type ExtractionInfo struct {
+// ExtractedInfo returned when starting an extractor. Contains the data, error channels and schema
+type ExtractedInfo struct {
 	DataChannel   chan idrf.Row
 	ErrorChannel  chan error
 	DataSetSchema *idrf.DataSetInfo
@@ -32,36 +32,18 @@ type defaultInfluxExtractor struct {
 	producer       DataProducer
 }
 
-// NewExtractor creates a new instance of InfluxExtractor with the specified config and connection params
-func NewExtractor(measureConfig *config.MeasureExtraction, connection *clientutils.ConnectionParams) (InfluxExtractor, error) {
-	err := config.ValidateMeasureExtractionConfig(measureConfig)
-	if err != nil {
-		return nil, fmt.Errorf("Config not valid: %s", err.Error())
-	}
-
-	if connection == nil {
-		return nil, fmt.Errorf("Connection params can't be nil")
-	}
-
-	clientUtils := clientutils.NewUtils()
-	return &defaultInfluxExtractor{
-		config:         measureConfig,
-		connection:     connection,
-		schemaExplorer: schemadiscovery.NewSchemaExplorerWithUtils(clientUtils),
-		influxUtils:    clientUtils,
-		producer:       NewDataProducerWith(clientUtils),
-	}, nil
-}
-
 // Start returns the schema info for a Influx Measurement and produces the the points as IDRFRows
 // to a supplied channel
-func (ie *defaultInfluxExtractor) Start() (*ExtractionInfo, error) {
+func (ie *defaultInfluxExtractor) Start() (*ExtractedInfo, error) {
 	dataSetInfo, err := ie.schemaExplorer.InfluxMeasurementSchema(ie.connection, ie.config.Database, ie.config.Measure)
 	if err != nil {
 		return nil, err
 	}
 
-	intChunkSize := int(ie.config.ChunkSize)
+	intChunkSize, err := safeCastChunkSize(ie.config.ChunkSize)
+	if err != nil {
+		return nil, err
+	}
 
 	query := influx.Query{
 		Command:   buildSelectCommand(ie.config, dataSetInfo.Columns),
@@ -75,9 +57,18 @@ func (ie *defaultInfluxExtractor) Start() (*ExtractionInfo, error) {
 
 	go ie.producer.Fetch(ie.connection, dataChannel, errorChannel, query)
 
-	return &ExtractionInfo{
+	return &ExtractedInfo{
 		DataSetSchema: dataSetInfo,
 		DataChannel:   dataChannel,
 		ErrorChannel:  errorChannel,
 	}, nil
+}
+
+func safeCastChunkSize(num uint) (int, error) {
+	numInt := int(num)
+	if numInt < 0 || uint(numInt) != num {
+		return -1, fmt.Errorf("chunk size could not be safely expressed as a signed int, it's too large")
+	}
+
+	return numInt, nil
 }
