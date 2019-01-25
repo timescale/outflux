@@ -7,7 +7,8 @@ type testCase struct {
 	measure string
 	from    string
 	to      string
-	chunk   int
+	chunk   uint
+	limit   uint
 }
 
 func TestNewMeasureExtractionConfig(t *testing.T) {
@@ -25,9 +26,10 @@ func TestNewMeasureExtractionConfig(t *testing.T) {
 		_, err := NewMeasureExtractionConfig(
 			badCase.db,
 			badCase.measure,
+			badCase.chunk,
+			badCase.limit,
 			badCase.from,
 			badCase.to,
-			badCase.chunk,
 		)
 
 		if err == nil {
@@ -37,6 +39,7 @@ func TestNewMeasureExtractionConfig(t *testing.T) {
 
 	goodCases := []testCase{
 		{db: "db", measure: "measure", chunk: 1},
+		{db: "db", measure: "measure", chunk: 1, limit: 1},
 		{db: "db", measure: "measure", chunk: 1, from: "2019-01-01T00:00:00Z"},
 		{db: "db", measure: "measure", chunk: 1, from: "2019-01-01T00:00:00+00:00"},
 		{db: "db", measure: "measure", chunk: 1, from: "2019-01-01T00:00:00-01:00"},
@@ -48,20 +51,19 @@ func TestNewMeasureExtractionConfig(t *testing.T) {
 		config, err := NewMeasureExtractionConfig(
 			goodCase.db,
 			goodCase.measure,
+			goodCase.chunk,
+			goodCase.limit,
 			goodCase.from,
 			goodCase.to,
-			goodCase.chunk,
 		)
 
 		if err != nil {
 			t.Errorf("expected not error, got: %v", err)
 		}
 
-		if config.ChunkSize != goodCase.chunk ||
-			config.Database != goodCase.db ||
-			config.Measure != goodCase.measure ||
-			config.From != goodCase.from ||
-			config.To != goodCase.to {
+		if config.ChunkSize != goodCase.chunk || config.Database != goodCase.db ||
+			config.Measure != goodCase.measure || config.From != goodCase.from ||
+			config.To != goodCase.to || config.Limit != goodCase.limit {
 			t.Errorf("config not good. expected values: %v, got: %v", goodCase, config)
 		}
 	}

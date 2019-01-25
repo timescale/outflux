@@ -1,4 +1,4 @@
-package extractors
+package extraction
 
 import (
 	"fmt"
@@ -56,12 +56,12 @@ func TestInfluxExtractorStart(t *testing.T) {
 
 		mockedProducer := testCase.producer.(*mockProducer)
 
-		if res.dataChannel == nil || res.errorChannel == nil || res.dataSetSchema == nil {
+		if res.DataChannel == nil || res.ErrorChannel == nil || res.DataSetSchema == nil {
 			t.Errorf("fetch method returned a nil value for some of the members of the result. result: %v", res)
 		}
 
 		// wait for channel to close at end of mocked method
-		for range res.dataChannel {
+		for range res.DataChannel {
 		}
 
 		if mockedProducer.numCalled == 0 {

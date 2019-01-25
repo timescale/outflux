@@ -1,4 +1,4 @@
-package extractors
+package extraction
 
 import (
 	"fmt"
@@ -14,8 +14,6 @@ import (
 
 func TestBuildSelectCommand(t *testing.T) {
 	db, measure := "db", "measure"
-	chunkSize := 1
-
 	oneColumnExample := []*idrf.ColumnInfo{
 		&idrf.ColumnInfo{Name: "col1", DataType: idrf.IDRFBoolean, ForeignKey: nil},
 	}
@@ -31,11 +29,11 @@ func TestBuildSelectCommand(t *testing.T) {
 		expected string
 	}{
 		{ // one column, no time boundaries
-			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "", To: "", ChunkSize: chunkSize},
+			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "", To: "", ChunkSize: 1},
 			columns:  oneColumnExample,
 			expected: "SELECT \"col1\" FROM \"measure\"",
 		}, { // two columns, space in one columns name, lower boundry
-			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "from", To: "", ChunkSize: chunkSize},
+			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "from", To: "", ChunkSize: 1},
 			columns:  twoColumnExample,
 			expected: "SELECT \"col1\", \"col 2\" FROM \"measure\" WHERE time >= 'from'",
 		}, { // one column, upper boundry
@@ -46,6 +44,14 @@ func TestBuildSelectCommand(t *testing.T) {
 			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "from", To: "to", ChunkSize: 1},
 			columns:  oneColumnExample,
 			expected: "SELECT \"col1\" FROM \"measure\" WHERE time >= 'from' AND time <= 'to'",
+		}, { //double bounded with limit
+			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "from", To: "to", ChunkSize: 1, Limit: 1},
+			columns:  oneColumnExample,
+			expected: "SELECT \"col1\" FROM \"measure\" WHERE time >= 'from' AND time <= 'to' LIMIT 1",
+		}, { //no boundes with limit
+			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "", To: "", ChunkSize: 1, Limit: 1},
+			columns:  oneColumnExample,
+			expected: "SELECT \"col1\" FROM \"measure\" LIMIT 1",
 		},
 	}
 

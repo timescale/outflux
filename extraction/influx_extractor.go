@@ -1,18 +1,13 @@
-package extractors
+package extraction
 
 import (
+	"fmt"
+
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/idrf"
 	"github.com/timescale/outflux/schemadiscovery"
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
-)
-
-const (
-	selectQueryDoubleBoundTemplate = "SELECT %s FROM \"%s\" WHERE time >= '%s' AND time <= '%s'"
-	selectQueryLowerBoundTemplate  = "SELECT %s FROM \"%s\" WHERE time >= '%s'"
-	selectQueryUpperBoundTemplate  = "SELECT %s FROM \"%s\" WHERE time <= '%s'"
-	selectQueryNoBoundTemplate     = "SELECT %s FROM \"%s\""
 )
 
 // InfluxExtractor defines an interface for an Extractor that can connect to an InfluxDB
@@ -23,9 +18,9 @@ type InfluxExtractor interface {
 
 // ExtractedInfo returned when starting an extractor. Contains the data, error channels and schema
 type ExtractedInfo struct {
-	dataChannel   chan idrf.Row
-	errorChannel  chan error
-	dataSetSchema *idrf.DataSetInfo
+	DataChannel   chan idrf.Row
+	ErrorChannel  chan error
+	DataSetSchema *idrf.DataSetInfo
 }
 
 // defaultInfluxExtractor is an implementation of the extractor interface.
@@ -45,21 +40,35 @@ func (ie *defaultInfluxExtractor) Start() (*ExtractedInfo, error) {
 		return nil, err
 	}
 
+	intChunkSize, err := safeCastChunkSize(ie.config.ChunkSize)
+	if err != nil {
+		return nil, err
+	}
+
 	query := influx.Query{
 		Command:   buildSelectCommand(ie.config, dataSetInfo.Columns),
 		Database:  ie.config.Database,
 		Chunked:   true,
-		ChunkSize: ie.config.ChunkSize,
+		ChunkSize: intChunkSize,
 	}
 
-	dataChannel := make(chan idrf.Row)
+	dataChannel := make(chan idrf.Row, ie.config.DataChannelBufferSize)
 	errorChannel := make(chan error)
 
 	go ie.producer.Fetch(ie.connection, dataChannel, errorChannel, query)
 
 	return &ExtractedInfo{
-		dataSetSchema: dataSetInfo,
-		dataChannel:   dataChannel,
-		errorChannel:  errorChannel,
+		DataSetSchema: dataSetInfo,
+		DataChannel:   dataChannel,
+		ErrorChannel:  errorChannel,
 	}, nil
+}
+
+func safeCastChunkSize(num uint) (int, error) {
+	numInt := int(num)
+	if numInt < 0 || uint(numInt) != num {
+		return -1, fmt.Errorf("chunk size could not be safely expressed as a signed int, it's too large")
+	}
+
+	return numInt, nil
 }

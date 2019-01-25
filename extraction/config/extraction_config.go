@@ -3,36 +3,33 @@ package config
 import (
 	"fmt"
 	"time"
-
-	influxUtils "github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
 const (
 	acceptedTimeFormat = time.RFC3339
 )
 
-// ExtractorConfig holds config properties for an Extractor that can connect to InfluxDB
-type ExtractorConfig struct {
-	Connection *influxUtils.ConnectionParams
-	Measures   []*MeasureExtraction
-}
-
 // MeasureExtraction holds config properties for a single measure
 type MeasureExtraction struct {
-	Database  string
-	Measure   string
-	From      string
-	To        string
-	ChunkSize int
+	Database              string
+	Measure               string
+	From                  string
+	To                    string
+	ChunkSize             uint
+	Limit                 uint
+	DataChannelBufferSize uint
 }
 
 // NewMeasureExtractionConfig creates a new instance of MeasureExtraction while validating the fields
-func NewMeasureExtractionConfig(database, measure, from, to string, chunkSize int) (*MeasureExtraction, error) {
+// 'chunkSize' must be positive, specifies the number of rows the database server sends to the client at once
+// 'limit' if > 0 limits the number of points extracted from the measure, if == 0 all data is requested
+// 'from' and 'to' are timestamps and optional. If specified request data only between these timescamps
+func NewMeasureExtractionConfig(database, measure string, chunkSize, limit uint, from, to string) (*MeasureExtraction, error) {
 	if database == "" || measure == "" {
 		return nil, fmt.Errorf("database and measure can't be empty")
 	}
 
-	if chunkSize <= 0 {
+	if chunkSize == 0 {
 		return nil, fmt.Errorf("chunk size must be > 0")
 	}
 
@@ -52,5 +49,6 @@ func NewMeasureExtractionConfig(database, measure, from, to string, chunkSize in
 		From:      from,
 		To:        to,
 		ChunkSize: chunkSize,
+		Limit:     limit,
 	}, nil
 }

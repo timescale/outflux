@@ -11,9 +11,13 @@ import (
 
 // NewSchemaExplorer creates an instance implementing the schema discovery API
 func NewSchemaExplorer() SchemaExplorer {
+	clientUtils := clientutils.NewUtils()
+	measureExplorer := discovery.NewMeasureExplorer()
+	tagExplorer := discovery.NewTagExplorer()
+	fieldExplorer := discovery.NewFieldExplorer()
 	return &defaultSchemaExplorer{
-		&defaultInfluxDatabaseSchemaExplorer{},
-		&defaultInfluxMeasurementSchemaExplorer{},
+		&defaultInfluxDatabaseSchemaExplorer{clientUtils, measureExplorer, tagExplorer, fieldExplorer},
+		&defaultInfluxMeasurementSchemaExplorer{clientUtils, measureExplorer, tagExplorer, fieldExplorer},
 	}
 }
 
@@ -125,6 +129,6 @@ func constructDataSet(
 	allColumns := []*idrf.ColumnInfo{idrfTimeColumn}
 	allColumns = append(allColumns, idrfTags...)
 	allColumns = append(allColumns, idrfFields...)
-	dataSet, err := idrf.NewDataSet(measure, allColumns)
+	dataSet, err := idrf.NewDataSet(measure, allColumns, "time")
 	return dataSet, err
 }

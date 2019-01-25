@@ -9,10 +9,11 @@ import "fmt"
 type DataSetInfo struct {
 	DataSetName string
 	Columns     []*ColumnInfo
+	TimeColumn  string
 }
 
 func (set *DataSetInfo) String() string {
-	return fmt.Sprintf("DataSetInfo { dataSetName: %s, columns: %s }", set.DataSetName, set.Columns)
+	return fmt.Sprintf("DataSetInfo { dataSetName: %s, columns: %s, time column: %s }", set.DataSetName, set.Columns, set.TimeColumn)
 }
 
 // ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column
@@ -28,25 +29,37 @@ func (set DataSetInfo) ColumnNamed(columnName string) *ColumnInfo {
 }
 
 // NewDataSet creates a new instance of DataSetInfo with checked arguments
-func NewDataSet(dataSetName string, columns []*ColumnInfo) (*DataSetInfo, error) {
+func NewDataSet(dataSetName string, columns []*ColumnInfo, timeColumn string) (*DataSetInfo, error) {
 	if len(dataSetName) == 0 {
-		return nil, fmt.Errorf("Data set name can't be empty")
+		return nil, fmt.Errorf("data set name can't be empty")
 	}
 
 	if len(columns) == 0 {
-		return nil, fmt.Errorf("Data set must have at least one column")
+		return nil, fmt.Errorf("data set must have at least one column")
+	}
+
+	if timeColumn == "" {
+		return nil, fmt.Errorf("data set must have a time column specified")
 	}
 
 	columnSet := make(map[string]bool)
+	timeColumnDefined := false
 	for _, columnInfo := range columns {
 		if _, exists := columnSet[columnInfo.Name]; exists {
-			return nil, fmt.Errorf("Duplicate column names found")
+			return nil, fmt.Errorf("duplicate column names found: %s", columnInfo.Name)
 		}
 
 		columnSet[columnInfo.Name] = true
+		if columnInfo.Name == timeColumn {
+			timeColumnDefined = true
+		}
 	}
 
-	return &DataSetInfo{dataSetName, columns}, nil
+	if !timeColumnDefined {
+		return nil, fmt.Errorf("time column %s, not found in columns array", timeColumn)
+	}
+
+	return &DataSetInfo{dataSetName, columns, timeColumn}, nil
 }
 
 // ColumnInfo represents DDL description of a single column in IDRF
@@ -94,28 +107,61 @@ type DataType int
 
 // Available values for IDRF DataType enum
 const (
-	IDRFInteger DataType = iota + 1
-	IDRFFloating
+	IDRFInteger32 DataType = iota + 1
+	IDRFInteger64
+	IDRFDouble
+	IDRFSingle
 	IDRFString
 	IDRFBoolean
+	IDRFTimestamptz
 	IDRFTimestamp
+	IDRFUnknown
 )
 
 func (d DataType) String() string {
 	switch d {
 	case IDRFBoolean:
 		return "IDRFBoolean"
-	case IDRFFloating:
-		return "IDRFFloating"
-	case IDRFInteger:
-		return "IDRFInteger"
+	case IDRFDouble:
+		return "IDRFDouble"
+	case IDRFInteger32:
+		return "IDRFInteger32"
 	case IDRFString:
 		return "IDRFString"
 	case IDRFTimestamp:
 		return "IDRFTimestamp"
+	case IDRFTimestamptz:
+		return "IDRFTimestamptz"
+	case IDRFInteger64:
+		return "IDRFInteger64"
+	case IDRFSingle:
+		return "IDRFSingle"
+	case IDRFUnknown:
+		return "IDRFUnknown"
 	default:
 		panic("Unexpected value")
 	}
+}
+
+// CanFitInto returns true if this data type can be safely cast to the other data type
+func (d DataType) CanFitInto(other DataType) bool {
+	if d == other {
+		return true
+	}
+
+	if d == IDRFInteger32 {
+		return other == IDRFSingle || other == IDRFDouble || other == IDRFInteger64
+	}
+
+	if d == IDRFInteger64 {
+		return other == IDRFDouble
+	}
+
+	if d == IDRFTimestamp {
+		return other == IDRFTimestamptz
+	}
+
+	return false
 }
 
 // ForeignKeyDescription describes a foreign key relationship to a IDRF data set's column

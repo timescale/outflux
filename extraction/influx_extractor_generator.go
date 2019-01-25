@@ -1,4 +1,4 @@
-package extractors
+package extraction
 
 import (
 	"fmt"
