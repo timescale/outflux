@@ -11,7 +11,7 @@ type ingestDataArgs struct {
 	ackChannel        chan bool
 	preparedStatement *sql.Stmt
 	transaction       *sql.Tx
-	extractionInfo    *extraction.ExtractedInfo
+	extractionInfo    *extraction.ExtractionInfo
 	converter         IdrfConverter
 }
 

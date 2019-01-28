@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/timescale/outflux/extraction"
+
 	extractionConfig "github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/ingestion"
 	ingestionConfig "github.com/timescale/outflux/ingestion/config"
@@ -12,8 +13,7 @@ import (
 )
 
 func main() {
-	extractorGenerator := extraction.NewInfluxExtractorGenerator()
-	config, _ := extractionConfig.NewMeasureExtractionConfig("benchmark", "cpu", 10000, 100000, "", "")
+	config, _ := extractionConfig.NewMeasureExtractionConfig("benchmark", "cpu", 10000, 1000, "", "")
 	config.DataChannelBufferSize = 1000
 	connection := &clientutils.ConnectionParams{
 		Server:   "http://localhost:8086",
@@ -21,7 +21,7 @@ func main() {
 		Password: "test",
 	}
 
-	extractor, _ := extractorGenerator.Generate(config, connection)
+	extractor := extraction.NewExtractor(config, connection)
 
 	conParams := make(map[string]string)
 	conParams["sslmode"] = "disable"

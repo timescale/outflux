@@ -93,7 +93,7 @@ func returnSchema(measure string, columnNames []string) schemadiscovery.SchemaEx
 		columns[i], _ = idrf.NewColumn(columnName, idrf.IDRFBoolean)
 	}
 
-	twoColumnExample, _ := idrf.NewDataSet(measure, columns)
+	twoColumnExample, _ := idrf.NewDataSet(measure, columns, columns[0].Name)
 	mockMeasureExplorer := &mockMeasureExplorer{twoColumnExample, nil}
 	return schemadiscovery.NewSchemaExplorerWith(nil, mockMeasureExplorer)
 }

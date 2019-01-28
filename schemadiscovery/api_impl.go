@@ -21,6 +21,17 @@ func NewSchemaExplorer() SchemaExplorer {
 	}
 }
 
+// NewSchemaExplorerWithUtils creates an instance implementing the schema discovery API
+func NewSchemaExplorerWithUtils(utils clientutils.ClientUtils) SchemaExplorer {
+	measureExplorer := discovery.NewMeasureExplorer()
+	tagExplorer := discovery.NewTagExplorer()
+	fieldExplorer := discovery.NewFieldExplorer()
+	return &defaultSchemaExplorer{
+		&defaultInfluxDatabaseSchemaExplorer{utils, measureExplorer, tagExplorer, fieldExplorer},
+		&defaultInfluxMeasurementSchemaExplorer{utils, measureExplorer, tagExplorer, fieldExplorer},
+	}
+}
+
 // NewSchemaExplorerWith creates an instance implementing the schema discovery API with provided dependencies
 func NewSchemaExplorerWith(
 	dbExplorer influxDatabaseSchemaExplorer,

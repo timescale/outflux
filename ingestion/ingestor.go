@@ -18,7 +18,7 @@ const (
 )
 
 type Ingestor interface {
-	Start(extractionInfo *extraction.ExtractedInfo) (chan bool, error)
+	Start(extractionInfo *extraction.ExtractionInfo) (chan bool, error)
 }
 
 func NewIngestor(config *config.Config) Ingestor {
@@ -30,16 +30,6 @@ func NewIngestor(config *config.Config) Ingestor {
 	}
 }
 
-func NewIngestorWith(config *config.Config, converterGenerator IdrfConverterGenerator,
-	ingestionRoutine Routine, schemaManager schemamanagement.SchemaManager) Ingestor {
-	return &defaultIngestor{
-		config:             config,
-		converterGenerator: converterGenerator,
-		ingestionRoutine:   ingestionRoutine,
-		schemaManager:      schemaManager,
-	}
-}
-
 type defaultIngestor struct {
 	config             *config.Config
 	converterGenerator IdrfConverterGenerator
@@ -47,7 +37,7 @@ type defaultIngestor struct {
 	schemaManager      schemamanagement.SchemaManager
 }
 
-func (ing *defaultIngestor) Start(extractionInfo *extraction.ExtractedInfo) (chan bool, error) {
+func (ing *defaultIngestor) Start(extractionInfo *extraction.ExtractionInfo) (chan bool, error) {
 	dataSet := extractionInfo.DataSetSchema
 	ackChannel := make(chan bool)
 	connStr := buildConnectionString(ing.config)

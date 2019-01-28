@@ -12,6 +12,7 @@ type SchemaManager interface {
 	Prepare(*PrepareArgs) error
 }
 
+// NewSchemaManager creates a new instance of the schema manager that prepares the outbound db to accept the data
 func NewSchemaManager() SchemaManager {
 	return &defaultManager{
 		explorer: newSchemaExplorer(),
@@ -26,6 +27,7 @@ type defaultManager struct {
 	creator  tableCreator
 }
 
+// PrepareArgs houses all the arguments required to prepare an outbound db
 type PrepareArgs struct {
 	Strategy config.SchemaStrategy
 	Schema   string
@@ -55,9 +57,9 @@ func (d *defaultManager) Prepare(args *PrepareArgs) error {
 		return fmt.Errorf("could not retreive column information for table %s", args.DataSet.DataSetName)
 	}
 
-	compatible, errDesc := isExistingTableCompatible(existingTableColumns, args.DataSet.Columns, args.DataSet.TimeColumn)
-	if !compatible {
-		return fmt.Errorf(errDesc)
+	err = isExistingTableCompatible(existingTableColumns, args.DataSet.Columns, args.DataSet.TimeColumn)
+	if err != nil {
+		return fmt.Errorf("Existing table in target db is not compatible with required. %s", err.Error())
 	}
 
 	isHypertable, err := d.explorer.isHypertable(args.DbCon, args.Schema, args.DataSet.DataSetName)
@@ -83,7 +85,7 @@ func prepareWithDropStrategy(args *PrepareArgs, tableExists bool, dropper tableD
 	return creator.Create(args.DbCon, args.Schema, args.DataSet)
 }
 
-func isExistingTableCompatible(existingColumns []*columnDesc, requiredColumns []*idrf.ColumnInfo, timeCol string) (bool, string) {
+func isExistingTableCompatible(existingColumns []*columnDesc, requiredColumns []*idrf.ColumnInfo, timeCol string) error {
 	columnsByName := make(map[string]*columnDesc)
 	for _, column := range existingColumns {
 		columnsByName[column.columnName] = column
@@ -94,23 +96,23 @@ func isExistingTableCompatible(existingColumns []*columnDesc, requiredColumns []
 		var existingCol *columnDesc
 		var ok bool
 		if existingCol, ok = columnsByName[colName]; !ok {
-			return false, fmt.Sprintf("Required column %s not found in existing table", colName)
+			return fmt.Errorf("Required column %s not found in existing table", colName)
 		}
 
 		existingType := pgTypeToIdrf(existingCol.dataType)
 		if !existingType.CanFitInto(reqColumn.DataType) {
-			return false, fmt.Sprintf(
+			return fmt.Errorf(
 				"Required column %s of type %s is not compatible with existing type %s",
 				colName, reqColumn.DataType, existingType)
 		}
 
 		// Only time column is allowed to have a NOT NULL constraint
 		if !existingCol.isColumnNullable() && existingCol.columnName != timeCol {
-			return false, fmt.Sprintf("Existing column %s is not nullable. Can't guarantee data transfer", existingCol.columnName)
+			return fmt.Errorf("Existing column %s is not nullable. Can't guarantee data transfer", existingCol.columnName)
 		}
 	}
 
-	return true, ""
+	return nil
 }
 
 func pgTypeToIdrf(pgType string) idrf.DataType {
