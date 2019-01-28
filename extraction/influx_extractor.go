@@ -18,8 +18,8 @@ type InfluxExtractor interface {
 	Start(utils.ErrorBroadcaster) (*ExtractionInfo, error)
 }
 
-// ExtractedInfo returned when starting an extractor. Contains the data, error channels and schema
-type ExtractedInfo struct {
+// ExtractionInfo returned when starting an extractor. Contains the data, error channels and schema
+type ExtractionInfo struct {
 	DataChannel   chan idrf.Row
 	DataSetSchema *idrf.DataSetInfo
 }
@@ -64,10 +64,7 @@ func (ie *defaultInfluxExtractor) Start(errorBroadcaster utils.ErrorBroadcaster)
 		return nil, fmt.Errorf("couldn't discover influxdb schema\n%v", err)
 	}
 
-	intChunkSize, err := safeCastChunkSize(ie.config.ChunkSize)
-	if err != nil {
-		return nil, err
-	}
+	intChunkSize := int(ie.config.ChunkSize)
 
 	query := influx.Query{
 		Command:   buildSelectCommand(ie.config, dataSetInfo.Columns),
@@ -80,17 +77,8 @@ func (ie *defaultInfluxExtractor) Start(errorBroadcaster utils.ErrorBroadcaster)
 
 	go ie.producer.Fetch(ie.connection, dataChannel, query, errorBroadcaster)
 
-	return &ExtractedInfo{
+	return &ExtractionInfo{
 		DataSetSchema: dataSetInfo,
 		DataChannel:   dataChannel,
 	}, nil
-}
-
-func safeCastChunkSize(num uint) (int, error) {
-	numInt := int(num)
-	if numInt < 0 || uint(numInt) != num {
-		return -1, fmt.Errorf("chunk size could not be safely expressed as a signed int, it's too large")
-	}
-
-	return numInt, nil
 }
