@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/timescale/outflux/extraction"
+
 	extractionConfig "github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/ingestion"
 	ingestionConfig "github.com/timescale/outflux/ingestion/config"
