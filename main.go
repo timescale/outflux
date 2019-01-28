@@ -13,7 +13,14 @@ import (
 )
 
 func main() {
-	config, _ := extractionConfig.NewMeasureExtractionConfig("benchmark", "cpu", 10000, 1000, "", "")
+	config := &extractionConfig.MeasureExtraction{
+		Database:              "benchmark",
+		Measure:               "cpu",
+		ChunkSize:             10000,
+		Limit:                 1000,
+		DataChannelBufferSize: 1000,
+	}
+
 	config.DataChannelBufferSize = 1000
 	connection := &clientutils.ConnectionParams{
 		Server:   "http://localhost:8086",
@@ -21,7 +28,7 @@ func main() {
 		Password: "test",
 	}
 
-	extractor := extraction.NewExtractor(config, connection)
+	extractor, _ := extraction.NewExtractor(config, connection)
 
 	conParams := make(map[string]string)
 	conParams["sslmode"] = "disable"
@@ -34,10 +41,10 @@ func main() {
 		AdditionalConnParams: conParams,
 		Schema:               "public",
 	}
-	ingestor := ingestion.NewIngestor(ingestionConfig)
 	start := time.Now()
 	extractionInfo, _ := extractor.Start()
-	ackChannel, err := ingestor.Start(extractionInfo)
+	ingestor := ingestion.NewIngestor(ingestionConfig, extractionInfo)
+	ackChannel, err := ingestor.Start()
 	if err != nil {
 		fmt.Println(err.Error())
 		return

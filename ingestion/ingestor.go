@@ -17,28 +17,34 @@ const (
 	postgresConnectionStringTemplate = "postgres://%s:%s@%s/%s%s"
 )
 
+// Ingestor takes a data channel of idrf rows and inserts them in a target database
 type Ingestor interface {
-	Start(extractionInfo *extraction.ExtractionInfo) (chan bool, error)
+	Start() (chan bool, error)
 }
 
-func NewIngestor(config *config.Config) Ingestor {
+// NewIngestor creates a new instance of an Ingestor with a specified config, for a specified
+// data set and data channel
+func NewIngestor(config *config.Config, extractionInfo *extraction.ExtractionInfo) Ingestor {
 	return &defaultIngestor{
-		config:             config,
-		converterGenerator: NewIdrfConverterGenerator(),
-		ingestionRoutine:   NewIngestionRoutine(),
-		schemaManager:      schemamanagement.NewSchemaManager(),
+		config:           config,
+		converter:        newIdrfConverter(extractionInfo.DataSetSchema),
+		dataChannel:      extractionInfo.DataChannel,
+		ingestionRoutine: NewIngestionRoutine(),
+		schemaManager:    schemamanagement.NewSchemaManager(),
+		dataSet:          extractionInfo.DataSetSchema,
 	}
 }
 
 type defaultIngestor struct {
-	config             *config.Config
-	converterGenerator IdrfConverterGenerator
-	ingestionRoutine   Routine
-	schemaManager      schemamanagement.SchemaManager
+	config           *config.Config
+	converter        IdrfConverter
+	ingestionRoutine Routine
+	schemaManager    schemamanagement.SchemaManager
+	dataSet          *idrf.DataSetInfo
+	dataChannel      chan idrf.Row
 }
 
-func (ing *defaultIngestor) Start(extractionInfo *extraction.ExtractionInfo) (chan bool, error) {
-	dataSet := extractionInfo.DataSetSchema
+func (ing *defaultIngestor) Start() (chan bool, error) {
 	ackChannel := make(chan bool)
 	connStr := buildConnectionString(ing.config)
 
@@ -51,7 +57,7 @@ func (ing *defaultIngestor) Start(extractionInfo *extraction.ExtractionInfo) (ch
 	managerArgs := &schemamanagement.PrepareArgs{
 		Strategy: ing.config.SchemaStrategy,
 		Schema:   ing.config.Schema,
-		DataSet:  extractionInfo.DataSetSchema,
+		DataSet:  ing.dataSet,
 		DbCon:    db,
 	}
 	err = ing.schemaManager.Prepare(managerArgs)
@@ -64,8 +70,8 @@ func (ing *defaultIngestor) Start(extractionInfo *extraction.ExtractionInfo) (ch
 		return nil, fmt.Errorf("couldn't open a transaction. %s", err.Error())
 	}
 
-	columnNames := extractColumnNames(dataSet.Columns)
-	copyQuery := pq.CopyIn(dataSet.DataSetName, columnNames...)
+	columnNames := extractColumnNames(ing.dataSet.Columns)
+	copyQuery := pq.CopyIn(ing.dataSet.DataSetName, columnNames...)
 	statement, err := transaction.Prepare(copyQuery)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't prepare COPY FROM statement in transaction. %s", err.Error())
@@ -75,8 +81,8 @@ func (ing *defaultIngestor) Start(extractionInfo *extraction.ExtractionInfo) (ch
 		ackChannel:        ackChannel,
 		preparedStatement: statement,
 		transaction:       transaction,
-		extractionInfo:    extractionInfo,
-		converter:         ing.converterGenerator.Generate(extractionInfo.DataSetSchema),
+		dataChannel:       ing.dataChannel,
+		converter:         ing.converter,
 	}
 
 	go ing.ingestionRoutine.ingestData(ingestArgs)

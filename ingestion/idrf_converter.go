@@ -6,22 +6,12 @@ import (
 	"github.com/timescale/outflux/idrf"
 )
 
-type IdrfConverterGenerator interface {
-	Generate(dataSet *idrf.DataSetInfo) IdrfConverter
-}
-
-type defaultIdrfConverterGenerator struct{}
-
-func NewIdrfConverterGenerator() IdrfConverterGenerator {
-	return &defaultIdrfConverterGenerator{}
-}
-
-func (gen *defaultIdrfConverterGenerator) Generate(dataSet *idrf.DataSetInfo) IdrfConverter {
-	return &defaultIdrfConverter{dataSet}
-}
-
 type IdrfConverter interface {
 	ConvertValues(row idrf.Row) ([]interface{}, error)
+}
+
+func newIdrfConverter(dataSet *idrf.DataSetInfo) IdrfConverter {
+	return &defaultIdrfConverter{dataSet}
 }
 
 type defaultIdrfConverter struct {

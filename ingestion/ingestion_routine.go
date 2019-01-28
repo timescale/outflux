@@ -4,14 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/timescale/outflux/extraction"
+	"github.com/timescale/outflux/idrf"
 )
 
 type ingestDataArgs struct {
 	ackChannel        chan bool
+	dataChannel       chan idrf.Row
 	preparedStatement *sql.Stmt
 	transaction       *sql.Tx
-	extractionInfo    *extraction.ExtractionInfo
 	converter         IdrfConverter
 }
 
@@ -29,7 +29,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	defer close(args.ackChannel)
 
 	numInserts := 0
-	for row := range args.extractionInfo.DataChannel {
+	for row := range args.dataChannel {
 		values, err := args.converter.ConvertValues(row)
 		if err != nil {
 			fmt.Printf("Could not convert row:\n%v\n", err)
