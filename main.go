@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/timescale/outflux/extraction"
+	"github.com/timescale/outflux/pipeline"
+	"github.com/timescale/outflux/utils"
 
 	extractionConfig "github.com/timescale/outflux/extraction/config"
-	"github.com/timescale/outflux/ingestion"
 	ingestionConfig "github.com/timescale/outflux/ingestion/config"
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
 func main() {
-	config := &extractionConfig.MeasureExtraction{
+	measureConfig := &extractionConfig.MeasureExtraction{
 		Database:              "benchmark",
 		Measure:               "cpu",
 		ChunkSize:             10000,
@@ -21,18 +21,22 @@ func main() {
 		DataChannelBufferSize: 1000,
 	}
 
-	config.DataChannelBufferSize = 1000
 	connection := &clientutils.ConnectionParams{
 		Server:   "http://localhost:8086",
 		Username: "test",
 		Password: "test",
 	}
 
-	extractor, _ := extraction.NewExtractor(config, connection)
+	extractionConfig := &extractionConfig.Config{
+		ExtractorID:       "extractor 1",
+		Connection:        connection,
+		MeasureExtraction: measureConfig,
+	}
 
 	conParams := make(map[string]string)
 	conParams["sslmode"] = "disable"
 	ingestionConfig := &ingestionConfig.Config{
+		IngestorID:           "ingestor 1",
 		Server:               "localhost:5432",
 		Username:             "test",
 		Password:             "test",
@@ -40,18 +44,25 @@ func main() {
 		Database:             "test",
 		AdditionalConnParams: conParams,
 		Schema:               "public",
+		BatchSize:            10000,
 	}
 	start := time.Now()
-	extractionInfo, _ := extractor.Start()
-	ingestor := ingestion.NewIngestor(ingestionConfig, extractionInfo)
-	ackChannel, err := ingestor.Start()
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	for ack := range ackChannel {
-		fmt.Printf("Ack: %v\n", ack)
+
+	errorBroadcaster := utils.NewErrorBroadcaster()
+	config := &pipeline.OutfluxConfig{
+		IngestionConfig:  ingestionConfig,
+		ExtractionConfig: extractionConfig,
 	}
 
-	fmt.Printf("Ending in: %f seconds\n", time.Since(start).Seconds())
+	pipe := &pipeline.ExecutionPipeline{
+		ID:               "pipe 1",
+		Config:           config,
+		ErrorBroadcaster: errorBroadcaster,
+	}
+
+	err := pipe.Start()
+	if err != nil {
+		fmt.Printf("Error in pipeline: %v\n", err)
+	}
+	fmt.Printf("Ended in: %f seconds\n", time.Since(start).Seconds())
 }

@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"time"
+
+	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
 const (
@@ -57,4 +59,11 @@ func safeCastChunkSize(num uint) (int, error) {
 	}
 
 	return numInt, nil
+}
+
+// Config combines everthing needed to create and start an Extractor
+type Config struct {
+	ExtractorID       string
+	MeasureExtraction *MeasureExtraction
+	Connection        *clientutils.ConnectionParams
 }
