@@ -33,6 +33,7 @@ type Routine interface {
 	ingestData(args *ingestDataArgs)
 }
 
+// NewIngestionRoutine creates an instance of the routine that will ingest data in the target db
 func NewIngestionRoutine() Routine {
 	return &defaultIngestionRoutine{}
 }
