@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-
 	measureConfig := &extractionConfig.MeasureExtraction{
 		Database:              "benchmark",
 		Measure:               "cpu",
