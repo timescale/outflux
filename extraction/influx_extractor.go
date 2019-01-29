@@ -21,7 +21,6 @@ type InfluxExtractor interface {
 // ExtractionInfo returned when starting an extractor. Contains the data, error channels and schema
 type ExtractionInfo struct {
 	DataChannel   chan idrf.Row
-	ErrorChannel  chan error
 	DataSetSchema *idrf.DataSetInfo
 }
 

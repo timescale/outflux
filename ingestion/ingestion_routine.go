@@ -41,12 +41,12 @@ type defaultIngestionRoutine struct{}
 
 func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	defer close(args.ackChannel)
-	defer args.preparedStatement.Close()
 
 	errorChannel, err := args.errorBroadcaster.Subscribe(args.ingestorID)
 	if err != nil {
-		err = fmt.Errorf("ingestor %s: could not subscribe for errors.\n%v", args.ingestorID, err)
+		err = fmt.Errorf("ingestor '%s': could not subscribe for errors.\n%v", args.ingestorID, err)
 		args.errorBroadcaster.Broadcast(args.ingestorID, err)
+		args.preparedStatement.Close()
 		return
 	}
 
@@ -54,6 +54,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 
 	err = checkError(errorChannel)
 	if err != nil {
+		args.preparedStatement.Close()
 		return
 	}
 
@@ -61,13 +62,16 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	for row := range args.dataChannel {
 		values, err := args.converter.ConvertValues(row)
 		if err != nil {
-			fmt.Printf("Could not convert row:\n%v\n", err)
+			err = fmt.Errorf("ingestor '%s': could not convert row:%v", args.ingestorID, err)
+			args.errorBroadcaster.Broadcast(args.ingestorID, err)
 			args.transaction.Rollback()
+			args.preparedStatement.Close()
 			return
 		}
 		_, err = args.preparedStatement.Exec(values...)
 		if err != nil {
-			fmt.Printf("Could not execute prepared statement:\n%v\n", err)
+			err = fmt.Errorf("ingestor '%s': could not execute prepared statement:\n%v", args.ingestorID, err)
+			args.errorBroadcaster.Broadcast(args.ingestorID, err)
 			args.transaction.Rollback()
 			return
 		}
@@ -79,15 +83,18 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 
 		if numInserts%args.batchSize == 0 && checkError(errorChannel) != nil {
 			if args.rollbackOnExternalError {
+				args.preparedStatement.Close()
 				args.transaction.Rollback()
+				return
 			}
 			break
 		}
 	}
 
+	args.preparedStatement.Close()
 	err = args.transaction.Commit()
 	if err != nil {
-		err = fmt.Errorf("ingestor %s: couldn't commit transaction.\n%v", args.ingestorID, err)
+		err = fmt.Errorf("ingestor '%s': couldn't commit transaction.\n%v", args.ingestorID, err)
 		args.errorBroadcaster.Broadcast(args.ingestorID, err)
 		return
 	}

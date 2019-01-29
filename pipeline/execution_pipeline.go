@@ -22,18 +22,18 @@ type ExecutionPipeline struct {
 func (pipe *ExecutionPipeline) Start() error {
 	errorChannel, err := pipe.ErrorBroadcaster.Subscribe(pipe.ID)
 	if err != nil {
-		return fmt.Errorf("could not subscribe for errors\n%v", err)
+		return fmt.Errorf("'%s': could not subscribe for errors\n%v", pipe.ID, err)
 	}
 
 	defer pipe.ErrorBroadcaster.Close()
 	extractor, err := extraction.NewExtractor(pipe.Config.ExtractionConfig)
 	if err != nil {
-		return fmt.Errorf("could not create the extractor\n%v", err)
+		return fmt.Errorf("'%s': could not create the extractor\n%v", pipe.ID, err)
 	}
 
 	extractionInfo, err := extractor.Start(pipe.ErrorBroadcaster)
 	if err != nil {
-		return fmt.Errorf("could not start the extractor\n%s", err.Error())
+		return fmt.Errorf("'%s': could not start the extractor\n%s", pipe.ID, err.Error())
 	}
 
 	ingestor := ingestion.NewIngestor(pipe.Config.IngestionConfig, extractionInfo)
@@ -41,7 +41,7 @@ func (pipe *ExecutionPipeline) Start() error {
 	ackChannel, err := ingestor.Start(pipe.ErrorBroadcaster)
 	if err != nil {
 		pipe.ErrorBroadcaster.Broadcast(pipe.ID, err)
-		return fmt.Errorf("could not start the ingestor\n%s", err.Error())
+		return fmt.Errorf("'%s': could not start the ingestor\n%v", pipe.ID, err)
 	}
 
 	ingestorProperlyEnded := false
@@ -50,7 +50,7 @@ func (pipe *ExecutionPipeline) Start() error {
 	}
 
 	for err := range errorChannel {
-		return fmt.Errorf("error in the execution pipleine %s\n%v", pipe.ID, err)
+		return fmt.Errorf("error in the execution pipleine '%s'\n%v", pipe.ID, err)
 	}
 
 	if ingestorProperlyEnded {
