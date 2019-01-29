@@ -17,7 +17,11 @@ func main() {
 		Database:              "benchmark",
 		Measure:               "cpu",
 		ChunkSize:             10000,
+<<<<<<< HEAD
 		Limit:                 100000,
+=======
+		Limit:                 1000000,
+>>>>>>> Fix deadlock in error handling
 		DataChannelBufferSize: 10000,
 	}
 
