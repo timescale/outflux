@@ -10,10 +10,11 @@ const (
 	tableColumnsQueryTemplate = `SELECT column_name, data_type, is_nullable
 	                             FROM information_schema.columns
 								 WHERE table_schema = $1 AND table_name = $2;`
-	isHipertableQueryTemplate = `SELECT EXISTS (
+	isHypertableQueryTemplate = `SELECT EXISTS (
 		    						SELECT 1 
 								 	FROM timescaledb_information.hypertable 
-								 	WHERE  table_schema = $1 AND table_name=$2)`
+									 WHERE  table_schema = $1 AND table_name=$2)`
+	isNullableSignifyingValue = "YES"
 )
 
 type tableFinder interface {
@@ -67,7 +68,7 @@ func (f *defaultTableFinder) tableExists(db *sql.DB, schemaName, tableName strin
 
 	exists := false
 	if !rows.Next() {
-		return true, fmt.Errorf("couldn extract result from postgres response")
+		return true, fmt.Errorf("couldn't extract result from postgres response")
 	}
 	err = rows.Scan(&exists)
 	if err != nil {
@@ -123,7 +124,7 @@ func (f *defaultHyptertableChecker) isHypertable(db *sql.DB, schemaName, tableNa
 		schemaName = "public"
 	}
 
-	rows, err := db.Query(isHipertableQueryTemplate, schemaName, tableName)
+	rows, err := db.Query(isHypertableQueryTemplate, schemaName, tableName)
 	if err != nil {
 		return false, err
 	}
@@ -147,7 +148,7 @@ type columnDesc struct {
 }
 
 func (col *columnDesc) isColumnNullable() bool {
-	return col.isNullable == "YES"
+	return col.isNullable == isNullableSignifyingValue
 }
 
 type node struct {

@@ -121,3 +121,14 @@ func connectionParamsToString(params map[string]string) string {
 
 	return "?" + strings.Join(singleParams, "&")
 }
+
+type dbWrapper interface {
+	Open(driver string, connectionString string) error
+	Close() error
+	BeginTransaction() error
+	Commit() error
+	Rollback() error
+	PrepareStatement(query string) error
+	ExecuteStatement(args []interface{}) (sql.Result, error)
+	CloseStatement() error
+}

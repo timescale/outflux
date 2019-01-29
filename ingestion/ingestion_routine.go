@@ -27,6 +27,7 @@ type defaultIngestionRoutine struct{}
 
 func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	defer close(args.ackChannel)
+	defer args.preparedStatement.Close()
 
 	numInserts := 0
 	for row := range args.dataChannel {
@@ -34,7 +35,6 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 		if err != nil {
 			fmt.Printf("Could not convert row:\n%v\n", err)
 			args.ackChannel <- false
-			args.preparedStatement.Close()
 			args.transaction.Rollback()
 			return
 		}
@@ -42,7 +42,6 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 		if err != nil {
 			fmt.Printf("Could not execute prepared statement:\n%v\n", err)
 			args.ackChannel <- false
-			args.preparedStatement.Close()
 			args.transaction.Rollback()
 			return
 		}
@@ -53,7 +52,6 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 		}
 	}
 
-	args.preparedStatement.Close()
 	err := args.transaction.Commit()
 	if err != nil {
 		fmt.Printf("Could not commit transaction\n%v\n", err)
