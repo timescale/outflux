@@ -16,9 +16,9 @@ func main() {
 	measureConfig := &extractionConfig.MeasureExtraction{
 		Database:              "benchmark",
 		Measure:               "cpu",
-		ChunkSize:             1000,
-		Limit:                 10,
-		DataChannelBufferSize: 1000,
+		ChunkSize:             10000,
+		Limit:                 1000000,
+		DataChannelBufferSize: 10000,
 	}
 
 	connection := &clientutils.ConnectionParams{

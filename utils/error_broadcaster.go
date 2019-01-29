@@ -143,3 +143,13 @@ func (sub defaultCloser) Close() {
 		close(errChannel)
 	}
 }
+
+// CheckError non-blockingly checks whether a channel has received an error
+func CheckError(errorChannel chan error) error {
+	select {
+	case err := <-errorChannel:
+		return err
+	default:
+		return nil
+	}
+}

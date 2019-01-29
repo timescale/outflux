@@ -49,15 +49,15 @@ func (pipe *ExecutionPipeline) Start() error {
 		ingestorProperlyEnded = true
 	}
 
-	for err := range errorChannel {
-		return fmt.Errorf("error in the execution pipleine '%s'\n%v", pipe.ID, err)
+	if err := utils.CheckError(errorChannel); err != nil {
+		return fmt.Errorf("'%s': received error in pipeline\n%v", pipe.ID, err)
 	}
 
 	if ingestorProperlyEnded {
 		return nil
 	}
 
-	return fmt.Errorf("no error received from extractor and ingestor, but ingestor didn't end properly")
+	return fmt.Errorf("'%s' no error received, but ingestor didn't end properly", pipe.ID)
 
 }
 

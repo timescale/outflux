@@ -52,7 +52,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 
 	defer args.errorBroadcaster.Unsubscribe(args.ingestorID)
 
-	err = checkError(errorChannel)
+	err = utils.CheckError(errorChannel)
 	if err != nil {
 		args.preparedStatement.Close()
 		return
@@ -60,20 +60,9 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 
 	numInserts := uint(0)
 	for row := range args.dataChannel {
-		values, err := args.converter.ConvertValues(row)
+		err := forEachRow(args, row)
 		if err != nil {
-			err = fmt.Errorf("ingestor '%s': could not convert row:%v", args.ingestorID, err)
 			args.errorBroadcaster.Broadcast(args.ingestorID, err)
-			args.transaction.Rollback()
-			args.preparedStatement.Close()
-			return
-		}
-		_, err = args.preparedStatement.Exec(values...)
-		if err != nil {
-			err = fmt.Errorf("ingestor '%s': could not execute prepared statement:\n%v", args.ingestorID, err)
-			args.errorBroadcaster.Broadcast(args.ingestorID, err)
-			args.transaction.Rollback()
-			return
 		}
 
 		numInserts++
@@ -81,17 +70,27 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 			fmt.Printf("Number of inserted rows:%d\n", numInserts)
 		}
 
-		if numInserts%args.batchSize == 0 && checkError(errorChannel) != nil {
+		if numInserts%args.batchSize == 0 && utils.CheckError(errorChannel) != nil {
 			if args.rollbackOnExternalError {
-				args.preparedStatement.Close()
-				args.transaction.Rollback()
+				closeAndRollback(args.preparedStatement, args.transaction)
 				return
 			}
 			break
 		}
 	}
 
-	args.preparedStatement.Close()
+	if utils.CheckError(errorChannel) != nil {
+		closeAndRollback(args.preparedStatement, args.transaction)
+		return
+	}
+
+	err = args.preparedStatement.Close()
+	if err != nil {
+		err = fmt.Errorf("ingestor '%s': couldn't close prepared statement.\n%v", args.ingestorID, err)
+		args.errorBroadcaster.Broadcast(args.ingestorID, err)
+		return
+	}
+
 	err = args.transaction.Commit()
 	if err != nil {
 		err = fmt.Errorf("ingestor '%s': couldn't commit transaction.\n%v", args.ingestorID, err)
@@ -102,11 +101,24 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	args.ackChannel <- true
 }
 
-func checkError(errorChannel chan error) error {
-	select {
-	case err := <-errorChannel:
+func forEachRow(args *ingestDataArgs, row idrf.Row) error {
+	values, err := args.converter.ConvertValues(row)
+	if err != nil {
+		err = fmt.Errorf("ingestor '%s': could not convert row:%v", args.ingestorID, err)
+		closeAndRollback(args.preparedStatement, args.transaction)
 		return err
-	default:
-		return nil
 	}
+	_, err = args.preparedStatement.Exec(values...)
+	if err != nil {
+		err = fmt.Errorf("ingestor '%s': could not execute prepared statement:\n%v", args.ingestorID, err)
+		closeAndRollback(args.preparedStatement, args.transaction)
+		return err
+	}
+
+	return nil
+}
+
+func closeAndRollback(preparedStatement *sql.Stmt, transaction *sql.Tx) {
+	preparedStatement.Close()
+	transaction.Rollback()
 }
