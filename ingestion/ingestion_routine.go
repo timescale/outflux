@@ -60,7 +60,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 
 	numInserts := uint(0)
 	for row := range args.dataChannel {
-		err := forEachRow(args, row)
+		err := insertRow(args, row)
 		if err != nil {
 			args.errorBroadcaster.Broadcast(args.ingestorID, err)
 		}
@@ -101,7 +101,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	args.ackChannel <- true
 }
 
-func forEachRow(args *ingestDataArgs, row idrf.Row) error {
+func insertRow(args *ingestDataArgs, row idrf.Row) error {
 	values, err := args.converter.ConvertValues(row)
 	if err != nil {
 		err = fmt.Errorf("ingestor '%s': could not convert row:%v", args.ingestorID, err)

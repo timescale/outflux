@@ -13,11 +13,12 @@ import (
 )
 
 func main() {
+
 	measureConfig := &extractionConfig.MeasureExtraction{
 		Database:              "benchmark",
 		Measure:               "cpu",
 		ChunkSize:             10000,
-		Limit:                 1000000,
+		Limit:                 100000,
 		DataChannelBufferSize: 10000,
 	}
 
@@ -40,7 +41,7 @@ func main() {
 		Server:               "localhost:5432",
 		Username:             "test",
 		Password:             "test",
-		SchemaStrategy:       ingestionConfig.DropAndCreate,
+		SchemaStrategy:       ingestionConfig.ValidateOnly,
 		Database:             "test",
 		AdditionalConnParams: conParams,
 		Schema:               "public",
