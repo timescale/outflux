@@ -1,11 +1,11 @@
-package config
+package utils
 
 import (
 	"math"
 	"testing"
 )
 
-func TestSafeCastChunkSize(t *testing.T) {
+func TestSafeUInt(t *testing.T) {
 	cases := []struct {
 		in          uint
 		out         int
@@ -17,7 +17,7 @@ func TestSafeCastChunkSize(t *testing.T) {
 	}
 
 	for _, tCase := range cases {
-		ret, err := safeCastChunkSize(tCase.in)
+		ret, err := SafeCastUInt(tCase.in)
 		if tCase.errExpected && err == nil {
 			t.Errorf("Expected error, none returned")
 		}

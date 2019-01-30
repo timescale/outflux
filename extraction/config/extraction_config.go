@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
+	"github.com/timescale/outflux/utils"
 )
 
 const (
@@ -35,7 +36,7 @@ func ValidateMeasureExtractionConfig(config *MeasureExtraction) error {
 		return fmt.Errorf("chunk size must be > 0")
 	}
 
-	if _, err := safeCastChunkSize(config.ChunkSize); err != nil {
+	if _, err := utils.SafeCastUInt(config.ChunkSize); err != nil {
 		return err
 	}
 
@@ -50,15 +51,6 @@ func ValidateMeasureExtractionConfig(config *MeasureExtraction) error {
 	}
 
 	return nil
-}
-
-func safeCastChunkSize(num uint) (int, error) {
-	numInt := int(num)
-	if numInt < 0 || uint(numInt) != num {
-		return -1, fmt.Errorf("chunk size could not be safely expressed as a signed int, it's too large")
-	}
-
-	return numInt, nil
 }
 
 // Config combines everthing needed to create and start an Extractor
