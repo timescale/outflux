@@ -1,4 +1,4 @@
-package extractors
+package extraction
 
 import (
 	"fmt"
@@ -9,6 +9,14 @@ import (
 	"github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/idrf"
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
+)
+
+const (
+	selectQueryDoubleBoundTemplate = "SELECT %s FROM \"%s\" WHERE time >= '%s' AND time <= '%s'"
+	selectQueryLowerBoundTemplate  = "SELECT %s FROM \"%s\" WHERE time >= '%s'"
+	selectQueryUpperBoundTemplate  = "SELECT %s FROM \"%s\" WHERE time <= '%s'"
+	selectQueryNoBoundTemplate     = "SELECT %s FROM \"%s\""
+	limitSuffixTemplate            = "LIMIT %d"
 )
 
 // DataProducer populates a data channel with the results from an influx query
@@ -107,15 +115,23 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 
 func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.ColumnInfo) string {
 	projection := buildProjection(columns)
+	var command string
 	if config.From != "" && config.To != "" {
-		return fmt.Sprintf(selectQueryDoubleBoundTemplate, projection, config.Measure, config.From, config.To)
+		command = fmt.Sprintf(selectQueryDoubleBoundTemplate, projection, config.Measure, config.From, config.To)
 	} else if config.From != "" {
-		return fmt.Sprintf(selectQueryLowerBoundTemplate, projection, config.Measure, config.From)
+		command = fmt.Sprintf(selectQueryLowerBoundTemplate, projection, config.Measure, config.From)
 	} else if config.To != "" {
-		return fmt.Sprintf(selectQueryUpperBoundTemplate, projection, config.Measure, config.To)
+		command = fmt.Sprintf(selectQueryUpperBoundTemplate, projection, config.Measure, config.To)
 	} else {
-		return fmt.Sprintf(selectQueryNoBoundTemplate, projection, config.Measure)
+		command = fmt.Sprintf(selectQueryNoBoundTemplate, projection, config.Measure)
 	}
+
+	if config.Limit == 0 {
+		return command
+	}
+
+	limit := fmt.Sprintf(limitSuffixTemplate, config.Limit)
+	return fmt.Sprintf("%s %s", command, limit)
 }
 
 func buildProjection(columns []*idrf.ColumnInfo) string {

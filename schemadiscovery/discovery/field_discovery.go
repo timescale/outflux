@@ -85,11 +85,11 @@ func convertFields(fieldsWithType [][2]string) ([]*idrf.ColumnInfo, error) {
 func convertDataType(influxType string) idrf.DataType {
 	switch influxType {
 	case "float":
-		return idrf.IDRFFloating
+		return idrf.IDRFDouble
 	case "string":
 		return idrf.IDRFString
 	case "integer":
-		return idrf.IDRFInteger
+		return idrf.IDRFInteger64
 	case "boolean":
 		return idrf.IDRFBoolean
 	default:

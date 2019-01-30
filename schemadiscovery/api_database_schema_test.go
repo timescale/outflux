@@ -43,8 +43,8 @@ func TestInfluxDatabaseSchema(t *testing.T) {
 
 	time, _ := idrf.NewColumn("time", idrf.IDRFTimestamp)
 	columns := []*idrf.ColumnInfo{time, tag, field}
-	dataSetA, _ := idrf.NewDataSet("a", columns)
-	dataSetB, _ := idrf.NewDataSet("b", columns)
+	dataSetA, _ := idrf.NewDataSet("a", columns, "time")
+	dataSetB, _ := idrf.NewDataSet("b", columns, "time")
 	dataSets := []*idrf.DataSetInfo{dataSetA, dataSetB}
 	// Test cases
 	cases := []apiDbTestCase{

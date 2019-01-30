@@ -48,7 +48,7 @@ func TestInfluxMeasurementSchema(t *testing.T) {
 
 	time, _ := idrf.NewColumn("time", idrf.IDRFTimestamp)
 	columns := []*idrf.ColumnInfo{time, tag, field}
-	dataSet, _ := idrf.NewDataSet("a", columns)
+	dataSet, _ := idrf.NewDataSet("a", columns, "time")
 	// END - Expected data set and it's columns
 
 	// Test cases
