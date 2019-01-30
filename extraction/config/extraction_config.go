@@ -59,10 +59,3 @@ type Config struct {
 	MeasureExtraction *MeasureExtraction
 	Connection        *clientutils.ConnectionParams
 }
-
-// Config combines everthing needed to create and start an Extractor
-type Config struct {
-	ExtractorID       string
-	MeasureExtraction *MeasureExtraction
-	Connection        *clientutils.ConnectionParams
-}
