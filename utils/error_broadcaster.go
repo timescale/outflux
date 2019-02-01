@@ -106,7 +106,7 @@ type defaultBroadcaster struct {
 	state *state
 }
 
-func (sub defaultBroadcaster) Broadcast(source string, err error) {
+func (sub *defaultBroadcaster) Broadcast(source string, err error) {
 	state := sub.state
 	state.lock.Lock()
 	defer state.lock.Unlock()
@@ -130,7 +130,7 @@ type defaultCloser struct {
 	state *state
 }
 
-func (sub defaultCloser) Close() {
+func (sub *defaultCloser) Close() {
 	state := sub.state
 	state.lock.Lock()
 	defer state.lock.Unlock()
