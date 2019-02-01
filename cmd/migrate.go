@@ -96,6 +96,7 @@ func migrate(args *pipeline.MigrationConfig) error {
 	pipelineSemaphore := semaphore.NewWeighted(int64(args.MaxParallel))
 	ctx := context.Background()
 	pipeChannel := make(chan bool, len(pipelines))
+	defer close(pipeChannel)
 
 	// schedule all pipelines, as soon a value in the semaphore is available, execution will start
 	for _, pipe := range pipelines {
@@ -117,12 +118,13 @@ func migrate(args *pipeline.MigrationConfig) error {
 func pipeRoutine(ctx context.Context, semaphore *semaphore.Weighted, pipe pipeline.ExecutionPipeline,
 	pipeChannel chan bool) {
 	semaphore.Acquire(ctx, 1)
+	defer semaphore.Release(1)
+
 	log.Printf("%s starting execution\n", pipe.ID())
 	err := pipe.Start()
 	if err != nil {
 		log.Printf("%s: %v\n", pipe.ID(), err)
 	}
-	defer semaphore.Release(1)
 	pipeChannel <- true
 }
 func discoverSchemaForDatabase(args *pipeline.MigrationConfig) ([]*idrf.DataSetInfo, error) {

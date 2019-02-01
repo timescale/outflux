@@ -15,11 +15,6 @@ func flagsToConfig(cmd *cobra.Command, args []string) (*pipeline.MigrationConfig
 		return nil, fmt.Errorf("input database name not specified")
 	}
 
-	inputHost := cmd.Flag(inputHostFlag).Value.String()
-	if inputHost == "" {
-		inputHost = defaultInputHost
-	}
-
 	inputUser := cmd.Flag(inputUserFlag).Value.String()
 	if inputUser == "" {
 		return nil, fmt.Errorf("username to connect to the input database not specified, '%s' flag is required", inputUserFlag)
@@ -30,19 +25,9 @@ func flagsToConfig(cmd *cobra.Command, args []string) (*pipeline.MigrationConfig
 		return nil, fmt.Errorf("password to connect to the input database not specified, '%s' flag is required", inputPassFlag)
 	}
 
-	outputHost := cmd.Flag(outputHostFlag).Value.String()
-	if outputHost == "" {
-		outputHost = defaultOutputHost
-	}
-
 	outputDB := cmd.Flag(outputDbFlag).Value.String()
 	if outputDB == "" {
 		return nil, fmt.Errorf("output database name not specified, '%s' flag is required", outputDbFlag)
-	}
-
-	sslMode := cmd.Flag(outputDbSslModeFlag).Value.String()
-	if sslMode == "" {
-		sslMode = defaultSslMode
 	}
 
 	outputUser := cmd.Flag(outputUserFlag).Value.String()
@@ -58,47 +43,32 @@ func flagsToConfig(cmd *cobra.Command, args []string) (*pipeline.MigrationConfig
 	strategyAsStr := cmd.Flag(schemaStrategyFlag).Value.String()
 	var strategy ingestionConfig.SchemaStrategy
 	var err error
-	if strategyAsStr == "" {
-		strategy = defaultSchemaStrategy
-	} else if strategy, err = ingestionConfig.ParseStrategyString(strategyAsStr); err != nil {
+	if strategy, err = ingestionConfig.ParseStrategyString(strategyAsStr); err != nil {
 		return nil, err
 	}
 
 	limitAsStr := cmd.Flag(limitFlag).Value.String()
 	var limit uint64
-	if limitAsStr == "" {
-		limit = defaultLimit
-	} else if limit, err = strconv.ParseUint(limitAsStr, 10, 64); err != nil {
+	if limit, err = strconv.ParseUint(limitAsStr, 10, 64); err != nil {
 		return nil, fmt.Errorf("value for the '%s' flag must be an integer >= 0", limitFlag)
 	}
 
 	chunkSizeAsStr := cmd.Flag(chunkSizeFlag).Value.String()
 	var chunkSize uint64
-	if chunkSizeAsStr == "" {
-		chunkSize = defaultChunkSize
-	} else if chunkSize, err = strconv.ParseUint(chunkSizeAsStr, 10, 16); err != nil || chunkSize == 0 {
+	if chunkSize, err = strconv.ParseUint(chunkSizeAsStr, 10, 16); err != nil || chunkSize == 0 {
 		return nil, fmt.Errorf("value for the '%s' flag must be an integer > 0 and < %d", limitFlag, math.MaxUint16)
 	}
 
 	dataBufferAsStr := cmd.Flag(dataBufferFlag).Value.String()
 	var dataBufferSize uint64
-	if dataBufferAsStr == "" {
-		dataBufferSize = defaultDataBufferSize
-	} else if dataBufferSize, err = strconv.ParseUint(dataBufferAsStr, 10, 16); err != nil {
+	if dataBufferSize, err = strconv.ParseUint(dataBufferAsStr, 10, 16); err != nil {
 		return nil, fmt.Errorf("value for the '%s' flag must be an integer >= 0 and < %d", dataBufferFlag, math.MaxUint16)
 	}
 
 	maxParallelAsStr := cmd.Flag(maxParallelFlag).Value.String()
 	var maxParallel uint64
-	if maxParallelAsStr == "" {
-		maxParallel = defaultMaxParallel
-	} else if maxParallel, err = strconv.ParseUint(maxParallelAsStr, 10, 8); err != nil || maxParallel == 0 {
+	if maxParallel, err = strconv.ParseUint(maxParallelAsStr, 10, 8); err != nil || maxParallel == 0 {
 		return nil, fmt.Errorf("value for the '%s' flag must be an integer > 0 and < %d", maxParallelFlag, math.MaxUint16)
-	}
-
-	outputSchema := cmd.Flag(outputSchemaFlag).Value.String()
-	if outputSchema == "" {
-		outputSchema = defaultOutputSchema
 	}
 
 	quietAsStr := cmd.Flag(quietFlag).Value.String()
@@ -115,13 +85,13 @@ func flagsToConfig(cmd *cobra.Command, args []string) (*pipeline.MigrationConfig
 	migrateArgs := &pipeline.MigrationConfig{
 		InputDb:                              args[0],
 		InputMeasures:                        args[1:],
-		InputHost:                            inputHost,
+		InputHost:                            cmd.Flag(inputHostFlag).Value.String(),
 		InputUser:                            inputUser,
 		InputPass:                            inputPass,
-		OutputHost:                           outputHost,
+		OutputHost:                           cmd.Flag(outputHostFlag).Value.String(),
 		OutputDb:                             outputDB,
-		OutputSchema:                         outputSchema,
-		OutputDbSslMode:                      sslMode,
+		OutputSchema:                         cmd.Flag(outputSchemaFlag).Value.String(),
+		OutputDbSslMode:                      cmd.Flag(outputDbSslModeFlag).Value.String(),
 		OutputUser:                           outputUser,
 		OutputPassword:                       outputPass,
 		OutputSchemaStrategy:                 strategy,
