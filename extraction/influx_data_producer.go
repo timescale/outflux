@@ -3,6 +3,7 @@ package extraction
 import (
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/timescale/outflux/utils"
@@ -26,8 +27,7 @@ type DataProducer interface {
 	Fetch(connectionParams *clientutils.ConnectionParams,
 		dataChannel chan idrf.Row,
 		query influx.Query,
-		errorBroadcaster utils.ErrorBroadcaster,
-		log utils.Logger)
+		errorBroadcaster utils.ErrorBroadcaster)
 }
 
 type defaultDataProducer struct {
@@ -56,8 +56,7 @@ func NewDataProducerWith(extractorID string, influxUtils clientutils.ClientUtils
 func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionParams,
 	dataChannel chan idrf.Row,
 	query influx.Query,
-	errorBroadcaster utils.ErrorBroadcaster,
-	log utils.Logger) {
+	errorBroadcaster utils.ErrorBroadcaster) {
 	defer close(dataChannel)
 
 	errorChannel, err := errorBroadcaster.Subscribe(dp.extractorID)
@@ -82,7 +81,7 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 	chunkResponse, err := client.QueryAsChunk(query)
 	if err != nil {
 		err = fmt.Errorf("extractor '%s' could not execute a chunked query.\n%v", dp.extractorID, err)
-		log.Log(err)
+		log.Printf("'%s': %v", dp.extractorID, err)
 		errorBroadcaster.Broadcast(dp.extractorID, err)
 		return
 	}
@@ -124,7 +123,7 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 		}
 
 		rows := series[0]
-		log.Log(fmt.Sprintf("Fetched %d new rows from Influx\n", len(rows.Values)))
+		log.Printf("%s: Fetched %d new rows from Influx", dp.extractorID, len(rows.Values))
 		for _, valRow := range rows.Values {
 			dataChannel <- valRow
 		}

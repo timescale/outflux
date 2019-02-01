@@ -3,6 +3,7 @@ package ingestion
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/timescale/outflux/utils"
@@ -33,7 +34,6 @@ func NewIngestor(config *config.Config, dataSet *idrf.DataSetInfo, dataChannel c
 		ingestionRoutine: NewIngestionRoutine(),
 		schemaManager:    schemamanagement.NewSchemaManager(),
 		dataSet:          dataSet,
-		log:              utils.NewLogger(config.Quiet),
 	}
 }
 
@@ -44,13 +44,13 @@ type defaultIngestor struct {
 	schemaManager    schemamanagement.SchemaManager
 	dataSet          *idrf.DataSetInfo
 	dataChannel      chan idrf.Row
-	log              utils.Logger
 }
 
 func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan bool, error) {
+	id := ing.config.IngestorID
 	ackChannel := make(chan bool)
 	connStr := buildConnectionString(ing.config)
-	ing.log.Log(fmt.Sprintf("Will connect to output database with: %s", connStr))
+	log.Printf("%s: Will connect to output database with: %s", id, connStr)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		err = fmt.Errorf("couldn't connect to target database: %s", err.Error())
@@ -98,7 +98,6 @@ func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan
 		converter:               ing.converter,
 		rollbackOnExternalError: ing.config.RollbackOnExternalError,
 		batchSize:               ing.config.BatchSize,
-		log:                     ing.log,
 	}
 
 	go ing.ingestionRoutine.ingestData(ingestArgs)

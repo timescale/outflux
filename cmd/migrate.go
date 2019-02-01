@@ -1,17 +1,20 @@
 package cmd
 
 import (
-	"fmt"
+	"context"
+	"io/ioutil"
+	"log"
+	"time"
 
 	"github.com/timescale/outflux/pipeline"
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/timescale/outflux/idrf"
 
 	"github.com/spf13/cobra"
 	ingestionConfig "github.com/timescale/outflux/ingestion/config"
 	"github.com/timescale/outflux/schemadiscovery"
-	"github.com/timescale/outflux/utils"
 )
 
 const (
@@ -65,40 +68,65 @@ var migrateCmd = &cobra.Command{
 }
 
 func migrate(args *pipeline.MigrationConfig) error {
-	logger := utils.NewLogger(args.Quiet)
+	startTime := time.Now()
+	if args.Quiet {
+		log.SetFlags(0)
+		log.SetOutput(ioutil.Discard)
+	}
 
 	influxDb := args.InputDb
-	logger.Log("Selected input database: " + influxDb)
+	log.Printf("Selected input database: %s\n", influxDb)
 	influxMeasures := args.InputMeasures
 
 	var discoveredDataSets []*idrf.DataSetInfo
 	var err error
 	if len(influxMeasures) == 0 {
-		discoveredDataSets, err = discoverSchemaForDatabase(args, logger)
+		discoveredDataSets, err = discoverSchemaForDatabase(args)
 	} else {
-		discoveredDataSets, err = discoverSchemaForMeasures(args, logger)
+		discoveredDataSets, err = discoverSchemaForMeasures(args)
 	}
 
 	if err != nil {
 		return err
 	}
 
-	logger.Log(fmt.Sprintf("Creating %d execution pipelines", len(influxMeasures)))
+	log.Printf("Creating %d execution pipelines\n", len(influxMeasures))
 	pipelines := pipeline.CreatePipelines(discoveredDataSets, args)
+
+	pipelineSemaphore := semaphore.NewWeighted(int64(args.MaxParallel))
+	ctx := context.Background()
+	pipeChannel := make(chan bool, len(pipelines))
+
+	// schedule all pipelines, as soon a value in the semaphore is available, execution will start
 	for _, pipe := range pipelines {
-		err = pipe.Start()
-		if err != nil {
-			logger.Log("Pipeline completed with error")
-			return err
-		}
+		go pipeRoutine(ctx, pipelineSemaphore, pipe, pipeChannel)
 	}
 
-	logger.Log("All pipelines completed")
+	log.Println("All pipelines scheduled")
+	for range pipelines {
+		<-pipeChannel
+	}
+
+	log.Println("All pipelines completed")
+
+	executionTime := time.Since(startTime).Seconds()
+	log.Printf("Execution time: %.3f seconds\n", executionTime)
 	return nil
 }
 
-func discoverSchemaForDatabase(args *pipeline.MigrationConfig, logger utils.Logger) ([]*idrf.DataSetInfo, error) {
-	logger.Log("All measurements selected for exporting")
+func pipeRoutine(ctx context.Context, semaphore *semaphore.Weighted, pipe pipeline.ExecutionPipeline,
+	pipeChannel chan bool) {
+	semaphore.Acquire(ctx, 1)
+	log.Printf("%s starting execution\n", pipe.ID())
+	err := pipe.Start()
+	if err != nil {
+		log.Printf("%s: %v\n", pipe.ID(), err)
+	}
+	defer semaphore.Release(1)
+	pipeChannel <- true
+}
+func discoverSchemaForDatabase(args *pipeline.MigrationConfig) ([]*idrf.DataSetInfo, error) {
+	log.Println("All measurements selected for exporting")
 	schemaExplorer := schemadiscovery.NewSchemaExplorer()
 	influxConnectionParams := &clientutils.ConnectionParams{
 		Server:   args.InputHost,
@@ -107,15 +135,15 @@ func discoverSchemaForDatabase(args *pipeline.MigrationConfig, logger utils.Logg
 	}
 	discoveredDataSets, err := schemaExplorer.InfluxDatabaseSchema(influxConnectionParams, args.InputDb)
 	if err != nil {
-		logger.Log("Couldn't discover the database schema")
+		log.Println("Couldn't discover the database schema")
 		return nil, err
 	}
 
 	return discoveredDataSets, nil
 }
 
-func discoverSchemaForMeasures(args *pipeline.MigrationConfig, logger utils.Logger) ([]*idrf.DataSetInfo, error) {
-	logger.Log(fmt.Sprintf("Selected measurements for exporting: %v", args.InputMeasures))
+func discoverSchemaForMeasures(args *pipeline.MigrationConfig) ([]*idrf.DataSetInfo, error) {
+	log.Printf("Selected measurements for exporting: %v\n", args.InputMeasures)
 	schemaExplorer := schemadiscovery.NewSchemaExplorer()
 	influxConnParams := &clientutils.ConnectionParams{
 		Server:   args.InputHost,
@@ -128,7 +156,7 @@ func discoverSchemaForMeasures(args *pipeline.MigrationConfig, logger utils.Logg
 	for i, measureName := range args.InputMeasures {
 		discoveredDataSets[i], err = schemaExplorer.InfluxMeasurementSchema(influxConnParams, args.InputDb, measureName)
 		if err != nil {
-			logger.Log(fmt.Sprintf("Could not discover schema for measurement: %s", measureName))
+			log.Printf("Could not discover schema for measurement: %s\n", measureName)
 			return nil, err
 		}
 	}

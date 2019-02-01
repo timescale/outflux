@@ -3,8 +3,6 @@ package pipeline
 import (
 	"fmt"
 
-	"github.com/timescale/outflux/utils"
-
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
 
 	extractionConfig "github.com/timescale/outflux/extraction/config"
@@ -18,7 +16,6 @@ func CreatePipelines(dataSets []*idrf.DataSetInfo, conf *MigrationConfig) []Exec
 		pipelines[i] = &defaultExecutionPipeline{
 			id:     fmt.Sprintf("pipe_%d", i),
 			config: createPipelineConf(i, dataSet, conf),
-			log:    utils.NewLogger(conf.Quiet),
 		}
 	}
 	return pipelines

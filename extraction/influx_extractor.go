@@ -2,6 +2,7 @@ package extraction
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/timescale/outflux/utils"
 
@@ -21,7 +22,6 @@ type InfluxExtractor interface {
 type defaultInfluxExtractor struct {
 	config   *config.Config
 	producer DataProducer
-	logger   utils.Logger
 }
 
 // NewExtractor creates a new instance of InfluxExtractor with the specified config and connection params
@@ -43,14 +43,14 @@ func NewExtractor(extractionConfig *config.Config) (InfluxExtractor, error) {
 	return &defaultInfluxExtractor{
 		config:   extractionConfig,
 		producer: NewDataProducerWith(extractionConfig.ExtractorID, clientUtils),
-		logger:   utils.NewLogger(extractionConfig.Quiet),
 	}, nil
 }
 
 // Start returns the schema info for a Influx Measurement and produces the the points as IDRFRows
 // to a supplied channel
 func (ie *defaultInfluxExtractor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan idrf.Row, error) {
-	ie.logger.Log(fmt.Sprintf("Starting extractor '%s' for measure: %s", ie.config.ExtractorID, ie.config.DataSet.DataSetName))
+	id := ie.config.ExtractorID
+	log.Printf("Starting extractor '%s' for measure: %s\n", id, ie.config.DataSet.DataSetName)
 	intChunkSize := int(ie.config.MeasureExtraction.ChunkSize)
 
 	query := influx.Query{
@@ -60,13 +60,13 @@ func (ie *defaultInfluxExtractor) Start(errorBroadcaster utils.ErrorBroadcaster)
 		ChunkSize: intChunkSize,
 	}
 
-	ie.logger.Log(fmt.Sprintf("Extracting data from server '%s', database '%s'", ie.config.Connection.Server, query.Database))
-	ie.logger.Log(fmt.Sprintf("Connecting with user '%s'", ie.config.Connection.Username))
-	ie.logger.Log(fmt.Sprintf("SELECT query: %s", query.Command))
-	ie.logger.Log(fmt.Sprintf("Pulling chunks with size %d", intChunkSize))
+	log.Printf("%s: Extracting data from server '%s', database '%s'\n", id, ie.config.Connection.Server, query.Database)
+	log.Printf("%s: Connecting with user '%s'\n", id, ie.config.Connection.Username)
+	log.Printf("%s: %s\n", id, query.Command)
+	log.Printf("%s:Pulling chunks with size %d\n", id, intChunkSize)
 	dataChannel := make(chan idrf.Row, ie.config.MeasureExtraction.DataChannelBufferSize)
 
-	go ie.producer.Fetch(ie.config.Connection, dataChannel, query, errorBroadcaster, ie.logger)
+	go ie.producer.Fetch(ie.config.Connection, dataChannel, query, errorBroadcaster)
 
 	return dataChannel, nil
 }
