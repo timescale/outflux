@@ -5,6 +5,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/timescale/outflux/utils"
+
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/idrf"
@@ -23,24 +25,27 @@ const (
 type DataProducer interface {
 	Fetch(connectionParams *clientutils.ConnectionParams,
 		dataChannel chan idrf.Row,
-		errorChannel chan error,
-		query influx.Query)
+		query influx.Query,
+		errorBroadcaster utils.ErrorBroadcaster)
 }
 
 type defaultDataProducer struct {
+	extractorID string
 	influxUtils clientutils.ClientUtils
 }
 
 // NewDataProducer creates a new implementation of the data producer
-func NewDataProducer() DataProducer {
+func NewDataProducer(extractorID string) DataProducer {
 	return &defaultDataProducer{
+		extractorID: extractorID,
 		influxUtils: clientutils.NewUtils(),
 	}
 }
 
 // NewDataProducerWith creates a new implementation of the data producer with a supplied client utils
-func NewDataProducerWith(influxUtils clientutils.ClientUtils) DataProducer {
+func NewDataProducerWith(extractorID string, influxUtils clientutils.ClientUtils) DataProducer {
 	return &defaultDataProducer{
+		extractorID: extractorID,
 		influxUtils: influxUtils,
 	}
 }
@@ -49,15 +54,24 @@ func NewDataProducerWith(influxUtils clientutils.ClientUtils) DataProducer {
 // If an error occurs a single error is sent to the error channel. Both channels are closed at the end of the routine.
 func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionParams,
 	dataChannel chan idrf.Row,
-	errorChannel chan error,
-	query influx.Query) {
+	query influx.Query,
+	errorBroadcaster utils.ErrorBroadcaster) {
 	defer close(dataChannel)
-	defer close(errorChannel)
+
+	errorChannel, err := errorBroadcaster.Subscribe(dp.extractorID)
+	if err != nil {
+		err = fmt.Errorf("extractor '%s' couldn't subscribe for errors", dp.extractorID)
+		errorBroadcaster.Broadcast(dp.extractorID, err)
+		return
+	}
+
+	defer errorBroadcaster.Unsubscribe(dp.extractorID)
 
 	client, err := dp.influxUtils.CreateInfluxClient(connectionParams)
 
 	if err != nil {
-		errorChannel <- err
+		err = fmt.Errorf("extractor '%s' couldn't create an influx client.\n%v", dp.extractorID, err)
+		errorBroadcaster.Broadcast(dp.extractorID, err)
 		return
 	}
 
@@ -65,13 +79,20 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 
 	chunkResponse, err := client.QueryAsChunk(query)
 	if err != nil {
-		errorChannel <- err
+		err = fmt.Errorf("extractor '%s' could not execute a chunked query.\n%v", dp.extractorID, err)
+		errorBroadcaster.Broadcast(dp.extractorID, err)
 		return
 	}
 
 	defer chunkResponse.Close()
 
 	for {
+		// Before requesting the next chunk, check if an error occured in some other goroutine
+		errorNotification := checkError(errorChannel)
+		if errorNotification != nil {
+			return
+		}
+
 		response, err := chunkResponse.NextResponse()
 		if err != nil {
 			if err == io.EOF {
@@ -79,34 +100,28 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 			}
 
 			// If we got an error while decoding the response, send that back.
-			errorChannel <- err
+			err = fmt.Errorf("extractor '%s': error decoding response.\n%v", dp.extractorID, err)
+			errorBroadcaster.Broadcast(dp.extractorID, err)
 			return
 		}
 
-		if response == nil {
-			errorChannel <- fmt.Errorf("server did not return a proper response")
-			return
-		}
-
-		if response.Err != "" {
-			errorChannel <- fmt.Errorf("returned response had an error: %s", response.Err)
-			return
-		}
-
-		if len(response.Results) != 1 {
-			errorChannel <- fmt.Errorf("returned response had an unexpected format")
+		if response == nil || response.Err != "" || len(response.Results) != 1 {
+			err = fmt.Errorf("extractor '%s': server did not return a proper response", dp.extractorID)
+			errorBroadcaster.Broadcast(dp.extractorID, err)
 			return
 		}
 
 		series := response.Results[0].Series
 		if len(series) > 1 {
-			errorChannel <- fmt.Errorf("returned response had an unexpected format")
+			err = fmt.Errorf("extractor '%s': returned response had an unexpected format", dp.extractorID)
+			errorBroadcaster.Broadcast(dp.extractorID, err)
 			return
 		} else if len(series) == 0 {
 			return
 		}
 
 		rows := series[0]
+		fmt.Printf("Fetched %d new rows from Influx\n", len(rows.Values))
 		for _, valRow := range rows.Values {
 			dataChannel <- valRow
 		}
@@ -141,4 +156,13 @@ func buildProjection(columns []*idrf.ColumnInfo) string {
 	}
 
 	return strings.Join(columnNames, ", ")
+}
+
+func checkError(errorChannel chan error) error {
+	select {
+	case err := <-errorChannel:
+		return err
+	default:
+		return nil
+	}
 }

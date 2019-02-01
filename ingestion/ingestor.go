@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/timescale/outflux/utils"
+
 	"github.com/lib/pq"
 	"github.com/timescale/outflux/extraction"
 	"github.com/timescale/outflux/idrf"
@@ -19,7 +21,7 @@ const (
 
 // Ingestor takes a data channel of idrf rows and inserts them in a target database
 type Ingestor interface {
-	Start() (chan bool, error)
+	Start(errorBroadcaster utils.ErrorBroadcaster) (chan bool, error)
 }
 
 // NewIngestor creates a new instance of an Ingestor with a specified config, for a specified
@@ -44,13 +46,15 @@ type defaultIngestor struct {
 	dataChannel      chan idrf.Row
 }
 
-func (ing *defaultIngestor) Start() (chan bool, error) {
+func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan bool, error) {
 	ackChannel := make(chan bool)
 	connStr := buildConnectionString(ing.config)
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't connect to target database: %s", err.Error())
+		err = fmt.Errorf("couldn't connect to target database: %s", err.Error())
+		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
+		return nil, err
 	}
 
 	// validate that db is ready to receive data
@@ -62,27 +66,37 @@ func (ing *defaultIngestor) Start() (chan bool, error) {
 	}
 	err = ing.schemaManager.Prepare(managerArgs)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't prepare input db. %s", err.Error())
+		err = fmt.Errorf("couldn't prepare input db. %s", err.Error())
+		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
+		return nil, err
 	}
 
 	transaction, err := db.Begin()
 	if err != nil {
-		return nil, fmt.Errorf("couldn't open a transaction. %s", err.Error())
+		err = fmt.Errorf("couldn't open a transaction. %s", err.Error())
+		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
+		return nil, err
 	}
 
 	columnNames := extractColumnNames(ing.dataSet.Columns)
 	copyQuery := pq.CopyIn(ing.dataSet.DataSetName, columnNames...)
 	statement, err := transaction.Prepare(copyQuery)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't prepare COPY FROM statement in transaction. %s", err.Error())
+		err = fmt.Errorf("couldn't prepare COPY FROM statement in transaction. %s", err.Error())
+		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
+		return nil, err
 	}
 
 	ingestArgs := &ingestDataArgs{
-		ackChannel:        ackChannel,
-		preparedStatement: statement,
-		transaction:       transaction,
-		dataChannel:       ing.dataChannel,
-		converter:         ing.converter,
+		ingestorID:              ing.config.IngestorID,
+		errorBroadcaster:        errorBroadcaster,
+		ackChannel:              ackChannel,
+		preparedStatement:       statement,
+		transaction:             transaction,
+		dataChannel:             ing.dataChannel,
+		converter:               ing.converter,
+		rollbackOnExternalError: ing.config.RollbackOnExternalError,
+		batchSize:               ing.config.BatchSize,
 	}
 
 	go ing.ingestionRoutine.ingestData(ingestArgs)

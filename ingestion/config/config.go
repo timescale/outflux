@@ -2,14 +2,16 @@ package config
 
 // Config holds all the properties required to create and run an ingestor
 type Config struct {
-	BatchSize            uint
-	Server               string
-	Username             string
-	Password             string
-	SchemaStrategy       SchemaStrategy
-	Database             string
-	AdditionalConnParams map[string]string
-	Schema               string
+	IngestorID              string
+	BatchSize               uint
+	Server                  string
+	Username                string
+	Password                string
+	SchemaStrategy          SchemaStrategy
+	Database                string
+	AdditionalConnParams    map[string]string
+	Schema                  string
+	RollbackOnExternalError bool
 }
 
 // SchemaStrategy is an enum representing what the ingestor should do

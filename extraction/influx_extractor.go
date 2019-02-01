@@ -3,6 +3,8 @@ package extraction
 import (
 	"fmt"
 
+	"github.com/timescale/outflux/utils"
+
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/idrf"
@@ -13,18 +15,18 @@ import (
 // InfluxExtractor defines an interface for an Extractor that can connect to an InfluxDB
 // discover the schema and produces the rows to a channel
 type InfluxExtractor interface {
-	Start() (*ExtractionInfo, error)
+	Start(utils.ErrorBroadcaster) (*ExtractionInfo, error)
 }
 
 // ExtractionInfo returned when starting an extractor. Contains the data, error channels and schema
 type ExtractionInfo struct {
 	DataChannel   chan idrf.Row
-	ErrorChannel  chan error
 	DataSetSchema *idrf.DataSetInfo
 }
 
 // defaultInfluxExtractor is an implementation of the extractor interface.
 type defaultInfluxExtractor struct {
+	ID             string
 	config         *config.MeasureExtraction
 	connection     *clientutils.ConnectionParams
 	schemaExplorer schemadiscovery.SchemaExplorer
@@ -33,32 +35,33 @@ type defaultInfluxExtractor struct {
 }
 
 // NewExtractor creates a new instance of InfluxExtractor with the specified config and connection params
-func NewExtractor(measureConfig *config.MeasureExtraction, connection *clientutils.ConnectionParams) (InfluxExtractor, error) {
-	err := config.ValidateMeasureExtractionConfig(measureConfig)
+func NewExtractor(extractionConfig *config.Config) (InfluxExtractor, error) {
+	err := config.ValidateMeasureExtractionConfig(extractionConfig.MeasureExtraction)
 	if err != nil {
 		return nil, fmt.Errorf("Config not valid: %s", err.Error())
 	}
 
-	if connection == nil {
+	if extractionConfig.Connection == nil {
 		return nil, fmt.Errorf("Connection params can't be nil")
 	}
 
 	clientUtils := clientutils.NewUtils()
 	return &defaultInfluxExtractor{
-		config:         measureConfig,
-		connection:     connection,
+		config:         extractionConfig.MeasureExtraction,
+		connection:     extractionConfig.Connection,
+		ID:             extractionConfig.ExtractorID,
 		schemaExplorer: schemadiscovery.NewSchemaExplorerWithUtils(clientUtils),
 		influxUtils:    clientUtils,
-		producer:       NewDataProducerWith(clientUtils),
+		producer:       NewDataProducerWith(extractionConfig.ExtractorID, clientUtils),
 	}, nil
 }
 
 // Start returns the schema info for a Influx Measurement and produces the the points as IDRFRows
 // to a supplied channel
-func (ie *defaultInfluxExtractor) Start() (*ExtractionInfo, error) {
+func (ie *defaultInfluxExtractor) Start(errorBroadcaster utils.ErrorBroadcaster) (*ExtractionInfo, error) {
 	dataSetInfo, err := ie.schemaExplorer.InfluxMeasurementSchema(ie.connection, ie.config.Database, ie.config.Measure)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("couldn't discover influxdb schema\n%v", err)
 	}
 
 	intChunkSize := int(ie.config.ChunkSize)
@@ -71,13 +74,11 @@ func (ie *defaultInfluxExtractor) Start() (*ExtractionInfo, error) {
 	}
 
 	dataChannel := make(chan idrf.Row, ie.config.DataChannelBufferSize)
-	errorChannel := make(chan error)
 
-	go ie.producer.Fetch(ie.connection, dataChannel, errorChannel, query)
+	go ie.producer.Fetch(ie.connection, dataChannel, query, errorBroadcaster)
 
 	return &ExtractionInfo{
 		DataSetSchema: dataSetInfo,
 		DataChannel:   dataChannel,
-		ErrorChannel:  errorChannel,
 	}, nil
 }
