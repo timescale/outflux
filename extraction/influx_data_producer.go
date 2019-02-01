@@ -88,6 +88,7 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 
 	defer chunkResponse.Close()
 
+	totalRows := 0
 	for {
 		// Before requesting the next chunk, check if an error occured in some other goroutine
 		errorNotification := checkError(errorChannel)
@@ -123,7 +124,8 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 		}
 
 		rows := series[0]
-		log.Printf("%s: Fetched %d new rows from Influx", dp.extractorID, len(rows.Values))
+		totalRows += len(rows.Values)
+		log.Printf("%s: Extracted %d rows from Influx", dp.extractorID, totalRows)
 		for _, valRow := range rows.Values {
 			dataChannel <- valRow
 		}
