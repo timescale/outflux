@@ -45,7 +45,6 @@ func createIngestionConf(pipeNum int, args *MigrationConfig) *ingestionConfig.Co
 		AdditionalConnParams:    additionalConnParams,
 		Schema:                  args.OutputSchema,
 		RollbackOnExternalError: args.RollbackAllMeasureExtractionsOnError,
-		Quiet:                   args.Quiet,
 	}
 }
 
@@ -70,7 +69,6 @@ func createExtractionConf(pipeNum int, conf *MigrationConfig, dataSet *idrf.Data
 		MeasureExtraction: measureExtractionConf,
 		Connection:        connection,
 		DataSet:           dataSet,
-		Quiet:             conf.Quiet,
 	}
 
 	return ex

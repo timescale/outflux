@@ -14,7 +14,6 @@ type Config struct {
 	AdditionalConnParams    map[string]string
 	Schema                  string
 	RollbackOnExternalError bool
-	Quiet                   bool
 }
 
 // SchemaStrategy is an enum representing what the ingestor should do

@@ -56,5 +56,4 @@ type Config struct {
 	MeasureExtraction *MeasureExtraction
 	Connection        *clientutils.ConnectionParams
 	DataSet           *idrf.DataSetInfo
-	Quiet             bool
 }
