@@ -1,9 +1,11 @@
 package config
 
+import "fmt"
+
 // Config holds all the properties required to create and run an ingestor
 type Config struct {
 	IngestorID              string
-	BatchSize               uint
+	BatchSize               uint16
 	Server                  string
 	Username                string
 	Password                string
@@ -12,6 +14,7 @@ type Config struct {
 	AdditionalConnParams    map[string]string
 	Schema                  string
 	RollbackOnExternalError bool
+	Quiet                   bool
 }
 
 // SchemaStrategy is an enum representing what the ingestor should do
@@ -43,4 +46,21 @@ func (s SchemaStrategy) String() string {
 	default:
 		panic("unknown type")
 	}
+}
+
+// ParseStrategyString returns the enum value matching the string, or an error
+func ParseStrategyString(strategy string) (SchemaStrategy, error) {
+	switch strategy {
+	case "ValidateOnly":
+		return ValidateOnly, nil
+	case "CreateIfMissing":
+		return CreateIfMissing, nil
+	case "DropCascadeAndCreate":
+		return DropCascadeAndCreate, nil
+	case "DropAndCreate":
+		return DropAndCreate, nil
+	default:
+		return ValidateOnly, fmt.Errorf("unknown schema strategy '%s'", strategy)
+	}
+
 }

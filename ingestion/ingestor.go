@@ -8,7 +8,6 @@ import (
 	"github.com/timescale/outflux/utils"
 
 	"github.com/lib/pq"
-	"github.com/timescale/outflux/extraction"
 	"github.com/timescale/outflux/idrf"
 	"github.com/timescale/outflux/ingestion/config"
 	"github.com/timescale/outflux/ingestion/schemamanagement"
@@ -26,14 +25,15 @@ type Ingestor interface {
 
 // NewIngestor creates a new instance of an Ingestor with a specified config, for a specified
 // data set and data channel
-func NewIngestor(config *config.Config, extractionInfo *extraction.ExtractionInfo) Ingestor {
+func NewIngestor(config *config.Config, dataSet *idrf.DataSetInfo, dataChannel chan idrf.Row) Ingestor {
 	return &defaultIngestor{
 		config:           config,
-		converter:        newIdrfConverter(extractionInfo.DataSetSchema),
-		dataChannel:      extractionInfo.DataChannel,
+		converter:        newIdrfConverter(dataSet),
+		dataChannel:      dataChannel,
 		ingestionRoutine: NewIngestionRoutine(),
 		schemaManager:    schemamanagement.NewSchemaManager(),
-		dataSet:          extractionInfo.DataSetSchema,
+		dataSet:          dataSet,
+		log:              utils.NewLogger(config.Quiet),
 	}
 }
 
@@ -44,12 +44,13 @@ type defaultIngestor struct {
 	schemaManager    schemamanagement.SchemaManager
 	dataSet          *idrf.DataSetInfo
 	dataChannel      chan idrf.Row
+	log              utils.Logger
 }
 
 func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan bool, error) {
 	ackChannel := make(chan bool)
 	connStr := buildConnectionString(ing.config)
-
+	ing.log.Log(fmt.Sprintf("Will connect to output database with: %s", connStr))
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		err = fmt.Errorf("couldn't connect to target database: %s", err.Error())
@@ -97,6 +98,7 @@ func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan
 		converter:               ing.converter,
 		rollbackOnExternalError: ing.config.RollbackOnExternalError,
 		batchSize:               ing.config.BatchSize,
+		log:                     ing.log,
 	}
 
 	go ing.ingestionRoutine.ingestData(ingestArgs)
@@ -134,15 +136,4 @@ func connectionParamsToString(params map[string]string) string {
 	}
 
 	return "?" + strings.Join(singleParams, "&")
-}
-
-type dbWrapper interface {
-	Open(driver string, connectionString string) error
-	Close() error
-	BeginTransaction() error
-	Commit() error
-	Rollback() error
-	PrepareStatement(query string) error
-	ExecuteStatement(args []interface{}) (sql.Result, error)
-	CloseStatement() error
 }
