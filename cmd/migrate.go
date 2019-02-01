@@ -44,8 +44,8 @@ const (
 	defaultSslMode                 = "disable"
 	defaultOutputSchema            = "public"
 	defaultSchemaStrategy          = ingestionConfig.ValidateOnly
-	defaultDataBufferSize          = 10000
-	defaultChunkSize               = 10000
+	defaultDataBufferSize          = 15000
+	defaultChunkSize               = 15000
 	defaultLimit                   = 0
 	defaultMaxParallel             = 2
 	defaultRollbackOnExternalError = true
