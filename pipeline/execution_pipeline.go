@@ -52,7 +52,7 @@ func (p *defaultExecutionPipeline) Start() error {
 	ackChannel, err := ingestor.Start(errorBroadcaster)
 	if err != nil {
 		errorBroadcaster.Broadcast(p.id, err)
-		return fmt.Errorf("'%s': could not start the ingestor\n%v", p.id, err)
+		return fmt.Errorf("'%s': could not start the ingestor.\n%v", p.id, err)
 	}
 
 	ingestorProperlyEnded := false

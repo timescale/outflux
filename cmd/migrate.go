@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"time"
@@ -60,14 +61,15 @@ var migrateCmd = &cobra.Command{
 			panic(err)
 		}
 
-		err = migrate(migrateArgs)
-		if err != nil {
+		errors := migrate(migrateArgs)
+		if errors != nil {
+			err = preparePipeErrors(errors)
 			panic(err)
 		}
 	},
 }
 
-func migrate(args *pipeline.MigrationConfig) error {
+func migrate(args *pipeline.MigrationConfig) []error {
 	startTime := time.Now()
 	if args.Quiet {
 		log.SetFlags(0)
@@ -87,7 +89,9 @@ func migrate(args *pipeline.MigrationConfig) error {
 	}
 
 	if err != nil {
-		return err
+		toReturn := make([]error, 1)
+		toReturn[0] = err
+		return toReturn
 	}
 
 	log.Printf("Creating %d execution pipelines\n", len(influxMeasures))
@@ -95,28 +99,38 @@ func migrate(args *pipeline.MigrationConfig) error {
 
 	pipelineSemaphore := semaphore.NewWeighted(int64(args.MaxParallel))
 	ctx := context.Background()
-	pipeChannel := make(chan bool, len(pipelines))
-	defer close(pipeChannel)
+	pipeChannels := makePipeChannels(len(pipelines))
 
 	// schedule all pipelines, as soon a value in the semaphore is available, execution will start
-	for _, pipe := range pipelines {
-		go pipeRoutine(ctx, pipelineSemaphore, pipe, pipeChannel)
+	for i, pipe := range pipelines {
+		go pipeRoutine(ctx, pipelineSemaphore, pipe, pipeChannels[i])
 	}
 
 	log.Println("All pipelines scheduled")
-	for range pipelines {
-		<-pipeChannel
+	hasError := false
+	pipeErrors := make([]error, len(pipelines))
+	for i, pipeChannel := range pipeChannels {
+		pipeErrors[i] = <-pipeChannel
+		if pipeErrors[i] != nil {
+			hasError = true
+		}
 	}
 
-	log.Println("All pipelines completed")
+	log.Println("All pipelines finished")
 
 	executionTime := time.Since(startTime).Seconds()
 	log.Printf("Execution time: %.3f seconds\n", executionTime)
+	if hasError {
+		return pipeErrors
+	}
+
 	return nil
 }
 
 func pipeRoutine(ctx context.Context, semaphore *semaphore.Weighted, pipe pipeline.ExecutionPipeline,
-	pipeChannel chan bool) {
+	pipeChannel chan error) {
+	defer close(pipeChannel)
+
 	semaphore.Acquire(ctx, 1)
 	defer semaphore.Release(1)
 
@@ -124,8 +138,8 @@ func pipeRoutine(ctx context.Context, semaphore *semaphore.Weighted, pipe pipeli
 	err := pipe.Start()
 	if err != nil {
 		log.Printf("%s: %v\n", pipe.ID(), err)
+		pipeChannel <- err
 	}
-	pipeChannel <- true
 }
 func discoverSchemaForDatabase(args *pipeline.MigrationConfig) ([]*idrf.DataSetInfo, error) {
 	log.Println("All measurements selected for exporting")
@@ -164,4 +178,25 @@ func discoverSchemaForMeasures(args *pipeline.MigrationConfig) ([]*idrf.DataSetI
 	}
 
 	return discoveredDataSets, nil
+}
+
+func makePipeChannels(numChannels int) []chan error {
+	channels := make([]chan error, numChannels)
+	for i := 0; i < numChannels; i++ {
+		channels[i] = make(chan error)
+	}
+
+	return channels
+}
+
+func preparePipeErrors(errors []error) error {
+	errString := `
+---------------------------------------------
+Migration finished with errors:
+`
+	for _, err := range errors {
+		errString += err.Error() + "\n"
+	}
+
+	return fmt.Errorf(errString)
 }
