@@ -22,7 +22,6 @@ func CreatePipelines(dataSets []*idrf.DataSetInfo, conf *MigrationConfig) []Exec
 }
 
 func createPipelineConf(pipeNum int, dataSet *idrf.DataSetInfo, conf *MigrationConfig) *PipelineConfig {
-
 	ex := createExtractionConf(pipeNum, conf, dataSet)
 	in := createIngestionConf(pipeNum, conf)
 	return &PipelineConfig{

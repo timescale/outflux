@@ -6,6 +6,7 @@ import (
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/idrf"
+	"github.com/timescale/outflux/utils"
 
 	"github.com/timescale/outflux/schemadiscovery"
 
@@ -16,57 +17,35 @@ import (
 
 func TestInfluxExtractorStart(t *testing.T) {
 	measure := "measure"
-	columnNames := []string{"a", "b"}
 
-	simpleConfig := config.MeasureExtraction{
-		Database: "db", Measure: measure, ChunkSize: 1,
+	simpleConfig := config.Config{
+		ExtractorID: "ID",
+		MeasureExtraction: &config.MeasureExtraction{
+			Database: "db", Measure: measure, ChunkSize: 1,
+		},
+		Connection: &clientutils.ConnectionParams{},
+		DataSet:    &idrf.DataSetInfo{},
 	}
 
 	producer := &mockProducer{}
-	testCases := []struct {
-		schemaExplorer schemadiscovery.SchemaExplorer
-		config         config.MeasureExtraction
-		producer       DataProducer
-		expectedError  bool
-	}{
-		{schemaExplorer: returnErrorOnMeasurementSchema(), expectedError: true},
-		{schemaExplorer: returnSchema(measure, columnNames), config: simpleConfig, producer: producer, expectedError: false},
+
+	extractor := defaultInfluxExtractor{
+		config:   &simpleConfig,
+		producer: producer,
 	}
 
-	for _, testCase := range testCases {
-		extractor := defaultInfluxExtractor{
-			schemaExplorer: testCase.schemaExplorer,
-			config:         &testCase.config,
-			producer:       testCase.producer,
-		}
+	res := extractor.Start(nil)
 
-		res, err := extractor.Start()
+	if res == nil {
+		t.Error("nil data channel returned")
+	}
 
-		if err != nil && !testCase.expectedError {
-			t.Errorf("no error expected, got: %v", err)
-		}
+	// wait for channel to close at end of mocked method
+	for range res {
+	}
 
-		if err == nil && testCase.expectedError {
-			t.Errorf("error was expected, none returned")
-		}
-
-		if testCase.expectedError {
-			continue
-		}
-
-		mockedProducer := testCase.producer.(*mockProducer)
-
-		if res.DataChannel == nil || res.ErrorChannel == nil || res.DataSetSchema == nil {
-			t.Errorf("fetch method returned a nil value for some of the members of the result. result: %v", res)
-		}
-
-		// wait for channel to close at end of mocked method
-		for range res.DataChannel {
-		}
-
-		if mockedProducer.numCalled == 0 {
-			t.Errorf("fetch method not called")
-		}
+	if producer.numCalled == 0 {
+		t.Errorf("fetch method not called")
 	}
 }
 
@@ -104,8 +83,8 @@ type mockProducer struct {
 
 func (dp *mockProducer) Fetch(connectionParams *clientutils.ConnectionParams,
 	dataChannel chan idrf.Row,
-	errorChannel chan error,
-	query influx.Query) {
+	query influx.Query,
+	errorBc utils.ErrorBroadcaster) {
 	dp.numCalled++
 	close(dataChannel)
 }

@@ -2,7 +2,7 @@
 
 This repo contains code for exporting complete InfluxDB databases or selected measurements to TimescaleDB.
 
-## Instalation
+## Installation
 
 Outflux is a Go project managed by `dep` (The go dependency management tool). To download the proper dependency versions, `dep` must be installed on your system. Instructions can be found on the [official documentation page](https://golang.github.io/dep/docs/installation.html). 
 
@@ -44,9 +44,9 @@ For example `outflux migrate benchmark cpu mem` will export the `cpu` and `mem` 
 | input-host                 | string  | http://localhost:8086 | Host of the input database, http(s)://location:port. |
 | input-pass                 | string  |                       | Password to use when connecting to the input database |
 | input-user                 | string  |                       | Username to use when connecting to the input database |
-| limit                      | uint64  | 0                     | If specified will limit the export points to it's value. 0 = NO LIMIT |
-| from                       | string  |                       | If specified will export data with a timestamp >= of it's value. Accepted format: RFC3339 |
-| to                         | string  |                       | If specified will export data with a timestamp <= of it's value. Accepted format: RFC3339 |
+| limit                      | uint64  | 0                     | If specified will limit the export points to its value. 0 = NO LIMIT |
+| from                       | string  |                       | If specified will export data with a timestamp >= of its value. Accepted format: RFC3339 |
+| to                         | string  |                       | If specified will export data with a timestamp <= of its value. Accepted format: RFC3339 |
 | output-db                  | string  |                       | Output (Target) database that the data will be inserted into |
 | output-db-ssl-mode         | string  | disable               | SSL mode to use when connecting to the output server. Valid options: disable, require, verify-ca, verify-full |
 | output-host                | string  | localhost:5432        | Host of the output database, location:port. |

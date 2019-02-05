@@ -15,7 +15,7 @@ import (
 // InfluxExtractor defines an interface for an Extractor that can connect to an InfluxDB
 // discover the schema and produces the rows to a channel
 type InfluxExtractor interface {
-	Start(utils.ErrorBroadcaster) (chan idrf.Row, error)
+	Start(utils.ErrorBroadcaster) chan idrf.Row
 }
 
 // defaultInfluxExtractor is an implementation of the extractor interface.
@@ -48,7 +48,7 @@ func NewExtractor(extractionConfig *config.Config) (InfluxExtractor, error) {
 
 // Start returns the schema info for a Influx Measurement and produces the the points as IDRFRows
 // to a supplied channel
-func (ie *defaultInfluxExtractor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan idrf.Row, error) {
+func (ie *defaultInfluxExtractor) Start(errorBroadcaster utils.ErrorBroadcaster) chan idrf.Row {
 	id := ie.config.ExtractorID
 	log.Printf("Starting extractor '%s' for measure: %s\n", id, ie.config.DataSet.DataSetName)
 	intChunkSize := int(ie.config.MeasureExtraction.ChunkSize)
@@ -68,5 +68,5 @@ func (ie *defaultInfluxExtractor) Start(errorBroadcaster utils.ErrorBroadcaster)
 
 	go ie.producer.Fetch(ie.config.Connection, dataChannel, query, errorBroadcaster)
 
-	return dataChannel, nil
+	return dataChannel
 }

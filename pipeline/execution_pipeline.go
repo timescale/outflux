@@ -42,11 +42,7 @@ func (p *defaultExecutionPipeline) Start() error {
 		return fmt.Errorf("'%s': could not create the extractor\n%v", p.id, err)
 	}
 
-	dataChannel, err := extractor.Start(errorBroadcaster)
-	if err != nil {
-		return fmt.Errorf("'%s': could not start the extractor\n%v", p.id, err)
-	}
-
+	dataChannel := extractor.Start(errorBroadcaster)
 	ingestor := ingestion.NewIngestor(p.config.IngestionConfig, extractionConf.DataSet, dataChannel)
 
 	ackChannel, err := ingestor.Start(errorBroadcaster)

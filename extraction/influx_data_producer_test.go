@@ -64,15 +64,36 @@ func TestBuildSelectCommand(t *testing.T) {
 	}
 }
 
-func TestFetchWhenErrorsHappenOnClientCreate(t *testing.T) {
+func TestFetchWhenErrorsHappenOnErrSub(t *testing.T) {
 	mockUtils := clientutils.NewUtilsWith(errorReturningGenerator(), nil)
-	producer := defaultDataProducer{mockUtils}
+	producer := defaultDataProducer{"id", mockUtils}
 	query := influx.Query{}
 	dataChannel := make(chan idrf.Row)
+	errorChannel := make(chan error, 1)
+
+	errorBroadcaster := &mockErrBc{broadChan: errorChannel, subErr: fmt.Errorf("error")}
+	producer.Fetch(nil, dataChannel, query, errorBroadcaster)
+
+	producedError := <-errorChannel
+	if producedError == nil {
+		t.Error("expected an error to be produced by the client generator")
+	}
+
+	for range dataChannel {
+		t.Error("no data was expected to be received on the data channel")
+	}
+}
+func TestFetchWhenErrorsHappenOnClientCreate(t *testing.T) {
+	mockUtils := clientutils.NewUtilsWith(errorReturningGenerator(), nil)
+	producer := defaultDataProducer{"id", mockUtils}
+	query := influx.Query{}
+	dataChannel := make(chan idrf.Row)
+	errorChannel := make(chan error, 1)
+	errorBroadcaster := &mockErrBc{subRes: errorChannel, broadChan: errorChannel}
+
 	// since we're not starting the Fetch method in a goroutine it will block
 	// if nobody is listening to the channel, hence we make it a buffered one
-	errorChannel := make(chan error, 1)
-	producer.Fetch(nil, dataChannel, errorChannel, query)
+	producer.Fetch(nil, dataChannel, query, errorBroadcaster)
 
 	producedError := <-errorChannel
 	if producedError == nil {
@@ -88,14 +109,14 @@ func TestFetchWhenErrorsHappenOnQueryAsChunk(t *testing.T) {
 	mockedClient := errorReturningMockClient()
 	mockUtils := clientutils.NewUtilsWith(mockReturningGenerator(mockedClient), nil)
 
-	producer := defaultDataProducer{mockUtils}
+	producer := defaultDataProducer{"id", mockUtils}
 
 	query := influx.Query{}
 	dataChannel := make(chan idrf.Row)
-	// since we're not starting the Fetch method in a goroutine it will block
-	// if nobody is listening to the channel, hence we make it a buffered one
 	errorChannel := make(chan error, 1)
-	producer.Fetch(nil, dataChannel, errorChannel, query)
+	errorBroadcaster := &mockErrBc{subRes: errorChannel, broadChan: errorChannel}
+
+	producer.Fetch(nil, dataChannel, query, errorBroadcaster)
 
 	producedError := <-errorChannel
 	if producedError == nil {
@@ -168,3 +189,24 @@ func chunkReturningMockClient(resToReturn *influx.ChunkedResponse) *mockClientDP
 	return &mockClientDP{chunkErrToReturn: nil,
 		chunkResToReturn: resToReturn}
 }
+
+type mockErrBc struct {
+	subRes    chan error
+	broadChan chan error
+	subErr    error
+	unsubErr  error
+}
+
+func (e *mockErrBc) Subscribe(id string) (chan error, error) {
+	return e.subRes, e.subErr
+}
+
+func (e *mockErrBc) Unsubscribe(id string) error {
+	return e.unsubErr
+}
+
+func (e *mockErrBc) Broadcast(source string, err error) {
+	e.broadChan <- err
+}
+
+func (e *mockErrBc) Close() {}
