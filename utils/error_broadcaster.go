@@ -45,6 +45,12 @@ func NewErrorBroadcaster() ErrorBroadcaster {
 	}
 }
 
+func newErrorBroadcasterWith(sub subscriber, unsub unsubscriber, brc broadcaster, cls closer) ErrorBroadcaster {
+	return &defaultErrorBroadcaster{
+		sub, unsub, brc, cls,
+	}
+}
+
 type defaultErrorBroadcaster struct {
 	subscriber
 	unsubscriber
