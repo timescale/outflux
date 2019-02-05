@@ -1,7 +1,6 @@
 package config
 
 import (
-	"math"
 	"testing"
 )
 
@@ -10,7 +9,6 @@ func TestNewMeasureExtractionConfig(t *testing.T) {
 		{Database: "", Measure: "measure", ChunkSize: 1},
 		{Database: "Db", Measure: "", ChunkSize: 1},
 		{Database: "Db", Measure: "measure", ChunkSize: 0},
-		{Database: "Db", Measure: "measure", ChunkSize: uint(math.MaxInt64) + uint(1)},
 		{Database: "Db", Measure: "measure", From: "2019-01-01T00:00:00", ChunkSize: 1},
 		{Database: "Db", Measure: "measure", From: "2019-01-01", ChunkSize: 1},
 		{Database: "Db", Measure: "measure", To: "2019-01-01T00:00:00", ChunkSize: 1},

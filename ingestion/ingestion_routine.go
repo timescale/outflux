@@ -3,6 +3,7 @@ package ingestion
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/timescale/outflux/utils"
 
@@ -25,7 +26,7 @@ type ingestDataArgs struct {
 	// the IDRF to SQL converter
 	converter IdrfConverter
 	// on each ${batchSize} rows inserted the ingestor checks if there is an error in some of the other goroutines
-	batchSize uint
+	batchSize uint16
 	// if an error occured in another goroutine should a rollback be done
 	rollbackOnExternalError bool
 }
@@ -33,6 +34,7 @@ type Routine interface {
 	ingestData(args *ingestDataArgs)
 }
 
+// NewIngestionRoutine creates an instance of the routine that will ingest data in the target db
 func NewIngestionRoutine() Routine {
 	return &defaultIngestionRoutine{}
 }
@@ -40,6 +42,7 @@ func NewIngestionRoutine() Routine {
 type defaultIngestionRoutine struct{}
 
 func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
+	log.Printf("Starting data ingestor '%s'", args.ingestorID)
 	defer close(args.ackChannel)
 
 	errorChannel, err := args.errorBroadcaster.Subscribe(args.ingestorID)
@@ -47,6 +50,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 		err = fmt.Errorf("ingestor '%s': could not subscribe for errors.\n%v", args.ingestorID, err)
 		args.errorBroadcaster.Broadcast(args.ingestorID, err)
 		args.preparedStatement.Close()
+		log.Printf("%s: Data ingestor closing early", args.ingestorID)
 		return
 	}
 
@@ -55,6 +59,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	err = utils.CheckError(errorChannel)
 	if err != nil {
 		args.preparedStatement.Close()
+		log.Printf("%s: received external error before starting data insertion. Quitting\n", args.ingestorID)
 		return
 	}
 
@@ -62,16 +67,15 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	for row := range args.dataChannel {
 		err := insertRow(args, row)
 		if err != nil {
+			log.Printf("%s could not insert row in output db. Rolling back\n", args.ingestorID)
 			args.errorBroadcaster.Broadcast(args.ingestorID, err)
+			return
 		}
 
 		numInserts++
-		if numInserts%args.batchSize == 0 {
-			fmt.Printf("Number of inserted rows:%d\n", numInserts)
-		}
-
-		if numInserts%args.batchSize == 0 && utils.CheckError(errorChannel) != nil {
+		if numInserts%uint(args.batchSize) == 0 && utils.CheckError(errorChannel) != nil {
 			if args.rollbackOnExternalError {
+				log.Printf("%s: Error received from outside of ingestor. Rolling back\n", args.ingestorID)
 				closeAndRollback(args.preparedStatement, args.transaction)
 				return
 			}
@@ -79,7 +83,8 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 		}
 	}
 
-	if utils.CheckError(errorChannel) != nil {
+	if utils.CheckError(errorChannel) != nil && args.rollbackOnExternalError {
+		log.Printf("%s: Error received from outside of ingestor. Rollbacking\n", args.ingestorID)
 		closeAndRollback(args.preparedStatement, args.transaction)
 		return
 	}
@@ -87,6 +92,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	err = args.preparedStatement.Close()
 	if err != nil {
 		err = fmt.Errorf("ingestor '%s': couldn't close prepared statement.\n%v", args.ingestorID, err)
+		log.Printf("%v\n", err)
 		args.errorBroadcaster.Broadcast(args.ingestorID, err)
 		return
 	}
@@ -94,10 +100,12 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	err = args.transaction.Commit()
 	if err != nil {
 		err = fmt.Errorf("ingestor '%s': couldn't commit transaction.\n%v", args.ingestorID, err)
+		log.Printf("%v\n", err)
 		args.errorBroadcaster.Broadcast(args.ingestorID, err)
 		return
 	}
 
+	log.Printf("Ingestor '%s' complete. Inserted %d rows.\n", args.ingestorID, numInserts)
 	args.ackChannel <- true
 }
 
@@ -105,12 +113,14 @@ func insertRow(args *ingestDataArgs, row idrf.Row) error {
 	values, err := args.converter.ConvertValues(row)
 	if err != nil {
 		err = fmt.Errorf("ingestor '%s': could not convert row:%v", args.ingestorID, err)
+		log.Printf("%v\n", err)
 		closeAndRollback(args.preparedStatement, args.transaction)
 		return err
 	}
 	_, err = args.preparedStatement.Exec(values...)
 	if err != nil {
 		err = fmt.Errorf("ingestor '%s': could not execute prepared statement:\n%v", args.ingestorID, err)
+		log.Printf("%v\n", err)
 		closeAndRollback(args.preparedStatement, args.transaction)
 		return err
 	}

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/timescale/outflux/idrf"
+
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
-	"github.com/timescale/outflux/utils"
 )
 
 const (
@@ -18,9 +19,9 @@ type MeasureExtraction struct {
 	Measure               string
 	From                  string
 	To                    string
-	ChunkSize             uint
-	Limit                 uint
-	DataChannelBufferSize uint
+	ChunkSize             uint16
+	Limit                 uint64
+	DataChannelBufferSize uint16
 }
 
 // ValidateMeasureExtractionConfig validates the fields
@@ -34,10 +35,6 @@ func ValidateMeasureExtractionConfig(config *MeasureExtraction) error {
 
 	if config.ChunkSize == 0 {
 		return fmt.Errorf("chunk size must be > 0")
-	}
-
-	if _, err := utils.SafeCastUInt(config.ChunkSize); err != nil {
-		return err
 	}
 
 	_, formatError := time.Parse(acceptedTimeFormat, config.From)
@@ -58,4 +55,5 @@ type Config struct {
 	ExtractorID       string
 	MeasureExtraction *MeasureExtraction
 	Connection        *clientutils.ConnectionParams
+	DataSet           *idrf.DataSetInfo
 }

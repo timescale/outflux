@@ -3,6 +3,7 @@ package extraction
 import (
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/timescale/outflux/utils"
@@ -80,12 +81,14 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 	chunkResponse, err := client.QueryAsChunk(query)
 	if err != nil {
 		err = fmt.Errorf("extractor '%s' could not execute a chunked query.\n%v", dp.extractorID, err)
+		log.Printf("'%s': %v", dp.extractorID, err)
 		errorBroadcaster.Broadcast(dp.extractorID, err)
 		return
 	}
 
 	defer chunkResponse.Close()
 
+	totalRows := 0
 	for {
 		// Before requesting the next chunk, check if an error occured in some other goroutine
 		errorNotification := checkError(errorChannel)
@@ -121,7 +124,8 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 		}
 
 		rows := series[0]
-		fmt.Printf("Fetched %d new rows from Influx\n", len(rows.Values))
+		totalRows += len(rows.Values)
+		log.Printf("%s: Extracted %d rows from Influx", dp.extractorID, totalRows)
 		for _, valRow := range rows.Values {
 			dataChannel <- valRow
 		}

@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/timescale/outflux/extraction"
 	"github.com/timescale/outflux/ingestion"
@@ -12,36 +13,42 @@ import (
 )
 
 // ExecutionPipeline combines an extractor with a ingestor
-type ExecutionPipeline struct {
-	ID               string
-	Config           *OutfluxConfig
-	ErrorBroadcaster utils.ErrorBroadcaster
+type ExecutionPipeline interface {
+	Start() error
+	ID() string
+}
+type defaultExecutionPipeline struct {
+	id     string
+	config *PipelineConfig
+}
+
+func (p *defaultExecutionPipeline) ID() string {
+	return p.id
 }
 
 // Start the extractor and ingestor and wait for them to complete
-func (pipe *ExecutionPipeline) Start() error {
-	errorChannel, err := pipe.ErrorBroadcaster.Subscribe(pipe.ID)
+func (p *defaultExecutionPipeline) Start() error {
+	errorBroadcaster := utils.NewErrorBroadcaster()
+	errorChannel, err := errorBroadcaster.Subscribe(p.id)
 	if err != nil {
-		return fmt.Errorf("'%s': could not subscribe for errors\n%v", pipe.ID, err)
+		return fmt.Errorf("'%s': could not subscribe for errors\n%v", p.id, err)
 	}
 
-	defer pipe.ErrorBroadcaster.Close()
-	extractor, err := extraction.NewExtractor(pipe.Config.ExtractionConfig)
+	defer errorBroadcaster.Close()
+
+	extractionConf := p.config.ExtractionConfig
+	extractor, err := extraction.NewExtractor(extractionConf)
 	if err != nil {
-		return fmt.Errorf("'%s': could not create the extractor\n%v", pipe.ID, err)
+		return fmt.Errorf("'%s': could not create the extractor\n%v", p.id, err)
 	}
 
-	extractionInfo, err := extractor.Start(pipe.ErrorBroadcaster)
-	if err != nil {
-		return fmt.Errorf("'%s': could not start the extractor\n%s", pipe.ID, err.Error())
-	}
+	dataChannel := extractor.Start(errorBroadcaster)
+	ingestor := ingestion.NewIngestor(p.config.IngestionConfig, extractionConf.DataSet, dataChannel)
 
-	ingestor := ingestion.NewIngestor(pipe.Config.IngestionConfig, extractionInfo)
-
-	ackChannel, err := ingestor.Start(pipe.ErrorBroadcaster)
+	ackChannel, err := ingestor.Start(errorBroadcaster)
 	if err != nil {
-		pipe.ErrorBroadcaster.Broadcast(pipe.ID, err)
-		return fmt.Errorf("'%s': could not start the ingestor\n%v", pipe.ID, err)
+		errorBroadcaster.Broadcast(p.id, err)
+		return fmt.Errorf("'%s': could not start the ingestor.\n%v", p.id, err)
 	}
 
 	ingestorProperlyEnded := false
@@ -50,19 +57,19 @@ func (pipe *ExecutionPipeline) Start() error {
 	}
 
 	if err := utils.CheckError(errorChannel); err != nil {
-		return fmt.Errorf("'%s': received error in pipeline\n%v", pipe.ID, err)
+		return fmt.Errorf("'%s': received error in pipeline\n%v", p.id, err)
 	}
 
+	log.Printf("Pipeline '%s' for measure '%s' completed", p.id, extractionConf.DataSet.DataSetName)
 	if ingestorProperlyEnded {
 		return nil
 	}
 
-	return fmt.Errorf("'%s' no error received, but ingestor didn't end properly", pipe.ID)
-
+	return fmt.Errorf("'%s' no error received, but ingestor didn't end properly", p.id)
 }
 
-// OutfluxConfig contains all the requirements to instantiate an extractor and ingestor
-type OutfluxConfig struct {
+// PipelineConfig contains all the requirements to instantiate an extractor and ingestor
+type PipelineConfig struct {
 	IngestionConfig  *ingestionConfig.Config
 	ExtractionConfig *extractionConfig.Config
 }

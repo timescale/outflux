@@ -38,7 +38,7 @@ type PrepareArgs struct {
 func (d *defaultManager) Prepare(args *PrepareArgs) error {
 	tableExists, err := d.explorer.tableExists(args.DbCon, args.Schema, args.DataSet.DataSetName)
 	if err != nil {
-		return fmt.Errorf("could not check if table exists. %s", err.Error())
+		return fmt.Errorf("could not check if table exists. \n%v", err)
 	}
 
 	strategyRequiresDrop := args.Strategy == config.DropAndCreate || args.Strategy == config.DropCascadeAndCreate

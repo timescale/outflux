@@ -45,6 +45,12 @@ func NewErrorBroadcaster() ErrorBroadcaster {
 	}
 }
 
+func newErrorBroadcasterWith(sub subscriber, unsub unsubscriber, brc broadcaster, cls closer) ErrorBroadcaster {
+	return &defaultErrorBroadcaster{
+		sub, unsub, brc, cls,
+	}
+}
+
 type defaultErrorBroadcaster struct {
 	subscriber
 	unsubscriber
@@ -106,7 +112,7 @@ type defaultBroadcaster struct {
 	state *state
 }
 
-func (sub defaultBroadcaster) Broadcast(source string, err error) {
+func (sub *defaultBroadcaster) Broadcast(source string, err error) {
 	state := sub.state
 	state.lock.Lock()
 	defer state.lock.Unlock()
@@ -130,7 +136,7 @@ type defaultCloser struct {
 	state *state
 }
 
-func (sub defaultCloser) Close() {
+func (sub *defaultCloser) Close() {
 	state := sub.state
 	state.lock.Lock()
 	defer state.lock.Unlock()
