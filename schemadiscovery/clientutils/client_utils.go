@@ -125,6 +125,7 @@ func NewUtils() ClientUtils {
 	queryExecutor := &defaultQueryExecutor{}
 	return &defaultUtils{
 		influxClientGenerator: &defaultClientGenerator{},
+		influxQueryExecutor:   queryExecutor,
 		showQueryExecutor:     &defaultShowExecutor{queryExecutor},
 	}
 }

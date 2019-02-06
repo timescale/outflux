@@ -65,7 +65,7 @@ func (f *defaultTableFinder) tableExists(db *sql.DB, schemaName, tableName strin
 	if err != nil {
 		return true, err
 	}
-
+	defer rows.Close()
 	exists := false
 	if !rows.Next() {
 		return true, fmt.Errorf("couldn't extract result from postgres response")
@@ -87,7 +87,7 @@ func (f *defaultColumnFinder) fetchTableColumns(db *sql.DB, schemaName, tableNam
 	if err != nil {
 		return nil, err
 	}
-
+	defer rows.Close()
 	first := &node{}
 	prev := first
 	numColumns := 0
@@ -128,6 +128,7 @@ func (f *defaultHyptertableChecker) isHypertable(db *sql.DB, schemaName, tableNa
 	if err != nil {
 		return false, err
 	}
+	defer rows.Close()
 
 	exists := false
 	if !rows.Next() {

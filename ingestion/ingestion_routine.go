@@ -29,6 +29,8 @@ type ingestDataArgs struct {
 	batchSize uint16
 	// if an error occured in another goroutine should a rollback be done
 	rollbackOnExternalError bool
+	// the database connection
+	dbConn *sql.DB
 }
 type Routine interface {
 	ingestData(args *ingestDataArgs)
@@ -44,6 +46,7 @@ type defaultIngestionRoutine struct{}
 func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	log.Printf("Starting data ingestor '%s'", args.ingestorID)
 	defer close(args.ackChannel)
+	defer args.dbConn.Close()
 
 	errorChannel, err := args.errorBroadcaster.Subscribe(args.ingestorID)
 	if err != nil {

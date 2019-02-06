@@ -40,13 +40,14 @@ func (d *defaultTableCreator) Create(dbConn *sql.DB, schema string, info *idrf.D
 
 	query := fmt.Sprintf(createTableQueryTemplate, tableName, columnsString)
 
-	_, err := dbConn.Query(query)
+	rows, err := dbConn.Query(query)
 	if err != nil {
 		return err
 	}
-
+	rows.Close()
 	hypertableQuery := fmt.Sprintf(createHypertableQueryTemplate, tableName, info.TimeColumn)
-	_, err = dbConn.Query(hypertableQuery)
+	rows, err = dbConn.Query(hypertableQuery)
+	rows.Close()
 	return err
 }
 

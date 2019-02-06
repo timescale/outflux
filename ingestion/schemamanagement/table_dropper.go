@@ -32,10 +32,10 @@ func (d *defaultTableDropper) Drop(db *sql.DB, schema, table string, cascade boo
 		query = fmt.Sprintf(dropTableQueryTemplate, name)
 	}
 
-	_, err := db.Query(query)
+	rows, err := db.Query(query)
 	if err != nil {
 		return err
 	}
-
+	rows.Close()
 	return nil
 }

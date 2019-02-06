@@ -98,6 +98,7 @@ func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan
 		converter:               ing.converter,
 		rollbackOnExternalError: ing.config.RollbackOnExternalError,
 		batchSize:               ing.config.BatchSize,
+		dbConn:                  db,
 	}
 
 	go ing.ingestionRoutine.ingestData(ingestArgs)
