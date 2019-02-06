@@ -14,9 +14,13 @@ func TestMigrateSingleValue(t *testing.T) {
 	// prepare influx db
 	db := "test"
 	measure := "test"
-	cols := []string{"field1"}
+	field := "field1"
+	value := 1
+	tags := make(map[string]string)
+	fieldValues := make(map[string]interface{})
+	fieldValues[field] = value
 	integrationtestutils.PrepareServersForITest(db)
-	integrationtestutils.CreateInfluxMeasure(db, measure, cols)
+	integrationtestutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
 	defer integrationtestutils.ClearServersAfterITest(db)
 
 	config := defaultConfig(db, measure)
@@ -37,8 +41,8 @@ func TestMigrateSingleValue(t *testing.T) {
 		panic("couldn't check state of TS DB")
 	}
 
-	if time == "" || field1 != 1 {
-		panic(fmt.Sprintf("expected time != nil and field1=1\ngot: time %s, field1=%d", time, field1))
+	if time == "" || field1 != value {
+		panic(fmt.Sprintf("expected time != nil and field1=%d\ngot: time %s, field1=%d", value, time, field1))
 	}
 	rows.Close()
 }

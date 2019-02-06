@@ -3,7 +3,6 @@ package integrationtestutils
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/schemadiscovery/clientutils"
@@ -45,28 +44,27 @@ func DeleteInfluxDb(db string) {
 	maybePanic(err)
 }
 
-// CreateInfluxMeasure creates a empty measure with the specified name and fields, each field is int type
-func CreateInfluxMeasure(db, measure string, cols []string) {
+// CreateInfluxMeasure creates a measure with the specified name. For each point the tags and field values are given
+// as maps
+func CreateInfluxMeasure(db, measure string, tags []*map[string]string, values []*map[string]interface{}) {
 	clientUtils := clientutils.NewUtils()
 	client, err := clientUtils.CreateInfluxClient(&clientutils.ConnectionParams{
 		Server:   InfluxHost,
 		Username: "",
 		Password: ""})
 	maybePanic(err)
-	fieldMap := make(map[string]interface{})
-	for _, col := range cols {
-		fieldMap[col] = 1
-	}
 
 	bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{Database: db})
 
-	point, _ := influx.NewPoint(
-		measure,
-		make(map[string]string),
-		fieldMap,
-		time.Now(),
-	)
-	bp.AddPoint(point)
+	for i, tagSet := range tags {
+		point, _ := influx.NewPoint(
+			measure,
+			*tagSet,
+			*values[i],
+		)
+		bp.AddPoint(point)
+
+	}
 
 	err = client.Write(bp)
 	maybePanic(err)
