@@ -15,6 +15,7 @@ before_install:
   # Start influxdb timescale in docker
   - docker stop influx1 || true && docker rm influx1 || true
   - docker stop ts1 || true && docker rm ts1 || true
+  - docker ps
   - docker run -d --name influx1 -p 8086:8086 influxdb
   - docker run -d --name ts1 -p 5432:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
 
