@@ -13,6 +13,8 @@ before_install:
   - chmod +x $GOPATH/bin/dep
   - dep ensure
   # Start influxdb timescale in docker
+  - docker stop `docker ps -a -q`
+  - docker rm `docker ps -a -q`
   - docker run -d -p 8086:8086 influxdb
   - docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
 
