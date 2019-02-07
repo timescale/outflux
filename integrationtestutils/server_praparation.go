@@ -81,6 +81,13 @@ func CreateTimescaleDb(db string) {
 	dbConn.Close()
 }
 
+func OpenTsConn(db string) *sql.DB {
+	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", TsUser, TsPass, TsHost, db)
+	dbConn, err := sql.Open("postgres", connStr)
+	maybePanic(err)
+	return dbConn
+}
+
 // ExecuteTsQuery executes a supplied query to the default server
 func ExecuteTsQuery(db, query string) *sql.Rows {
 	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", TsUser, TsPass, TsHost, db)

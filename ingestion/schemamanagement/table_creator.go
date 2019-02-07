@@ -25,20 +25,12 @@ func newTableCreator() tableCreator {
 type defaultTableCreator struct{}
 
 func (d *defaultTableCreator) Create(dbConn *sql.DB, schema string, info *idrf.DataSetInfo) error {
-	columnDefinitions := make([]string, len(info.Columns))
-	for i, column := range info.Columns {
-		dataType := idrfToPgType(column.DataType)
-		columnDefinitions[i] = fmt.Sprintf(columnDefTemplate, column.Name, dataType)
-	}
-
-	columnsString := strings.Join(columnDefinitions, ", ")
-
 	tableName := info.DataSetName
 	if schema != "" {
 		tableName = schema + "." + tableName
 	}
 
-	query := fmt.Sprintf(createTableQueryTemplate, tableName, columnsString)
+	query := dataSetToSQLTableDef(tableName, info)
 
 	rows, err := dbConn.Query(query)
 	if err != nil {
@@ -47,8 +39,24 @@ func (d *defaultTableCreator) Create(dbConn *sql.DB, schema string, info *idrf.D
 	rows.Close()
 	hypertableQuery := fmt.Sprintf(createHypertableQueryTemplate, tableName, info.TimeColumn)
 	rows, err = dbConn.Query(hypertableQuery)
+	if err != nil {
+		return err
+	}
+
 	rows.Close()
-	return err
+	return nil
+}
+
+func dataSetToSQLTableDef(tableName string, dataSet *idrf.DataSetInfo) string {
+	columnDefinitions := make([]string, len(dataSet.Columns))
+	for i, column := range dataSet.Columns {
+		dataType := idrfToPgType(column.DataType)
+		columnDefinitions[i] = fmt.Sprintf(columnDefTemplate, column.Name, dataType)
+	}
+
+	columnsString := strings.Join(columnDefinitions, ", ")
+
+	return fmt.Sprintf(createTableQueryTemplate, tableName, columnsString)
 }
 
 func idrfToPgType(dataType idrf.DataType) string {
