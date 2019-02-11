@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	ingestionConfig "github.com/timescale/outflux/ingestion/config"
 	"github.com/timescale/outflux/pipeline"
-
-	"github.com/timescale/outflux/integrationtestutils"
+	"github.com/timescale/outflux/schemamanagement"
+	"github.com/timescale/outflux/testutils"
 )
 
 func TestMigrateSingleValue(t *testing.T) {
@@ -21,17 +20,18 @@ func TestMigrateSingleValue(t *testing.T) {
 	tags := make(map[string]string)
 	fieldValues := make(map[string]interface{})
 	fieldValues[field] = value
-	integrationtestutils.PrepareServersForITest(db)
-	integrationtestutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
-	defer integrationtestutils.ClearServersAfterITest(db)
+	testutils.PrepareServersForITest(db)
+	testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
+	defer testutils.ClearServersAfterITest(db)
 
 	config := defaultConfig(db, measure)
-	errs := migrate(config)
+	appContext := initAppContext()
+	errs := migrate(appContext, config)
 	if errs != nil {
 		panic(errs[0])
 	}
 
-	rows := integrationtestutils.ExecuteTsQuery(db, "SELECT * FROM "+measure)
+	rows := testutils.ExecuteTSQuery(db, "SELECT * FROM "+measure)
 	var time string
 	var field1 int
 	if !rows.Next() {
@@ -50,16 +50,19 @@ func TestMigrateSingleValue(t *testing.T) {
 }
 
 func defaultConfig(db string, measure string) *pipeline.MigrationConfig {
+	connConfig := &pipeline.ConnectionConfig{
+		InputHost:       testutils.InfluxHost,
+		InputDb:         db,
+		InputMeasures:   []string{measure},
+		OutputHost:      testutils.TsHost,
+		OutputDb:        db,
+		OutputDbSslMode: "disable",
+		OutputUser:      testutils.TsUser,
+		OutputPassword:  testutils.TsPass,
+	}
 	return &pipeline.MigrationConfig{
-		InputHost:                            integrationtestutils.InfluxHost,
-		InputDb:                              db,
-		InputMeasures:                        []string{measure},
-		OutputHost:                           integrationtestutils.TsHost,
-		OutputDb:                             db,
-		OutputDbSslMode:                      "disable",
-		OutputUser:                           integrationtestutils.TsUser,
-		OutputPassword:                       integrationtestutils.TsPass,
-		OutputSchemaStrategy:                 ingestionConfig.CreateIfMissing,
+		Connection:                           connConfig,
+		OutputSchemaStrategy:                 schemamanagement.CreateIfMissing,
 		ChunkSize:                            1,
 		Quiet:                                false,
 		DataBuffer:                           1,

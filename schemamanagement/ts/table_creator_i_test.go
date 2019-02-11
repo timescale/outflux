@@ -8,15 +8,15 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/timescale/outflux/idrf"
-	"github.com/timescale/outflux/integrationtestutils"
+	"github.com/timescale/outflux/testutils"
 )
 
 func TestCreateTable(t *testing.T) {
 	db := "test"
-	integrationtestutils.CreateTimescaleDb(db)
-	defer integrationtestutils.DeleteTimescaleDb(db)
+	testutils.CreateTimescaleDb(db)
+	defer testutils.DeleteTimescaleDb(db)
 	creator := &defaultTableCreator{}
-	dbConn := integrationtestutils.OpenTsConn(db)
+	dbConn := testutils.OpenTSConn(db)
 	defer dbConn.Close()
 	dataSet := &idrf.DataSetInfo{
 		DataSetName: "name",
@@ -26,7 +26,7 @@ func TestCreateTable(t *testing.T) {
 		},
 		TimeColumn: "col1",
 	}
-	err := creator.Create(dbConn, "public", dataSet)
+	err := creator.Create(dbConn, dataSet)
 	if err != nil {
 		t.Errorf("expected no error, got: %v", err)
 	}
@@ -34,7 +34,7 @@ func TestCreateTable(t *testing.T) {
 	tableeColumns := fmt.Sprintf(`SELECT column_name, data_type
 	FROM information_schema.columns
 	WHERE table_schema = %s AND table_name = %s`, "'public'", "'name'")
-	rows := integrationtestutils.ExecuteTsQuery(db, tableeColumns)
+	rows := testutils.ExecuteTSQuery(db, tableeColumns)
 	defer rows.Close()
 	currCol := 0
 	for rows.Next() {
@@ -55,7 +55,7 @@ func TestCreateTable(t *testing.T) {
 	}
 
 	// Creating the table again should fail
-	err = creator.Create(dbConn, "public", dataSet)
+	err = creator.Create(dbConn, dataSet)
 	if err == nil {
 		t.Error("table creation should have failed because table exists")
 	}

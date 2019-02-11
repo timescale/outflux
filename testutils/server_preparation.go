@@ -1,4 +1,4 @@
-package integrationtestutils
+package testutils
 
 import (
 	"database/sql"

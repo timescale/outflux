@@ -1,4 +1,4 @@
-package integrationtestutils
+package testutils
 
 const (
 	// InfluxHost is the default InfluxDB host to be used in integration tests
