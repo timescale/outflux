@@ -13,7 +13,7 @@ import (
 
 // PrepareServersForITest Creates a database with the same name on the default influx server and default timescale server
 func PrepareServersForITest(db string) {
-	CreateInfluxDb(db)
+	CreateInfluxDB(db)
 	CreateTimescaleDb(db)
 }
 
@@ -23,15 +23,15 @@ func ClearServersAfterITest(db string) {
 	DeleteTimescaleDb(db)
 }
 
-// CreateInfluxDb creates a new influx database to the default influx server. Used for integration tests
-func CreateInfluxDb(db string) {
+// CreateInfluxDB creates a new influx database to the default influx server. Used for integration tests
+func CreateInfluxDB(db string) {
 	connService := connections.NewInfluxConnectionService()
 	queryService := influxqueries.NewInfluxQueryService()
 	connParams := &connections.InfluxConnectionParams{Server: InfluxHost}
 	client, err := connService.NewConnection(connParams)
-	maybePanic(err)
+	panicOnErr(err)
 	_, err = queryService.ExecuteQuery(client, db, "CREATE DATABASE "+db)
-	maybePanic(err)
+	panicOnErr(err)
 }
 
 // DeleteInfluxDb deletes a influx database on the default influx server. Used for integration tests
@@ -40,9 +40,9 @@ func DeleteInfluxDb(db string) {
 	queryService := influxqueries.NewInfluxQueryService()
 	connParams := &connections.InfluxConnectionParams{Server: InfluxHost}
 	client, err := connService.NewConnection(connParams)
-	maybePanic(err)
+	panicOnErr(err)
 	_, err = queryService.ExecuteQuery(client, db, "DROP DATABASE "+db)
-	maybePanic(err)
+	panicOnErr(err)
 }
 
 // CreateInfluxMeasure creates a measure with the specified name. For each point the tags and field values are given
@@ -51,7 +51,7 @@ func CreateInfluxMeasure(db, measure string, tags []*map[string]string, values [
 	connService := connections.NewInfluxConnectionService()
 	connParams := &connections.InfluxConnectionParams{Server: InfluxHost}
 	client, err := connService.NewConnection(connParams)
-	maybePanic(err)
+	panicOnErr(err)
 
 	bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{Database: db})
 
@@ -66,49 +66,44 @@ func CreateInfluxMeasure(db, measure string, tags []*map[string]string, values [
 	}
 
 	err = client.Write(bp)
-	maybePanic(err)
+	panicOnErr(err)
 	client.Close()
 }
 
 // CreateTimescaleDb creates a new databas on the default server and then creates the extension on it
 func CreateTimescaleDb(db string) {
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", TsUser, TsPass, TsHost, defaultPgDb)
-	dbConn, err := sql.Open("postgres", connStr)
-	maybePanic(err)
-	_, err = dbConn.Query("CREATE DATABASE " + db)
-	maybePanic(err)
-	dbConn.Close()
+	dbConn := OpenTSConn(defaultPgDb)
+	defer dbConn.Close()
+	_, err := dbConn.Query("CREATE DATABASE " + db)
+	panicOnErr(err)
 }
 
-func OpenTsConn(db string) *sql.DB {
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", TsUser, TsPass, TsHost, db)
-	dbConn, err := sql.Open("postgres", connStr)
-	maybePanic(err)
-	return dbConn
-}
-
-// ExecuteTsQuery executes a supplied query to the default server
-func ExecuteTsQuery(db, query string) *sql.Rows {
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", TsUser, TsPass, TsHost, db)
-	dbConn, err := sql.Open("postgres", connStr)
-	maybePanic(err)
+// ExecuteTSQuery executes a supplied query to the default server
+func ExecuteTSQuery(db, query string) *sql.Rows {
+	dbConn := OpenTSConn(db)
+	defer dbConn.Close()
 	rows, err := dbConn.Query(query)
-	maybePanic(err)
-	dbConn.Close()
+	panicOnErr(err)
 	return rows
+}
+
+// OpenTSConn opens a connection to a TimescaleDB
+func OpenTSConn(db string) *sql.DB {
+	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", TsUser, TsPass, TsHost, db)
+	dbConn, err := sql.Open("postgres", connStr)
+	panicOnErr(err)
+	return dbConn
 }
 
 // DeleteTimescaleDb drops a databass on the default server
 func DeleteTimescaleDb(db string) {
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", TsUser, TsPass, TsHost, defaultPgDb)
-	dbConn, err := sql.Open("postgres", connStr)
-	maybePanic(err)
-	_, err = dbConn.Query("DROP DATABASE " + db)
-	maybePanic(err)
-	dbConn.Close()
+	dbConn := OpenTSConn(defaultPgDb)
+	defer dbConn.Close()
+	_, err := dbConn.Query("DROP DATABASE " + db)
+	panicOnErr(err)
 }
 
-func maybePanic(err error) {
+func panicOnErr(err error) {
 	if err != nil {
 		panic(err)
 	}
