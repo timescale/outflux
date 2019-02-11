@@ -99,8 +99,9 @@ func OpenTSConn(db string) *sql.DB {
 func DeleteTimescaleDb(db string) {
 	dbConn := OpenTSConn(defaultPgDb)
 	defer dbConn.Close()
-	_, err := dbConn.Query("DROP DATABASE " + db)
+	dd, err := dbConn.Query("DROP DATABASE " + db)
 	panicOnErr(err)
+	dd.Close()
 }
 
 func panicOnErr(err error) {
