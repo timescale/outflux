@@ -3,15 +3,12 @@ package ingestion
 import (
 	"database/sql"
 	"fmt"
-	"log"
-	"strings"
 
-	"github.com/timescale/outflux/utils"
+	"github.com/timescale/outflux/schemamanagement"
 
 	"github.com/lib/pq"
 	"github.com/timescale/outflux/idrf"
-	"github.com/timescale/outflux/ingestion/config"
-	"github.com/timescale/outflux/ingestion/schemamanagement"
+	"github.com/timescale/outflux/utils"
 )
 
 const (
@@ -26,22 +23,29 @@ type Ingestor interface {
 
 // NewIngestor creates a new instance of an Ingestor with a specified config, for a specified
 // data set and data channel
-func NewIngestor(config *config.Config, dataSet *idrf.DataSetInfo, dataChannel chan idrf.Row) Ingestor {
+func NewIngestor(
+	config *IngestorConfig,
+	schemaManager schemamanagement.SchemaManager,
+	dbConn *sql.DB,
+	dataSet *idrf.DataSetInfo,
+	dataChannel chan idrf.Row) Ingestor {
 	return &defaultIngestor{
 		config:           config,
 		converter:        newIdrfConverter(dataSet),
 		dataChannel:      dataChannel,
 		ingestionRoutine: NewIngestionRoutine(),
-		schemaManager:    schemamanagement.NewSchemaManager(),
+		dbConn:           dbConn,
+		schemaManager:    schemaManager,
 		dataSet:          dataSet,
 	}
 }
 
 type defaultIngestor struct {
-	config           *config.Config
+	config           *IngestorConfig
 	converter        IdrfConverter
 	ingestionRoutine Routine
 	schemaManager    schemamanagement.SchemaManager
+	dbConn           *sql.DB
 	dataSet          *idrf.DataSetInfo
 	dataChannel      chan idrf.Row
 }
@@ -49,32 +53,10 @@ type defaultIngestor struct {
 func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan bool, error) {
 	id := ing.config.IngestorID
 	ackChannel := make(chan bool)
-	connStr := buildConnectionString(ing.config)
-	log.Printf("%s: Will connect to output database with: %s", id, connStr)
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		err = fmt.Errorf("couldn't connect to target database: %s", err.Error())
-		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
-		return nil, err
-	}
 
-	// validate that db is ready to receive data
-	managerArgs := &schemamanagement.PrepareArgs{
-		Strategy: ing.config.SchemaStrategy,
-		Schema:   ing.config.Schema,
-		DataSet:  ing.dataSet,
-		DbCon:    db,
-	}
-	err = ing.schemaManager.Prepare(managerArgs)
+	transaction, err := ing.dbConn.Begin()
 	if err != nil {
-		err = fmt.Errorf("couldn't prepare input db. %s", err.Error())
-		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
-		return nil, err
-	}
-
-	transaction, err := db.Begin()
-	if err != nil {
-		err = fmt.Errorf("couldn't open a transaction. %s", err.Error())
+		err = fmt.Errorf("%s: couldn't open a transaction.\n%v", id, err)
 		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
 		return nil, err
 	}
@@ -83,7 +65,7 @@ func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan
 	copyQuery := pq.CopyIn(ing.dataSet.DataSetName, columnNames...)
 	statement, err := transaction.Prepare(copyQuery)
 	if err != nil {
-		err = fmt.Errorf("couldn't prepare COPY FROM statement in transaction. %s", err.Error())
+		err = fmt.Errorf("%s: couldn't prepare COPY FROM statement in transaction\n%v", id, err)
 		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
 		return nil, err
 	}
@@ -98,7 +80,7 @@ func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan
 		converter:               ing.converter,
 		rollbackOnExternalError: ing.config.RollbackOnExternalError,
 		batchSize:               ing.config.BatchSize,
-		dbConn:                  db,
+		dbConn:                  ing.dbConn,
 	}
 
 	go ing.ingestionRoutine.ingestData(ingestArgs)
@@ -112,28 +94,4 @@ func extractColumnNames(columns []*idrf.ColumnInfo) []string {
 	}
 
 	return columnNames
-}
-
-func buildConnectionString(config *config.Config) string {
-	additionalParams := connectionParamsToString(config.AdditionalConnParams)
-
-	//postgresConnectionStringTemplate = "postgres://%s:%s@%s/%s?%s"
-	return fmt.Sprintf(
-		postgresConnectionStringTemplate,
-		config.Username, config.Password, config.Server, config.Database, additionalParams)
-}
-
-func connectionParamsToString(params map[string]string) string {
-	if params == nil {
-		return ""
-	}
-
-	singleParams := make([]string, len(params))
-	current := 0
-	for key, value := range params {
-		singleParams[current] = fmt.Sprintf("%s=%s", key, value)
-		current++
-	}
-
-	return "?" + strings.Join(singleParams, "&")
 }

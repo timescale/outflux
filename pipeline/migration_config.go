@@ -1,22 +1,11 @@
 package pipeline
 
-import (
-	ingestionConfig "github.com/timescale/outflux/ingestion/config"
-)
+import "github.com/timescale/outflux/schemamanagement"
 
+// MigrationConfig contains the configurable parameters for migrating an InfluxDB to TimescaleDB
 type MigrationConfig struct {
-	InputHost                            string
-	InputDb                              string
-	InputMeasures                        []string
-	InputUser                            string
-	InputPass                            string
-	OutputHost                           string
-	OutputDb                             string
-	OutputSchema                         string
-	OutputDbSslMode                      string
-	OutputUser                           string
-	OutputPassword                       string
-	OutputSchemaStrategy                 ingestionConfig.SchemaStrategy
+	Connection                           *ConnectionConfig
+	OutputSchemaStrategy                 schemamanagement.SchemaStrategy
 	From                                 string
 	To                                   string
 	Limit                                uint64
@@ -25,4 +14,13 @@ type MigrationConfig struct {
 	DataBuffer                           uint16
 	MaxParallel                          uint8
 	RollbackAllMeasureExtractionsOnError bool
+}
+
+// ToSchemaTransferConfig transforms the migration command config to schema transfer config
+func (m *MigrationConfig) ToSchemaTransferConfig() *SchemaTransferConfig {
+	return &SchemaTransferConfig{
+		Connection:           m.Connection,
+		OutputSchemaStrategy: m.OutputSchemaStrategy,
+		Quiet:                m.Quiet,
+	}
 }

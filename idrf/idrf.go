@@ -7,9 +7,10 @@ import "fmt"
 
 // DataSetInfo represents DDL description of a single data set (table, measurement) in IDRF
 type DataSetInfo struct {
-	DataSetName string
-	Columns     []*ColumnInfo
-	TimeColumn  string
+	DataSetName   string
+	DataSetSchema string
+	Columns       []*ColumnInfo
+	TimeColumn    string
 }
 
 func (set *DataSetInfo) String() string {
@@ -29,7 +30,7 @@ func (set DataSetInfo) ColumnNamed(columnName string) *ColumnInfo {
 }
 
 // NewDataSet creates a new instance of DataSetInfo with checked arguments
-func NewDataSet(dataSetName string, columns []*ColumnInfo, timeColumn string) (*DataSetInfo, error) {
+func NewDataSet(schema, dataSetName string, columns []*ColumnInfo, timeColumn string) (*DataSetInfo, error) {
 	if len(dataSetName) == 0 {
 		return nil, fmt.Errorf("data set name can't be empty")
 	}
@@ -51,6 +52,10 @@ func NewDataSet(dataSetName string, columns []*ColumnInfo, timeColumn string) (*
 
 		columnSet[columnInfo.Name] = true
 		if columnInfo.Name == timeColumn {
+			if columnInfo.DataType != IDRFTimestamp && columnInfo.DataType != IDRFTimestamptz {
+				return nil, fmt.Errorf("time column '%s', is not of a Timestamp(tz) type", timeColumn)
+			}
+
 			timeColumnDefined = true
 		}
 	}
@@ -59,7 +64,7 @@ func NewDataSet(dataSetName string, columns []*ColumnInfo, timeColumn string) (*
 		return nil, fmt.Errorf("time column %s, not found in columns array", timeColumn)
 	}
 
-	return &DataSetInfo{dataSetName, columns, timeColumn}, nil
+	return &DataSetInfo{dataSetName, schema, columns, timeColumn}, nil
 }
 
 // ColumnInfo represents DDL description of a single column in IDRF

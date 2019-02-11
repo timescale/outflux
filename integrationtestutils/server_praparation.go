@@ -4,8 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/timescale/outflux/schemamanagement/influx/influxqueries"
+
+	"github.com/timescale/outflux/connections"
+
 	influx "github.com/influxdata/influxdb/client/v2"
-	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
 // PrepareServersForITest Creates a database with the same name on the default influx server and default timescale server
@@ -22,36 +25,32 @@ func ClearServersAfterITest(db string) {
 
 // CreateInfluxDb creates a new influx database to the default influx server. Used for integration tests
 func CreateInfluxDb(db string) {
-	clientUtils := clientutils.NewUtils()
-	client, err := clientUtils.CreateInfluxClient(&clientutils.ConnectionParams{
-		Server:   InfluxHost,
-		Username: "",
-		Password: ""})
+	connService := connections.NewInfluxConnectionService()
+	queryService := influxqueries.NewInfluxQueryService()
+	connParams := &connections.InfluxConnectionParams{Server: InfluxHost}
+	client, err := connService.NewConnection(connParams)
 	maybePanic(err)
-	_, err = clientUtils.ExecuteInfluxQuery(client, db, "CREATE DATABASE "+db)
+	_, err = queryService.ExecuteQuery(client, db, "CREATE DATABASE "+db)
 	maybePanic(err)
 }
 
 // DeleteInfluxDb deletes a influx database on the default influx server. Used for integration tests
 func DeleteInfluxDb(db string) {
-	clientUtils := clientutils.NewUtils()
-	client, err := clientUtils.CreateInfluxClient(&clientutils.ConnectionParams{
-		Server:   InfluxHost,
-		Username: "",
-		Password: ""})
+	connService := connections.NewInfluxConnectionService()
+	queryService := influxqueries.NewInfluxQueryService()
+	connParams := &connections.InfluxConnectionParams{Server: InfluxHost}
+	client, err := connService.NewConnection(connParams)
 	maybePanic(err)
-	_, err = clientUtils.ExecuteInfluxQuery(client, db, "DROP DATABASE "+db)
+	_, err = queryService.ExecuteQuery(client, db, "DROP DATABASE "+db)
 	maybePanic(err)
 }
 
 // CreateInfluxMeasure creates a measure with the specified name. For each point the tags and field values are given
 // as maps
 func CreateInfluxMeasure(db, measure string, tags []*map[string]string, values []*map[string]interface{}) {
-	clientUtils := clientutils.NewUtils()
-	client, err := clientUtils.CreateInfluxClient(&clientutils.ConnectionParams{
-		Server:   InfluxHost,
-		Username: "",
-		Password: ""})
+	connService := connections.NewInfluxConnectionService()
+	connParams := &connections.InfluxConnectionParams{Server: InfluxHost}
+	client, err := connService.NewConnection(connParams)
 	maybePanic(err)
 
 	bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{Database: db})

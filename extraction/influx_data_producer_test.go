@@ -5,9 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/timescale/outflux/schemadiscovery/clientutils"
-
 	influx "github.com/influxdata/influxdb/client/v2"
+	"github.com/timescale/outflux/connections"
 	"github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/idrf"
 )
@@ -65,8 +64,7 @@ func TestBuildSelectCommand(t *testing.T) {
 }
 
 func TestFetchWhenErrorsHappenOnErrSub(t *testing.T) {
-	mockUtils := clientutils.NewUtilsWith(errorReturningGenerator(), nil)
-	producer := defaultDataProducer{"id", mockUtils}
+	producer := defaultDataProducer{"id", &mockConnService{}}
 	query := influx.Query{}
 	dataChannel := make(chan idrf.Row)
 	errorChannel := make(chan error, 1)
@@ -84,8 +82,7 @@ func TestFetchWhenErrorsHappenOnErrSub(t *testing.T) {
 	}
 }
 func TestFetchWhenErrorsHappenOnClientCreate(t *testing.T) {
-	mockUtils := clientutils.NewUtilsWith(errorReturningGenerator(), nil)
-	producer := defaultDataProducer{"id", mockUtils}
+	producer := defaultDataProducer{"id", errorReturningConnService()}
 	query := influx.Query{}
 	dataChannel := make(chan idrf.Row)
 	errorChannel := make(chan error, 1)
@@ -107,9 +104,7 @@ func TestFetchWhenErrorsHappenOnClientCreate(t *testing.T) {
 
 func TestFetchWhenErrorsHappenOnQueryAsChunk(t *testing.T) {
 	mockedClient := errorReturningMockClient()
-	mockUtils := clientutils.NewUtilsWith(mockReturningGenerator(mockedClient), nil)
-
-	producer := defaultDataProducer{"id", mockUtils}
+	producer := defaultDataProducer{"id", mockedConnService(mockedClient)}
 
 	query := influx.Query{}
 	dataChannel := make(chan idrf.Row)
@@ -136,21 +131,21 @@ func TestFetchWhenErrorsHappenOnQueryAsChunk(t *testing.T) {
 	}
 }
 
-type mockClientGeneratorDP struct {
+type mockConnService struct {
 	resToReturn influx.Client
 	errToReturn error
 }
 
-func (cg *mockClientGeneratorDP) CreateInfluxClient(params *clientutils.ConnectionParams) (influx.Client, error) {
-	return cg.resToReturn, cg.errToReturn
+func (qs *mockConnService) NewConnection(params *connections.InfluxConnectionParams) (influx.Client, error) {
+	return qs.resToReturn, qs.errToReturn
 }
 
-func errorReturningGenerator() *mockClientGeneratorDP {
-	return &mockClientGeneratorDP{nil, fmt.Errorf("some error")}
+func errorReturningConnService() *mockConnService {
+	return &mockConnService{nil, fmt.Errorf("some error")}
 }
 
-func mockReturningGenerator(mockClient influx.Client) *mockClientGeneratorDP {
-	return &mockClientGeneratorDP{mockClient, nil}
+func mockedConnService(mockClient influx.Client) *mockConnService {
+	return &mockConnService{mockClient, nil}
 }
 
 type mockClientDP struct {

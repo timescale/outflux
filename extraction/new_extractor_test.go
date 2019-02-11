@@ -3,10 +3,10 @@ package extraction
 import (
 	"testing"
 
-	"github.com/timescale/outflux/idrf"
+	"github.com/timescale/outflux/connections"
 
 	"github.com/timescale/outflux/extraction/config"
-	"github.com/timescale/outflux/schemadiscovery/clientutils"
+	"github.com/timescale/outflux/idrf"
 )
 
 func TestNewExtractor(t *testing.T) {
@@ -22,7 +22,7 @@ func TestNewExtractor(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		res, err := NewExtractor(tc.conf)
+		res, err := NewExtractor(tc.conf, &mockConnService{})
 		if tc.expectErr && err == nil {
 			t.Errorf("test case: %s\nexpected error, none received", tc.desc)
 		}
@@ -59,12 +59,12 @@ func noConnConf() *config.Config {
 func noDataSetConf() *config.Config {
 	return &config.Config{
 		MeasureExtraction: &config.MeasureExtraction{Database: "db", Measure: "m", ChunkSize: 1},
-		Connection:        &clientutils.ConnectionParams{}}
+		Connection:        &connections.InfluxConnectionParams{}}
 }
 
 func goodConf() *config.Config {
 	return &config.Config{
 		MeasureExtraction: &config.MeasureExtraction{Database: "db", Measure: "m", ChunkSize: 1},
-		Connection:        &clientutils.ConnectionParams{},
+		Connection:        &connections.InfluxConnectionParams{},
 		DataSet:           &idrf.DataSetInfo{}}
 }
