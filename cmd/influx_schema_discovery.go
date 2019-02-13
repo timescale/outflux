@@ -27,7 +27,7 @@ func createInfluxClient(args *pipeline.ConnectionConfig, connService connections
 func discoverSchemaForDatabase(app *appContext, args *pipeline.ConnectionConfig, influxClient influx.Client) ([]*idrf.DataSetInfo, error) {
 	log.Println("All measurements selected for exporting")
 
-	schemaManager := influxSchema.NewInfluxSchemaManager(influxClient, app.influxQueryService, args.InputDb)
+	schemaManager := influxSchema.NewInfluxSchemaManager(influxClient, app.iqs, args.InputDb)
 	discoveredDataSets, err := schemaManager.DiscoverDataSets()
 	if err != nil {
 		log.Printf("Couldn't discover the database schema\n%v", err)
@@ -40,7 +40,7 @@ func discoverSchemaForDatabase(app *appContext, args *pipeline.ConnectionConfig,
 func discoverSchemaForMeasures(app *appContext, args *pipeline.ConnectionConfig, influxClient influx.Client) ([]*idrf.DataSetInfo, error) {
 	log.Printf("Selected measurements for exporting: %v\n", args.InputMeasures)
 
-	schemaManager := influxSchema.NewInfluxSchemaManager(influxClient, app.influxQueryService, args.InputDb)
+	schemaManager := influxSchema.NewInfluxSchemaManager(influxClient, app.iqs, args.InputDb)
 	discoveredDataSets := make([]*idrf.DataSetInfo, len(args.InputMeasures))
 	var err error
 	for i, measureName := range args.InputMeasures {

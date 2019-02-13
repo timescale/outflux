@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/timescale/outflux/cmd/flagparsers"
+	"github.com/timescale/outflux/internal/flagparsers"
 )
 
+// RootCmd defines the root outflux command
 var RootCmd = &cobra.Command{
 	Use:   "outflux",
 	Short: "outflux migrates an InfluxDB database (or part of a database) to TimescaleDB",
@@ -12,6 +13,7 @@ var RootCmd = &cobra.Command{
 		"It can also allow a user to transfer only the schema of a database or measurement to TimescaleDB",
 }
 
+// Execute is called to execute the root outflux command
 func Execute() {
 	err := RootCmd.Execute()
 	if err != nil {

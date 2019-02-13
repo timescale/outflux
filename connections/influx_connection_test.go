@@ -9,11 +9,7 @@ func TestInfluxConnectionServiceNewConnection(t *testing.T) {
 		t.Error("Should not be able to create a client without connection params")
 	}
 
-	serverParams := &InfluxConnectionParams{
-		Server:   "",
-		Username: "",
-		Password: "",
-	}
+	serverParams := &InfluxConnectionParams{}
 
 	_, err = clientGenerator.NewConnection(serverParams)
 	if err == nil {

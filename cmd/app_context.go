@@ -7,19 +7,19 @@ import (
 )
 
 type appContext struct {
-	influxConnectionService connections.InfluxConnectionService
-	tsConnectionService     connections.TSConnectionService
-	pipelinesService        pipeline.PipelinesService
-	influxQueryService      influxqueries.InfluxQueryService
+	ics  connections.InfluxConnectionService
+	tscs connections.TSConnectionService
+	ps   pipeline.PipelinesService
+	iqs  influxqueries.InfluxQueryService
 }
 
 func initAppContext() *appContext {
-	tsConnService := connections.NewTSConnectionService()
-	influxConnService := connections.NewInfluxConnectionService()
+	tscs := connections.NewTSConnectionService()
+	ics := connections.NewInfluxConnectionService()
 	return &appContext{
-		influxConnectionService: influxConnService,
-		tsConnectionService:     tsConnService,
-		pipelinesService:        pipeline.NewPipelinesService(tsConnService, influxConnService),
-		influxQueryService:      influxqueries.NewInfluxQueryService(),
+		ics:  ics,
+		tscs: tscs,
+		ps:   pipeline.NewPipelinesService(tscs, ics),
+		iqs:  influxqueries.NewInfluxQueryService(),
 	}
 }

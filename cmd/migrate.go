@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/timescale/outflux/cmd/flagparsers"
+	"github.com/timescale/outflux/internal/flagparsers"
 	"github.com/timescale/outflux/pipeline"
 	"golang.org/x/sync/semaphore"
 )
@@ -65,7 +65,7 @@ func migrate(app *appContext, args *pipeline.MigrationConfig) []error {
 
 	startTime := time.Now()
 	log.Printf("Creating %d execution pipelines\n", len(discoveredDataSets))
-	pipelines, err := app.pipelinesService.CreatePipelines(discoveredDataSets, args)
+	pipelines, err := app.ps.CreatePipelines(discoveredDataSets, args)
 	if err != nil {
 		return []error{err}
 	}

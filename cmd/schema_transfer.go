@@ -10,8 +10,8 @@ import (
 	"github.com/timescale/outflux/connections"
 
 	"github.com/spf13/cobra"
-	"github.com/timescale/outflux/cmd/flagparsers"
 	"github.com/timescale/outflux/idrf"
+	"github.com/timescale/outflux/internal/flagparsers"
 	"github.com/timescale/outflux/pipeline"
 	"github.com/timescale/outflux/schemamanagement"
 	tsSchema "github.com/timescale/outflux/schemamanagement/ts"
@@ -46,7 +46,7 @@ func initSchemaTransferCmd() *cobra.Command {
 }
 
 func transferSchema(app *appContext, args *pipeline.SchemaTransferConfig) ([]*idrf.DataSetInfo, error) {
-	influxClient, err := createInfluxClient(args.Connection, app.influxConnectionService)
+	influxClient, err := createInfluxClient(args.Connection, app.ics)
 	if err != nil {
 		return nil, fmt.Errorf("could not craete influx client\n%v", err)
 	}
@@ -72,7 +72,7 @@ func transferSchema(app *appContext, args *pipeline.SchemaTransferConfig) ([]*id
 
 	log.Println("Extracted data sets schema. Prepairing output database")
 	tsConnectionParams := tsConnParams(args.Connection)
-	dbConn, err := app.tsConnectionService.NewConnection(tsConnectionParams)
+	dbConn, err := app.tscs.NewConnection(tsConnectionParams)
 	if err != nil {
 		return nil, fmt.Errorf("could not open connection to output db\n%v", err)
 	}

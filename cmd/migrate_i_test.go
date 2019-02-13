@@ -3,7 +3,6 @@
 package cmd
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/timescale/outflux/pipeline"
@@ -40,11 +39,11 @@ func TestMigrateSingleValue(t *testing.T) {
 
 	err := rows.Scan(&time, &field1)
 	if err != nil {
-		panic("couldn't check state of TS DB")
+		t.Error("couldn't check state of TS DB")
 	}
 
 	if time == "" || field1 != value {
-		panic(fmt.Sprintf("expected time != nil and field1=%d\ngot: time %s, field1=%d", value, time, field1))
+		t.Errorf("expected time != nil and field1=%d\ngot: time %s, field1=%d", value, time, field1)
 	}
 	rows.Close()
 }
