@@ -6,12 +6,11 @@ import (
 	"log"
 	"strings"
 
-	"github.com/timescale/outflux/utils"
-
 	influx "github.com/influxdata/influxdb/client/v2"
+	"github.com/timescale/outflux/connections"
 	"github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/idrf"
-	"github.com/timescale/outflux/schemadiscovery/clientutils"
+	"github.com/timescale/outflux/utils"
 )
 
 const (
@@ -24,36 +23,28 @@ const (
 
 // DataProducer populates a data channel with the results from an influx query
 type DataProducer interface {
-	Fetch(connectionParams *clientutils.ConnectionParams,
+	Fetch(connectionParams *connections.InfluxConnectionParams,
 		dataChannel chan idrf.Row,
 		query influx.Query,
 		errorBroadcaster utils.ErrorBroadcaster)
 }
 
 type defaultDataProducer struct {
-	extractorID string
-	influxUtils clientutils.ClientUtils
+	extractorID             string
+	influxConnectionService connections.InfluxConnectionService
 }
 
 // NewDataProducer creates a new implementation of the data producer
-func NewDataProducer(extractorID string) DataProducer {
+func NewDataProducer(extractorID string, connectionService connections.InfluxConnectionService) DataProducer {
 	return &defaultDataProducer{
-		extractorID: extractorID,
-		influxUtils: clientutils.NewUtils(),
-	}
-}
-
-// NewDataProducerWith creates a new implementation of the data producer with a supplied client utils
-func NewDataProducerWith(extractorID string, influxUtils clientutils.ClientUtils) DataProducer {
-	return &defaultDataProducer{
-		extractorID: extractorID,
-		influxUtils: influxUtils,
+		extractorID:             extractorID,
+		influxConnectionService: connectionService,
 	}
 }
 
 // Executes the select query and receives the chunked response, piping it to a data channel.
 // If an error occurs a single error is sent to the error channel. Both channels are closed at the end of the routine.
-func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionParams,
+func (dp *defaultDataProducer) Fetch(connectionParams *connections.InfluxConnectionParams,
 	dataChannel chan idrf.Row,
 	query influx.Query,
 	errorBroadcaster utils.ErrorBroadcaster) {
@@ -68,7 +59,7 @@ func (dp *defaultDataProducer) Fetch(connectionParams *clientutils.ConnectionPar
 
 	defer errorBroadcaster.Unsubscribe(dp.extractorID)
 
-	client, err := dp.influxUtils.CreateInfluxClient(connectionParams)
+	client, err := dp.influxConnectionService.NewConnection(connectionParams)
 
 	if err != nil {
 		err = fmt.Errorf("extractor '%s' couldn't create an influx client.\n%v", dp.extractorID, err)

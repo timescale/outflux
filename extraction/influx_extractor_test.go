@@ -1,18 +1,14 @@
 package extraction
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/timescale/outflux/connections"
+
 	influx "github.com/influxdata/influxdb/client/v2"
+	"github.com/timescale/outflux/extraction/config"
 	"github.com/timescale/outflux/idrf"
 	"github.com/timescale/outflux/utils"
-
-	"github.com/timescale/outflux/schemadiscovery"
-
-	"github.com/timescale/outflux/schemadiscovery/clientutils"
-
-	"github.com/timescale/outflux/extraction/config"
 )
 
 func TestInfluxExtractorStart(t *testing.T) {
@@ -23,8 +19,9 @@ func TestInfluxExtractorStart(t *testing.T) {
 		MeasureExtraction: &config.MeasureExtraction{
 			Database: "db", Measure: measure, ChunkSize: 1,
 		},
-		Connection: &clientutils.ConnectionParams{},
-		DataSet:    &idrf.DataSetInfo{},
+		Connection:  &connections.InfluxConnectionParams{},
+		DataSet:     &idrf.DataSetInfo{},
+		DataChannel: make(chan idrf.Row, 1),
 	}
 
 	producer := &mockProducer{}
@@ -34,14 +31,10 @@ func TestInfluxExtractorStart(t *testing.T) {
 		producer: producer,
 	}
 
-	res := extractor.Start(nil)
-
-	if res == nil {
-		t.Error("nil data channel returned")
-	}
+	extractor.Start(nil)
 
 	// wait for channel to close at end of mocked method
-	for range res {
+	for range simpleConfig.DataChannel {
 	}
 
 	if producer.numCalled == 0 {
@@ -55,33 +48,17 @@ type mockMeasureExplorer struct {
 }
 
 func (me *mockMeasureExplorer) InfluxMeasurementSchema(
-	connectionParams *clientutils.ConnectionParams,
+	connectionParams *connections.InfluxConnectionParams,
 	database, measure string,
 ) (*idrf.DataSetInfo, error) {
 	return me.resToReturn, me.errToReturn
-}
-
-func returnErrorOnMeasurementSchema() schemadiscovery.SchemaExplorer {
-	mockMeasureExplorer := &mockMeasureExplorer{nil, fmt.Errorf("some error")}
-	return schemadiscovery.NewSchemaExplorerWith(nil, mockMeasureExplorer)
-}
-
-func returnSchema(measure string, columnNames []string) schemadiscovery.SchemaExplorer {
-	columns := make([]*idrf.ColumnInfo, len(columnNames))
-	for i, columnName := range columnNames {
-		columns[i], _ = idrf.NewColumn(columnName, idrf.IDRFBoolean)
-	}
-
-	twoColumnExample, _ := idrf.NewDataSet(measure, columns, columns[0].Name)
-	mockMeasureExplorer := &mockMeasureExplorer{twoColumnExample, nil}
-	return schemadiscovery.NewSchemaExplorerWith(nil, mockMeasureExplorer)
 }
 
 type mockProducer struct {
 	numCalled int
 }
 
-func (dp *mockProducer) Fetch(connectionParams *clientutils.ConnectionParams,
+func (dp *mockProducer) Fetch(connectionParams *connections.InfluxConnectionParams,
 	dataChannel chan idrf.Row,
 	query influx.Query,
 	errorBc utils.ErrorBroadcaster) {

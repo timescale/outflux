@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/timescale/outflux/connections"
 	"github.com/timescale/outflux/idrf"
-
-	"github.com/timescale/outflux/schemadiscovery/clientutils"
 )
 
 const (
@@ -15,13 +14,12 @@ const (
 
 // MeasureExtraction holds config properties for a single measure
 type MeasureExtraction struct {
-	Database              string
-	Measure               string
-	From                  string
-	To                    string
-	ChunkSize             uint16
-	Limit                 uint64
-	DataChannelBufferSize uint16
+	Database  string
+	Measure   string
+	From      string
+	To        string
+	ChunkSize uint16
+	Limit     uint64
 }
 
 // ValidateMeasureExtractionConfig validates the fields
@@ -54,6 +52,7 @@ func ValidateMeasureExtractionConfig(config *MeasureExtraction) error {
 type Config struct {
 	ExtractorID       string
 	MeasureExtraction *MeasureExtraction
-	Connection        *clientutils.ConnectionParams
+	Connection        *connections.InfluxConnectionParams
 	DataSet           *idrf.DataSetInfo
+	DataChannel       chan idrf.Row
 }
