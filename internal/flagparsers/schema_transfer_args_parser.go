@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/pflag"
-	"github.com/timescale/outflux/pipeline"
-	"github.com/timescale/outflux/schemamanagement"
+	"github.com/timescale/outflux/internal/pipeline"
+	"github.com/timescale/outflux/internal/schemamanagement"
 )
 
 // FlagsToSchemaTransferConfig extracts the config for running schema transfer from the flags of the command

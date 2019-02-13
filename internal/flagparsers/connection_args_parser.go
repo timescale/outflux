@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/pflag"
-	"github.com/timescale/outflux/pipeline"
+	"github.com/timescale/outflux/internal/pipeline"
 )
 
 // FlagsToConnectionConfig extracts flags related to establishing the connection to input and output database

@@ -1,6 +1,6 @@
 package flagparsers
 
-import "github.com/timescale/outflux/schemamanagement"
+import "github.com/timescale/outflux/internal/schemamanagement"
 
 // Flags used in outflux and their default values
 const (
