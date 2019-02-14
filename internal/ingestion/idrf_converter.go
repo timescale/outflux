@@ -1,7 +1,9 @@
 package ingestion
 
 import (
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/timescale/outflux/internal/idrf"
 )
@@ -39,12 +41,21 @@ func convertByType(rawValue interface{}, expected idrf.DataType) interface{} {
 	}
 
 	switch {
-	case expected == idrf.IDRFInteger32 || expected == idrf.IDRFInteger64:
-		valueAsStr := fmt.Sprintf("%v", rawValue)
-		return valueAsStr
-	case expected == idrf.IDRFDouble || expected == idrf.IDRFSingle:
-		valueAsStr := fmt.Sprintf("%v", rawValue)
-		return valueAsStr
+	case expected == idrf.IDRFInteger32:
+		valAsInt64, _ := rawValue.(json.Number).Int64()
+		return int32(valAsInt64)
+	case expected == idrf.IDRFInteger64:
+		valAsInt64, _ := rawValue.(json.Number).Int64()
+		return valAsInt64
+	case expected == idrf.IDRFDouble:
+		valAsFloat64, _ := rawValue.(json.Number).Float64()
+		return valAsFloat64
+	case expected == idrf.IDRFSingle:
+		valAsFloat64, _ := rawValue.(json.Number).Float64()
+		return float32(valAsFloat64)
+	case expected == idrf.IDRFTimestamptz || expected == idrf.IDRFTimestamp:
+		ts, _ := time.Parse(time.RFC3339, rawValue.(string))
+		return ts
 	default:
 		return rawValue
 	}

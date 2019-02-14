@@ -48,6 +48,9 @@ func initMigrateCmd() *cobra.Command {
 	migrateCmd.PersistentFlags().Uint16(flagparsers.DataBufferFlag, flagparsers.DefaultDataBufferSize, "Size of the buffer holding exported data ready to be inserted in the output database")
 	migrateCmd.PersistentFlags().Uint8(flagparsers.MaxParallelFlag, flagparsers.DefaultMaxParallel, "Number of parallel measure extractions. One InfluxDB measure is exported using 1 worker")
 	migrateCmd.PersistentFlags().Bool(flagparsers.RollbackOnExternalErrorFlag, flagparsers.DefaultRollbackOnExternalError, "If this flag is set, when an error occurs while extracting the data, the insertion will be rollbacked. Otherwise it will try to commit")
+	migrateCmd.PersistentFlags().String(flagparsers.CommitStrategyFlag, flagparsers.DefaultCommitStrategy.String(), "Determines whether to commit on each chunk extracted from Influx, or at the end. Valid options: CommitOnEnd and CommitOnEachBatch")
+	migrateCmd.PersistentFlags().Uint16(flagparsers.BatchSizeFlag, flagparsers.DefaultBatchSize, "The size of the batch inserted in to the output database")
+
 	return migrateCmd
 }
 
@@ -102,7 +105,7 @@ func migrate(app *appContext, args *pipeline.MigrationConfig) []error {
 
 func pipeRoutine(ctx context.Context, semaphore *semaphore.Weighted, pipe pipeline.ExecutionPipeline,
 	pipeChannel chan error) {
-	semaphore.Acquire(ctx, 1)
+	_ = semaphore.Acquire(ctx, 1)
 
 	log.Printf("%s starting execution\n", pipe.ID())
 	err := pipe.Start()

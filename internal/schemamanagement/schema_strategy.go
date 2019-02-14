@@ -47,5 +47,4 @@ func ParseStrategyString(strategy string) (SchemaStrategy, error) {
 	default:
 		return ValidateOnly, fmt.Errorf("unknown schema strategy '%s'", strategy)
 	}
-
 }

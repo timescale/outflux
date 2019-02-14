@@ -3,7 +3,9 @@ package connections
 import (
 	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx"
 	"log"
+	"strconv"
 	"strings"
 
 	// Postgres driver
@@ -27,6 +29,7 @@ type TSConnectionParams struct {
 // TSConnectionService creates new timescale db connections
 type TSConnectionService interface {
 	NewConnection(params *TSConnectionParams) (*sql.DB, error)
+	NewPGXConnection(params *TSConnectionParams) (*pgx.Conn, error)
 }
 
 type defaultTSConnectionService struct{}
@@ -71,4 +74,17 @@ func connectionParamsToString(params map[string]string) string {
 	}
 
 	return "?" + strings.Join(singleParams, "&")
+}
+
+func (s *defaultTSConnectionService) NewPGXConnection(params *TSConnectionParams) (*pgx.Conn, error) {
+	serverAndPort := strings.Split(params.Server, ":")
+	port, _ := strconv.ParseUint(serverAndPort[1], 10, 16)
+	connConfig := pgx.ConnConfig{
+		Host:     serverAndPort[0],
+		Port:     uint16(port),
+		Database: params.Database,
+		User:     params.Username,
+		Password: params.Password,
+	}
+	return pgx.Connect(connConfig)
 }

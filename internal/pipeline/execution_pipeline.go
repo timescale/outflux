@@ -35,12 +35,7 @@ func (p *defaultExecutionPipeline) Start() error {
 
 	p.config.Extractor.Start(errorBroadcaster)
 
-	ackChannel, err := p.config.Ingestor.Start(errorBroadcaster)
-	if err != nil {
-		errorBroadcaster.Broadcast(p.id, err)
-		return fmt.Errorf("'%s': could not start the ingestor.\n%v", p.id, err)
-	}
-
+	ackChannel:= p.config.Ingestor.Start(errorBroadcaster)
 	ingestorProperlyEnded := false
 	for range ackChannel {
 		ingestorProperlyEnded = true

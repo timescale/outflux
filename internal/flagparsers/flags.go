@@ -1,6 +1,9 @@
 package flagparsers
 
-import "github.com/timescale/outflux/internal/schemamanagement"
+import (
+	"github.com/timescale/outflux/internal/ingestion"
+	"github.com/timescale/outflux/internal/schemamanagement"
+)
 
 // Flags used in outflux and their default values
 const (
@@ -13,6 +16,7 @@ const (
 	OutputUserFlag              = "output-user"
 	OutputPasswordFlag          = "output-pass"
 	SchemaStrategyFlag          = "schema-strategy"
+	CommitStrategyFlag          = "commit-strategy"
 	OutputSchemaFlag            = "output-schema"
 	FromFlag                    = "from"
 	ToFlag                      = "to"
@@ -22,6 +26,7 @@ const (
 	DataBufferFlag              = "data-buffer"
 	MaxParallelFlag             = "max-parallel"
 	RollbackOnExternalErrorFlag = "rollback-on-external-error"
+	BatchSizeFlag               = "batch-size"
 
 	DefaultInputHost               = "http://localhost:8086"
 	DefaultInputUser               = ""
@@ -30,9 +35,11 @@ const (
 	DefaultSslMode                 = "disable"
 	DefaultOutputSchema            = "public"
 	DefaultSchemaStrategy          = schemamanagement.CreateIfMissing
+	DefaultCommitStrategy          = ingestion.CommitOnEachBatch
 	DefaultDataBufferSize          = 15000
 	DefaultChunkSize               = 15000
 	DefaultLimit                   = 0
 	DefaultMaxParallel             = 2
 	DefaultRollbackOnExternalError = true
+	DefaultBatchSize               = 8000
 )

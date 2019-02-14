@@ -31,6 +31,9 @@ func (s *defaultPipeConfCreator) createPipelineConf(pipeNum int, dataSet *idrf.D
 	}
 
 	ingestor, err := s.ingestion.create(pipeNum, conf, extractionConfig)
+	if err != nil {
+		return nil, err
+	}
 	return &PipelineConfig{
 		Extractor: extractor,
 		Ingestor:  ingestor,

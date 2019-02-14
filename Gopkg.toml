@@ -48,3 +48,7 @@
 [[constraint]]
   branch = "master"
   name = "golang.org/x/sync"
+
+[[constraint]]
+  name = "github.com/jackc/pgx"
+  version = "3.3.0"
