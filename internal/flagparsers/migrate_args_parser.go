@@ -5,9 +5,8 @@ import (
 	"math"
 
 	"github.com/spf13/pflag"
-
-	"github.com/timescale/outflux/pipeline"
-	"github.com/timescale/outflux/schemamanagement"
+	"github.com/timescale/outflux/internal/pipeline"
+	"github.com/timescale/outflux/internal/schemamanagement"
 )
 
 // FlagsToMigrateConfig extracts the config for running a migration from the flags of the command
