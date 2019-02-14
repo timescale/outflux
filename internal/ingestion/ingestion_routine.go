@@ -79,7 +79,13 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	batchInserts := uint16(0)
 	log.Printf("Will batch insert %d rows at once. With strategy: %v", args.batchSize, args.commitStrategy)
 	batch := make([][]interface{}, args.batchSize)
-	tableIdentifier := &pgx.Identifier{args.schemaName, args.tableName}
+	var tableIdentifier *pgx.Identifier
+	if args.schemaName != "" {
+		tableIdentifier = &pgx.Identifier{args.schemaName, args.tableName}
+	} else {
+		tableIdentifier = &pgx.Identifier{args.tableName}
+	}
+
 	for row := range args.dataChannel {
 		batch[batchInserts], err = args.converter.ConvertValues(row)
 		if err != nil {
