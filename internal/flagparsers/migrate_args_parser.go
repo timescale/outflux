@@ -2,7 +2,7 @@ package flagparsers
 
 import (
 	"fmt"
-	"github.com/timescale/outflux/ingestion"
+	"github.com/timescale/outflux/internal/ingestion"
 	"math"
 
 	"github.com/spf13/pflag"
