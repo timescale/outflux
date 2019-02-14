@@ -62,6 +62,7 @@ func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) chan 
 		dbConn:                  ing.dbConn,
 		colNames:                colNames,
 		tableName:               ing.dataSet.DataSetName,
+		schemaName:              ing.dataSet.DataSetSchema,
 		commitStrategy:          ing.config.CommitStrategy,
 	}
 

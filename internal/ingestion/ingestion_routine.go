@@ -30,6 +30,8 @@ type ingestDataArgs struct {
 	colNames []string
 	// name of table where inserts happen
 	tableName string
+	// name of schema where the table is
+	schemaName string
 	// commit strategy
 	commitStrategy CommitStrategy
 }
@@ -50,7 +52,7 @@ type defaultIngestionRoutine struct{}
 func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	log.Printf("Starting data ingestor '%s'", args.ingestorID)
 	defer close(args.ackChannel)
-	defer func() { _ = args.dbConn.Close() }()
+	defer args.dbConn.Close()
 
 	errorChannel, err := args.errorBroadcaster.Subscribe(args.ingestorID)
 	if err != nil {
@@ -60,7 +62,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 		return
 	}
 
-	defer func() { _ = args.errorBroadcaster.Unsubscribe(args.ingestorID) }()
+	defer args.errorBroadcaster.Unsubscribe(args.ingestorID)
 
 	err = utils.CheckError(errorChannel)
 	if err != nil {
@@ -75,9 +77,9 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 
 	numInserts := uint(0)
 	batchInserts := uint16(0)
-	log.Printf("Will batch %d at once. With strategy: %v", args.batchSize, args.commitStrategy)
+	log.Printf("Will batch insert %d rows at once. With strategy: %v", args.batchSize, args.commitStrategy)
 	batch := make([][]interface{}, args.batchSize)
-	tableIdentifier := &pgx.Identifier{args.tableName}
+	tableIdentifier := &pgx.Identifier{args.schemaName, args.tableName}
 	for row := range args.dataChannel {
 		batch[batchInserts], err = args.converter.ConvertValues(row)
 		if err != nil {
@@ -88,12 +90,11 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 		}
 
 		batchInserts++
-
 		if batchInserts < args.batchSize {
 			continue
 		}
 
-		if utils.CheckError(errorChannel) != nil && args.rollbackOnExternalError {
+		if args.rollbackOnExternalError && utils.CheckError(errorChannel) != nil {
 			log.Printf("%s: Error received from outside of ingestor. Rolling back\n", args.ingestorID)
 			_ = tx.Rollback()
 			return
@@ -101,7 +102,6 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 
 		numInserts += uint(batchInserts)
 		batchInserts = 0
-
 		if err = copyToDb(args, tableIdentifier, tx, batch); err != nil {
 			return
 		}
@@ -119,7 +119,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 		}
 	}
 
-	if utils.CheckError(errorChannel) != nil && args.rollbackOnExternalError {
+	if args.rollbackOnExternalError && utils.CheckError(errorChannel) != nil {
 		log.Printf("%s: Error received from outside of ingestor. Rollbacking\n", args.ingestorID)
 		_ = tx.Rollback()
 		return
