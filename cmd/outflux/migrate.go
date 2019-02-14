@@ -21,13 +21,14 @@ func initMigrateCmd() *cobra.Command {
 			app := initAppContext()
 			migrateArgs, err := flagparsers.FlagsToMigrateConfig(cmd.Flags(), args)
 			if err != nil {
-				panic(err)
+				log.Fatal(err)
+				return
 			}
 
 			errors := migrate(app, migrateArgs)
 			if errors != nil {
 				err = preparePipeErrors(errors)
-				panic(err)
+				log.Fatal(err)
 			}
 		},
 	}

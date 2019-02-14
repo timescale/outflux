@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 	"github.com/timescale/outflux/internal/flagparsers"
+	"log"
 )
 
 // RootCmd defines the root outflux command
@@ -15,9 +16,8 @@ var RootCmd = &cobra.Command{
 
 // Execute is called to execute the root outflux command
 func Execute() {
-	err := RootCmd.Execute()
-	if err != nil {
-		panic(err)
+	if err := RootCmd.Execute(); err != nil {
+		log.Fatal(err)
 	}
 }
 

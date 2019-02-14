@@ -24,7 +24,8 @@ func initSchemaTransferCmd() *cobra.Command {
 			app := initAppContext()
 			schemaTransferArgs, err := flagparsers.FlagsToSchemaTransferConfig(cmd.Flags(), args)
 			if err != nil {
-				panic(err)
+				log.Fatal(err)
+				return
 			}
 
 			if schemaTransferArgs.Quiet {
@@ -34,7 +35,7 @@ func initSchemaTransferCmd() *cobra.Command {
 
 			_, err = transferSchema(app, schemaTransferArgs)
 			if err != nil {
-				panic(err)
+				log.Fatal(err)
 			}
 		},
 	}

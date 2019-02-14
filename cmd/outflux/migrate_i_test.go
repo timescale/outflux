@@ -28,14 +28,14 @@ func TestMigrateSingleValue(t *testing.T) {
 	appContext := initAppContext()
 	errs := migrate(appContext, config)
 	if errs != nil {
-		panic(errs[0])
+		t.Error(errs[0])
 	}
 
 	rows := testutils.ExecuteTSQuery(db, "SELECT * FROM "+measure)
 	var time string
 	var field1 int
 	if !rows.Next() {
-		panic("couldn't check state of TS DB")
+		t.Error("couldn't check state of TS DB")
 	}
 
 	err := rows.Scan(&time, &field1)
