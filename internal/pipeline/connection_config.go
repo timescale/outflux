@@ -6,6 +6,7 @@ type ConnectionConfig struct {
 	InputMeasures      []string
 	InputUser          string
 	InputPass          string
+	UseEnvVars         bool
 	OutputDbConnString string
 	OutputSchema       string
 }

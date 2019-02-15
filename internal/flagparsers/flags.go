@@ -11,6 +11,7 @@ const (
 	InputUserFlag               = "input-user"
 	InputPassFlag               = "input-pass"
 	OutputConnFlag              = "output-conn"
+	UseEnvVarsFlag              = "use-env-vars"
 	SchemaStrategyFlag          = "schema-strategy"
 	CommitStrategyFlag          = "commit-strategy"
 	OutputSchemaFlag            = "output-schema"
@@ -28,6 +29,7 @@ const (
 	DefaultInputUser               = ""
 	DefaultInputPass               = ""
 	DefaultOutputConn              = "sslmode=disable"
+	DefaultUseEnvVars              = false
 	DefaultOutputSchema            = ""
 	DefaultSchemaStrategy          = schemamanagement.CreateIfMissing
 	DefaultCommitStrategy          = ingestion.CommitOnEachBatch

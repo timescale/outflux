@@ -70,7 +70,12 @@ func transferSchema(app *appContext, args *pipeline.SchemaTransferConfig) ([]*id
 	}
 
 	log.Println("Extracted data sets schema. Preparing output database")
-	dbConn, err := app.tscs.NewConnection(args.Connection.OutputDbConnString)
+	var dbConn *pgx.Conn
+	if args.Connection.UseEnvVars {
+		dbConn, err = app.tscs.NewConnectionFromEnvVars()
+	} else {
+		dbConn, err = app.tscs.NewConnection(args.Connection.OutputDbConnString)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("could not open connection to output db\n%v", err)
 	}

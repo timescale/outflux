@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"github.com/jackc/pgx"
 	"github.com/timescale/outflux/internal/connections"
 	extractionConfig "github.com/timescale/outflux/internal/extraction/config"
 	"github.com/timescale/outflux/internal/ingestion"
@@ -21,8 +22,14 @@ func newIngestorCreator(confCreator *defaultIngestionConfCreator, tsConnService 
 }
 func (s *defaultIngestorCreator) create(pipeNum int, conf *MigrationConfig, extractionConf *extractionConfig.Config) (ingestion.Ingestor, error) {
 	in := s.confCreator.create(pipeNum, conf)
-	connectionString := conf.Connection.OutputDbConnString
-	dbConn, err := s.tsConnectionService.NewConnection(connectionString)
+	var dbConn *pgx.Conn
+	var err error
+	if conf.Connection.UseEnvVars {
+		dbConn, err = s.tsConnectionService.NewConnectionFromEnvVars()
+	} else {
+		connectionString := conf.Connection.OutputDbConnString
+		dbConn, err = s.tsConnectionService.NewConnection(connectionString)
+	}
 	if err != nil {
 		return nil, err
 	}
