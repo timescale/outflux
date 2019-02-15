@@ -3,8 +3,10 @@
 package main
 
 import (
+	"fmt"
 	"github.com/timescale/outflux/internal/ingestion"
 	"testing"
+	"time"
 
 	"github.com/timescale/outflux/internal/pipeline"
 	"github.com/timescale/outflux/internal/schemamanagement"
@@ -13,6 +15,7 @@ import (
 
 func TestMigrateSingleValue(t *testing.T) {
 	// prepare influx db
+	start := time.Now().UTC()
 	db := "test"
 	measure := "test"
 	field := "field1"
@@ -31,34 +34,36 @@ func TestMigrateSingleValue(t *testing.T) {
 		t.Error(errs[0])
 	}
 
-	rows := testutils.ExecuteTSQuery(db, "SELECT * FROM "+measure)
-	var time string
+	dbConn := testutils.OpenTSConn(db)
+	defer dbConn.Close()
+	rows, err := dbConn.Query("SELECT * FROM "+measure)
+	if err != nil {
+		t.Error(err)
+	}
+
+	var time time.Time
 	var field1 int
 	if !rows.Next() {
 		t.Error("couldn't check state of TS DB")
 	}
 
-	err := rows.Scan(&time, &field1)
+	err = rows.Scan(&time, &field1)
 	if err != nil {
 		t.Error("couldn't check state of TS DB")
 	}
 
-	if time == "" || field1 != value {
-		t.Errorf("expected time != nil and field1=%d\ngot: time %s, field1=%d", value, time, field1)
+	if time.Before(start) || field1 != value {
+		t.Errorf("expected time > %v and field1=%d\ngot: time %s, field1=%d", start, value, time, field1)
 	}
 	rows.Close()
 }
 
 func defaultConfig(db string, measure string) *pipeline.MigrationConfig {
 	connConfig := &pipeline.ConnectionConfig{
-		InputHost:       testutils.InfluxHost,
-		InputDb:         db,
-		InputMeasures:   []string{measure},
-		OutputHost:      testutils.TsHost,
-		OutputDb:        db,
-		OutputDbSslMode: "disable",
-		OutputUser:      testutils.TsUser,
-		OutputPassword:  testutils.TsPass,
+		InputHost:          testutils.InfluxHost,
+		InputDb:            db,
+		InputMeasures:      []string{measure},
+		OutputDbConnString: fmt.Sprintf(testutils.TsConnStringTemplate, db),
 	}
 	return &pipeline.MigrationConfig{
 		Connection:                           connConfig,

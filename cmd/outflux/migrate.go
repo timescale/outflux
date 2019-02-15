@@ -32,15 +32,7 @@ func initMigrateCmd() *cobra.Command {
 			}
 		},
 	}
-	migrateCmd.PersistentFlags().String(flagparsers.InputHostFlag, flagparsers.DefaultInputHost, "Host of the input database, http(s)://location:port.")
-	migrateCmd.PersistentFlags().String(flagparsers.InputUserFlag, flagparsers.DefaultInputUser, "Username to use when connecting to the input database")
-	migrateCmd.PersistentFlags().String(flagparsers.InputPassFlag, flagparsers.DefaultInputPass, "Password to use when connecting to the input database")
-	migrateCmd.PersistentFlags().String(flagparsers.OutputHostFlag, flagparsers.DefaultOutputHost, "Host of the output database, location:port")
-	migrateCmd.PersistentFlags().String(flagparsers.OutputUserFlag, "", "Username to use when connecting to the output database")
-	migrateCmd.PersistentFlags().String(flagparsers.OutputPasswordFlag, "", "Password to use when connecting to the output database")
-	migrateCmd.PersistentFlags().String(flagparsers.OutputDbFlag, "", "Output (Target) database that the data will be inserted into")
-	migrateCmd.PersistentFlags().String(flagparsers.OutputSchemaFlag, "public", "The schema of the output database that the data will be inserted into")
-	migrateCmd.PersistentFlags().String(flagparsers.OutputDbSslModeFlag, "disable", "SSL mode to use when connecting to the output server. Valid: disable, require, verify-ca, verify-full")
+	flagparsers.AddConnectionFlagsToCmd(migrateCmd)
 	migrateCmd.PersistentFlags().String(flagparsers.SchemaStrategyFlag, flagparsers.DefaultSchemaStrategy.String(), "Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate")
 	migrateCmd.PersistentFlags().String(flagparsers.FromFlag, "", "If specified will export data with a timestamp >= of it's value. Accepted format: RFC3339")
 	migrateCmd.PersistentFlags().String(flagparsers.ToFlag, "", "If specified will export data with a timestamp <= of it's value. Accepted format: RFC3339")

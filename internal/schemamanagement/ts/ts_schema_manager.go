@@ -1,7 +1,6 @@
 package ts
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/jackc/pgx"
 	"log"
@@ -14,15 +13,13 @@ type tsSchemaManager struct {
 	explorer schemaExplorer
 	creator  tableCreator
 	dropper  tableDropper
-	dbConn   *sql.DB
-	pgxConn  *pgx.Conn
+	dbConn   *pgx.Conn
 }
 
 // NewTSSchemaManager creates a new TimeScale Schema Manager
-func NewTSSchemaManager(dbConn *sql.DB, dbConn2 *pgx.Conn) schemamanagement.SchemaManager {
+func NewTSSchemaManager(dbConn *pgx.Conn) schemamanagement.SchemaManager {
 	return &tsSchemaManager{
 		dbConn:   dbConn,
-		pgxConn:  dbConn2,
 		explorer: newSchemaExplorer(),
 		creator:  newTableCreator(),
 		dropper:  newTableDropper(),
@@ -48,7 +45,7 @@ func (sm *tsSchemaManager) PrepareDataSet(dataSet *idrf.DataSetInfo, strategy sc
 		return sm.prepareWithDropStrategy(dataSet, strategy, tableExists)
 	} else if strategy == schemamanagement.CreateIfMissing && !tableExists {
 		log.Printf("CreateIfMissing strategy: Table %s does not exist. Creating", dataSet.DataSetName)
-		return sm.creator.Create(sm.pgxConn, dataSet)
+		return sm.creator.Create(sm.dbConn, dataSet)
 	} else if strategy != schemamanagement.CreateIfMissing && strategy != schemamanagement.ValidateOnly {
 		return fmt.Errorf("preparation step for strategy %v not implemented", strategy)
 	} else if strategy == schemamanagement.ValidateOnly && !tableExists {
@@ -108,5 +105,5 @@ func (sm *tsSchemaManager) prepareWithDropStrategy(dataSet *idrf.DataSetInfo, st
 	}
 
 	log.Printf("Table %s.%s ready to be created", dataSet.DataSetSchema, dataSet.DataSetName)
-	return sm.creator.Create(sm.pgxConn, dataSet)
+	return sm.creator.Create(sm.dbConn, dataSet)
 }

@@ -1,7 +1,6 @@
 package testutils
 
 import (
-	"database/sql"
 	"fmt"
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/jackc/pgx"
@@ -72,36 +71,14 @@ func CreateInfluxMeasure(db, measure string, tags []*map[string]string, values [
 func CreateTimescaleDb(db string) {
 	dbConn := OpenTSConn(defaultPgDb)
 	defer dbConn.Close()
-	_, err := dbConn.Query("CREATE DATABASE " + db)
+	_, err := dbConn.Exec("CREATE DATABASE " + db)
 	panicOnErr(err)
-}
-
-// ExecuteTSQuery executes a supplied query to the default server
-func ExecuteTSQuery(db, query string) *sql.Rows {
-	dbConn := OpenTSConn(db)
-	defer dbConn.Close()
-	rows, err := dbConn.Query(query)
-	panicOnErr(err)
-	return rows
 }
 
 // OpenTSConn opens a connection to a TimescaleDB
-func OpenTSConn(db string) *sql.DB {
-	connStr := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", TsUser, TsPass, TsHost, db)
-	dbConn, err := sql.Open("postgres", connStr)
-	panicOnErr(err)
-	return dbConn
-}
-
-// OpenTSConn opens a connection to a TimescaleDB
-func OpenTSConn2(db string) *pgx.Conn {
-	connConfig := pgx.ConnConfig{
-		Host:     "localhost",
-		Port:     uint16(5433),
-		Database: db,
-		User:     TsUser,
-		Password: TsPass,
-	}
+func OpenTSConn(db string) *pgx.Conn {
+	connString := fmt.Sprintf(TsConnStringTemplate, db)
+	connConfig, _ := pgx.ParseConnectionString(connString)
 	c, _ := pgx.Connect(connConfig)
 	return c
 }
@@ -110,9 +87,8 @@ func OpenTSConn2(db string) *pgx.Conn {
 func DeleteTimescaleDb(db string) {
 	dbConn := OpenTSConn(defaultPgDb)
 	defer dbConn.Close()
-	dd, err := dbConn.Query("DROP DATABASE " + db)
+	_, err := dbConn.Exec("DROP DATABASE " + db)
 	panicOnErr(err)
-	dd.Close()
 }
 
 func panicOnErr(err error) {

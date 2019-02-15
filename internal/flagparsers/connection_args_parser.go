@@ -23,36 +23,17 @@ func FlagsToConnectionConfig(flags *pflag.FlagSet, args []string) (*pipeline.Con
 		return nil, fmt.Errorf("password to connect to the input database not specified, '%s' flag is required", InputPassFlag)
 	}
 
-	outputDB, _ := flags.GetString(OutputDbFlag)
-	if outputDB == "" {
-		return nil, fmt.Errorf("output database name not specified, '%s' flag is required", OutputDbFlag)
-	}
-
-	outputUser, _ := flags.GetString(OutputUserFlag)
-	if outputUser == "" {
-		return nil, fmt.Errorf("username for output database not specified, '%s' flag is required", OutputUserFlag)
-	}
-
-	outputPass, _ := flags.GetString(OutputPasswordFlag)
-	if outputPass == "" {
-		return nil, fmt.Errorf("password for output database not specified, '%s' flag is required", OutputPasswordFlag)
-	}
-
 	inputHost, _ := flags.GetString(InputHostFlag)
-	outputHost, _ := flags.GetString(OutputHostFlag)
-	outputSchema, _ := flags.GetString(OutputSchemaFlag)
-	sslMode, _ := flags.GetString(OutputDbSslModeFlag)
+
+	outputConnString, _ := flags.GetString(OutputConnFlag)
+	schema, _ := flags.GetString(OutputSchemaFlag)
 	return &pipeline.ConnectionConfig{
-		InputDb:         args[0],
-		InputMeasures:   args[1:],
-		InputHost:       inputHost,
-		InputUser:       inputUser,
-		InputPass:       inputPass,
-		OutputHost:      outputHost,
-		OutputDb:        outputDB,
-		OutputSchema:    outputSchema,
-		OutputDbSslMode: sslMode,
-		OutputUser:      outputUser,
-		OutputPassword:  outputPass,
+		InputDb:            args[0],
+		InputMeasures:      args[1:],
+		InputHost:          inputHost,
+		InputUser:          inputUser,
+		InputPass:          inputPass,
+		OutputDbConnString: outputConnString,
+		OutputSchema:       schema,
 	}, nil
 }

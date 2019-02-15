@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/jackc/pgx"
 	"io/ioutil"
@@ -9,7 +8,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/flagparsers"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/pipeline"
@@ -71,22 +69,17 @@ func transferSchema(app *appContext, args *pipeline.SchemaTransferConfig) ([]*id
 		return nil, err
 	}
 
-	log.Println("Extracted data sets schema. Prepairing output database")
-	tsConnectionParams := tsConnParams(args.Connection)
-	dbConn, err := app.tscs.NewConnection(tsConnectionParams)
+	log.Println("Extracted data sets schema. Preparing output database")
+	dbConn, err := app.tscs.NewConnection(args.Connection.OutputDbConnString)
 	if err != nil {
 		return nil, fmt.Errorf("could not open connection to output db\n%v", err)
 	}
 
 	defer dbConn.Close()
-	dbConn2, err := app.tscs.NewPGXConnection(tsConnectionParams)
-	if err != nil {
-		return nil, fmt.Errorf("could not open connection to output db\n%v", err)
-	}
-	defer dbConn2.Close()
 
 	for _, dataSet := range discoveredDataSets {
-		err := prepareOutputDataSet(dataSet, args.OutputSchemaStrategy, dbConn, dbConn2)
+		dataSet.DataSetSchema = args.Connection.OutputSchema
+		err := prepareOutputDataSet(dataSet, args.OutputSchemaStrategy, dbConn)
 		if err != nil {
 			return nil, fmt.Errorf("could not prepare output data set '%s'\n%v", dataSet.DataSetName, err)
 		}
@@ -100,20 +93,7 @@ func transferSchema(app *appContext, args *pipeline.SchemaTransferConfig) ([]*id
 func prepareOutputDataSet(
 	dataSet *idrf.DataSetInfo,
 	strategy schemamanagement.SchemaStrategy,
-	dbConn *sql.DB,
-	dbConn2 *pgx.Conn) error {
-	tsSchemaManager := tsSchema.NewTSSchemaManager(dbConn, dbConn2)
+	dbConn *pgx.Conn) error {
+	tsSchemaManager := tsSchema.NewTSSchemaManager(dbConn)
 	return tsSchemaManager.PrepareDataSet(dataSet, strategy)
-}
-
-func tsConnParams(conf *pipeline.ConnectionConfig) *connections.TSConnectionParams {
-	additionalConnParams := make(map[string]string)
-	additionalConnParams["sslmode"] = conf.OutputDbSslMode
-	return &connections.TSConnectionParams{
-		Server:               conf.OutputHost,
-		Username:             conf.OutputUser,
-		Password:             conf.OutputPassword,
-		Database:             conf.OutputDb,
-		AdditionalConnParams: additionalConnParams,
-	}
 }

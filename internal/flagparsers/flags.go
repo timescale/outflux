@@ -10,11 +10,7 @@ const (
 	InputHostFlag               = "input-host"
 	InputUserFlag               = "input-user"
 	InputPassFlag               = "input-pass"
-	OutputHostFlag              = "output-host"
-	OutputDbFlag                = "output-db"
-	OutputDbSslModeFlag         = "output-db-ssl-mode"
-	OutputUserFlag              = "output-user"
-	OutputPasswordFlag          = "output-pass"
+	OutputConnFlag              = "output-conn"
 	SchemaStrategyFlag          = "schema-strategy"
 	CommitStrategyFlag          = "commit-strategy"
 	OutputSchemaFlag            = "output-schema"
@@ -31,9 +27,8 @@ const (
 	DefaultInputHost               = "http://localhost:8086"
 	DefaultInputUser               = ""
 	DefaultInputPass               = ""
-	DefaultOutputHost              = "localhost:5432"
-	DefaultSslMode                 = "disable"
-	DefaultOutputSchema            = "public"
+	DefaultOutputConn              = "sslmode=disable"
+	DefaultOutputSchema            = ""
 	DefaultSchemaStrategy          = schemamanagement.CreateIfMissing
 	DefaultCommitStrategy          = ingestion.CommitOnEachBatch
 	DefaultDataBufferSize          = 15000

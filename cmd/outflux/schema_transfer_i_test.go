@@ -1,8 +1,7 @@
-// +build integration
-
 package main
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/timescale/outflux/internal/pipeline"
@@ -24,14 +23,10 @@ func TestSchemaTransfer(t *testing.T) {
 
 	config := &pipeline.SchemaTransferConfig{
 		Connection: &pipeline.ConnectionConfig{
-			InputHost:       testutils.InfluxHost,
-			InputDb:         db,
-			InputMeasures:   []string{measure},
-			OutputHost:      testutils.TsHost,
-			OutputDb:        db,
-			OutputDbSslMode: "disable",
-			OutputUser:      testutils.TsUser,
-			OutputPassword:  testutils.TsPass,
+			InputHost:          testutils.InfluxHost,
+			InputDb:            db,
+			InputMeasures:      []string{measure},
+			OutputDbConnString: fmt.Sprintf(testutils.TsConnStringTemplate, db),
 		},
 		OutputSchemaStrategy: schemamanagement.DropAndCreate,
 	}
@@ -41,7 +36,13 @@ func TestSchemaTransfer(t *testing.T) {
 		t.Error(err)
 	}
 
-	rows := testutils.ExecuteTSQuery(db, "SELECT count(*) FROM "+measure)
+	dbConn := testutils.OpenTSConn(db)
+	defer dbConn.Close()
+	rows, err := dbConn.Query("SELECT count(*) FROM " + measure)
+	if err != nil {
+		t.Error(err)
+	}
+
 	defer rows.Close()
 	var count int
 	if !rows.Next() {
