@@ -16,7 +16,7 @@ func TestCreateTable(t *testing.T) {
 	testutils.CreateTimescaleDb(db)
 	defer testutils.DeleteTimescaleDb(db)
 	creator := &defaultTableCreator{}
-	dbConn := testutils.OpenTSConn(db)
+	dbConn := testutils.OpenTSConn2(db)
 	defer dbConn.Close()
 	dataSet := &idrf.DataSetInfo{
 		DataSetName: "name",

@@ -3,6 +3,7 @@ package ts
 import (
 	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx"
 	"testing"
 
 	"github.com/timescale/outflux/internal/idrf"
@@ -41,7 +42,7 @@ func TestPrepareDataSetFails(t *testing.T) {
 		dropper  tableDropper
 	}{
 		{
-			args:     prepareArgs{DataSet: dataSet, Strategy:schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: errorOnTableExistsExplorer(),
 			desc:     "error checking if target table exists",
 		}, {
@@ -262,7 +263,7 @@ func (m *mocker) fetchTableColumns(db *sql.DB, schemaName, tableName string) ([]
 	return m.fetcColR, m.fetchColError
 }
 
-func (m *mocker) Create(dbConn *sql.DB, info *idrf.DataSetInfo) error {
+func (m *mocker) Create(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
 	return m.tableCreateError
 }
 

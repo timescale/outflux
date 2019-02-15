@@ -32,7 +32,7 @@ func (s *defaultIngestorCreator) create(pipeNum int, conf *MigrationConfig, extr
 		return nil, err
 	}
 
-	schemaManager := ts.NewTSSchemaManager(dbConn)
+	schemaManager := ts.NewTSSchemaManager(dbConn, pgxDBConn)
 	ingestor := ingestion.NewIngestor(in, schemaManager, pgxDBConn, extractionConf.DataSet, extractionConf.DataChannel)
 	return ingestor, nil
 }

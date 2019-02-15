@@ -3,8 +3,8 @@ package testutils
 import (
 	"database/sql"
 	"fmt"
-
 	influx "github.com/influxdata/influxdb/client/v2"
+	"github.com/jackc/pgx"
 	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/schemamanagement/influx/influxqueries"
 )
@@ -91,6 +91,19 @@ func OpenTSConn(db string) *sql.DB {
 	dbConn, err := sql.Open("postgres", connStr)
 	panicOnErr(err)
 	return dbConn
+}
+
+// OpenTSConn opens a connection to a TimescaleDB
+func OpenTSConn2(db string) *pgx.Conn {
+	connConfig := pgx.ConnConfig{
+		Host:     "localhost",
+		Port:     uint16(5433),
+		Database: db,
+		User:     TsUser,
+		Password: TsPass,
+	}
+	c, _ := pgx.Connect(connConfig)
+	return c
 }
 
 // DeleteTimescaleDb drops a databass on the default server

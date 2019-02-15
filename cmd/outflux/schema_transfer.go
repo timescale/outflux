@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx"
 	"io/ioutil"
 	"log"
 	"time"
@@ -78,9 +79,14 @@ func transferSchema(app *appContext, args *pipeline.SchemaTransferConfig) ([]*id
 	}
 
 	defer dbConn.Close()
+	dbConn2, err := app.tscs.NewPGXConnection(tsConnectionParams)
+	if err != nil {
+		return nil, fmt.Errorf("could not open connection to output db\n%v", err)
+	}
+	defer dbConn2.Close()
 
 	for _, dataSet := range discoveredDataSets {
-		err := prepareOutputDataSet(app, dataSet, args.OutputSchemaStrategy, dbConn)
+		err := prepareOutputDataSet(dataSet, args.OutputSchemaStrategy, dbConn, dbConn2)
 		if err != nil {
 			return nil, fmt.Errorf("could not prepare output data set '%s'\n%v", dataSet.DataSetName, err)
 		}
@@ -92,11 +98,11 @@ func transferSchema(app *appContext, args *pipeline.SchemaTransferConfig) ([]*id
 }
 
 func prepareOutputDataSet(
-	app *appContext,
 	dataSet *idrf.DataSetInfo,
 	strategy schemamanagement.SchemaStrategy,
-	dbConn *sql.DB) error {
-	tsSchemaManager := tsSchema.NewTSSchemaManager(dbConn)
+	dbConn *sql.DB,
+	dbConn2 *pgx.Conn) error {
+	tsSchemaManager := tsSchema.NewTSSchemaManager(dbConn, dbConn2)
 	return tsSchemaManager.PrepareDataSet(dataSet, strategy)
 }
 
