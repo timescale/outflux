@@ -3,6 +3,7 @@
 package main
 
 import (
+	"github.com/timescale/outflux/internal/ingestion"
 	"testing"
 
 	"github.com/timescale/outflux/internal/pipeline"
@@ -67,5 +68,7 @@ func defaultConfig(db string, measure string) *pipeline.MigrationConfig {
 		DataBuffer:                           1,
 		MaxParallel:                          1,
 		RollbackAllMeasureExtractionsOnError: true,
+		BatchSize:                            1,
+		CommitStrategy:                       ingestion.CommitOnEachBatch,
 	}
 }

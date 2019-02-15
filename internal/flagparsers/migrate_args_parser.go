@@ -2,6 +2,7 @@ package flagparsers
 
 import (
 	"fmt"
+	"github.com/timescale/outflux/internal/ingestion"
 	"math"
 
 	"github.com/spf13/pflag"
@@ -22,6 +23,12 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*pipeline.Migrat
 		return nil, err
 	}
 
+	commitStrategyAsStr, err := flags.GetString(CommitStrategyFlag)
+	var commitStrategy ingestion.CommitStrategy
+	if commitStrategy, err = ingestion.ParseStrategyString(commitStrategyAsStr); err != nil {
+		return nil, err
+	}
+
 	limit, err := flags.GetUint64(LimitFlag)
 	if err != nil {
 		return nil, err
@@ -29,6 +36,11 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*pipeline.Migrat
 
 	chunkSize, err := flags.GetUint16(ChunkSizeFlag)
 	if err != nil || chunkSize == 0 {
+		return nil, fmt.Errorf("value for the '%s' flag must be an integer > 0 and < %d", ChunkSizeFlag, math.MaxUint16)
+	}
+
+	batchSize, err := flags.GetUint16(BatchSizeFlag)
+	if err != nil || batchSize == 0 {
 		return nil, fmt.Errorf("value for the '%s' flag must be an integer > 0 and < %d", ChunkSizeFlag, math.MaxUint16)
 	}
 
@@ -61,10 +73,12 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*pipeline.Migrat
 		To:                                   to,
 		Limit:                                limit,
 		ChunkSize:                            chunkSize,
+		BatchSize:                            batchSize,
 		DataBuffer:                           dataBuffer,
 		MaxParallel:                          maxParallel,
 		Quiet:                                quiet,
 		RollbackAllMeasureExtractionsOnError: rollBack,
+		CommitStrategy:                       commitStrategy,
 	}
 
 	return migrateArgs, nil

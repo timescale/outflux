@@ -1,7 +1,8 @@
 package ingestion
 
 import (
-	"fmt"
+	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/timescale/outflux/internal/idrf"
@@ -14,10 +15,10 @@ func TestConvertByType(t *testing.T) {
 		expected    interface{}
 		isConverted bool
 	}{
-		{1, idrf.IDRFInteger32, "1", true},
-		{1, idrf.IDRFInteger64, "1", true},
-		{1.0, idrf.IDRFSingle, "1", true},
-		{1, idrf.IDRFDouble, "1", true},
+		{json.Number("1"), idrf.IDRFInteger32, int32(1), true},
+		{json.Number("1"), idrf.IDRFInteger64, int64(1), true},
+		{json.Number("1.0"), idrf.IDRFSingle, float32(1), true},
+		{json.Number("1"), idrf.IDRFDouble, float64(1), true},
 		{"1", idrf.IDRFString, "1", false},
 		{nil, idrf.IDRFBoolean, nil, false},
 	}
@@ -31,10 +32,11 @@ func TestConvertByType(t *testing.T) {
 				continue
 			}
 		}
-		if tc.isConverted && fmt.Sprintf("%v", tc.expected) != res {
-			t.Errorf("expected: %v\ngot: %v", tc.expected, res)
-		} else if !tc.isConverted && res.(string) != tc.expected.(string) {
-			t.Errorf("expected: %v\ngot: %v", tc.expected, res)
+
+		expectedType := reflect.TypeOf(tc.expected)
+		gotType := reflect.TypeOf(res)
+		if expectedType != gotType {
+			t.Errorf("expected type: %v\ngot: %v", expectedType, gotType)
 		}
 	}
 }

@@ -1,10 +1,7 @@
 package ingestion
 
 import (
-	"database/sql"
-	"fmt"
-
-	"github.com/lib/pq"
+	"github.com/jackc/pgx"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/schemamanagement"
 	"github.com/timescale/outflux/internal/utils"
@@ -17,7 +14,7 @@ const (
 
 // Ingestor takes a data channel of idrf rows and inserts them in a target database
 type Ingestor interface {
-	Start(errorBroadcaster utils.ErrorBroadcaster) (chan bool, error)
+	Start(errorBroadcaster utils.ErrorBroadcaster) chan bool
 }
 
 // NewIngestor creates a new instance of an Ingestor with a specified config, for a specified
@@ -25,7 +22,7 @@ type Ingestor interface {
 func NewIngestor(
 	config *IngestorConfig,
 	schemaManager schemamanagement.SchemaManager,
-	dbConn *sql.DB,
+	dbConn *pgx.Conn,
 	dataSet *idrf.DataSetInfo,
 	dataChannel chan idrf.Row) Ingestor {
 	return &defaultIngestor{
@@ -44,46 +41,33 @@ type defaultIngestor struct {
 	converter        IdrfConverter
 	ingestionRoutine Routine
 	schemaManager    schemamanagement.SchemaManager
-	dbConn           *sql.DB
+	dbConn           *pgx.Conn
 	dataSet          *idrf.DataSetInfo
 	dataChannel      chan idrf.Row
 }
 
-func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) (chan bool, error) {
-	id := ing.config.IngestorID
+func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) chan bool {
 	ackChannel := make(chan bool)
 
-	transaction, err := ing.dbConn.Begin()
-	if err != nil {
-		err = fmt.Errorf("%s: couldn't open a transaction.\n%v", id, err)
-		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
-		return nil, err
-	}
-
-	columnNames := extractColumnNames(ing.dataSet.Columns)
-	copyQuery := pq.CopyIn(ing.dataSet.DataSetName, columnNames...)
-	statement, err := transaction.Prepare(copyQuery)
-	if err != nil {
-		err = fmt.Errorf("%s: couldn't prepare COPY FROM statement in transaction\n%v", id, err)
-		errorBroadcaster.Broadcast(ing.config.IngestorID, err)
-		return nil, err
-	}
+	colNames := extractColumnNames(ing.dataSet.Columns)
 
 	ingestArgs := &ingestDataArgs{
 		ingestorID:              ing.config.IngestorID,
 		errorBroadcaster:        errorBroadcaster,
 		ackChannel:              ackChannel,
-		preparedStatement:       statement,
-		transaction:             transaction,
 		dataChannel:             ing.dataChannel,
 		converter:               ing.converter,
 		rollbackOnExternalError: ing.config.RollbackOnExternalError,
 		batchSize:               ing.config.BatchSize,
 		dbConn:                  ing.dbConn,
+		colNames:                colNames,
+		tableName:               ing.dataSet.DataSetName,
+		schemaName:              ing.dataSet.DataSetSchema,
+		commitStrategy:          ing.config.CommitStrategy,
 	}
 
 	go ing.ingestionRoutine.ingestData(ingestArgs)
-	return ackChannel, nil
+	return ackChannel
 }
 
 func extractColumnNames(columns []*idrf.ColumnInfo) []string {
