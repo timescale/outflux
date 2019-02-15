@@ -2,8 +2,9 @@ package ts
 
 import (
 	"fmt"
-	"github.com/jackc/pgx"
 	"testing"
+
+	"github.com/jackc/pgx"
 
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/schemamanagement"
@@ -14,6 +15,31 @@ type prepareArgs struct {
 	DataSet  *idrf.DataSetInfo
 }
 
+func TestNewTSSchemaManager(t *testing.T) {
+	NewTSSchemaManager(nil)
+}
+
+func TestDiscoverDataSets(t *testing.T) {
+	sm := &tsSchemaManager{}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
+	sm.DiscoverDataSets()
+	t.Errorf("The code did not panic")
+}
+
+func TestFetchDataSet(t *testing.T) {
+	sm := &tsSchemaManager{}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
+	sm.FetchDataSet("", "")
+	t.Errorf("The code did not panic")
+}
 func TestPrepareDataSetFails(t *testing.T) {
 	exampleColumns := []*idrf.ColumnInfo{
 		{Name: "time", DataType: idrf.IDRFTimestamptz},
@@ -51,12 +77,25 @@ func TestPrepareDataSetFails(t *testing.T) {
 			strat:    schemamanagement.DropAndCreate,
 			desc:     "drop strategy, table doesn't exist, error on create",
 		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.DropCascadeAndCreate},
+			explorer: onTableExists(false),
+			creator:  errorOnCreateTable(),
+			strat:    schemamanagement.DropAndCreate,
+			desc:     "drop cascade strategy, table doesn't exist, error on create",
+		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.DropAndCreate},
 			explorer: onTableExists(true),
 			creator:  okOnTableCreate(),
 			dropper:  errorOnDrop(),
 			strat:    schemamanagement.DropAndCreate,
 			desc:     "drop strategy, table exists, error on drop",
+		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.DropAndCreate},
+			explorer: onTableExists(true),
+			creator:  okOnTableCreate(),
+			dropper:  errorOnDrop(),
+			strat:    schemamanagement.DropCascadeAndCreate,
+			desc:     "drop cascade strategy, table exists, error on drop",
 		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.CreateIfMissing},
 			explorer: onTableExists(false),
@@ -71,13 +110,25 @@ func TestPrepareDataSetFails(t *testing.T) {
 			explorer: onFetchColError(),
 			desc:     "validate only, table exists, error on fetch columns",
 		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.CreateIfMissing},
+			explorer: onFetchColError(),
+			desc:     "create if missing, table exists, error on fetch columns",
+		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: onFetchColWith(wrongExistingColumns),
 			desc:     "validate only, incompatible tables",
 		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.CreateIfMissing},
+			explorer: onFetchColWith(wrongExistingColumns),
+			desc:     "create if missing, incompatible tables",
+		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: onTsExistsError(existingColumns),
 			desc:     "validate only, can't check if timescale extension is created",
+		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.CreateIfMissing},
+			explorer: onTsExistsError(existingColumns),
+			desc:     "create if missing, can't check if timescale extension is created",
 		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: onTsNotExits(existingColumns),
@@ -87,6 +138,10 @@ func TestPrepareDataSetFails(t *testing.T) {
 			explorer: onIsHypertableError(existingColumns),
 			desc:     "validate only, compatible, error checking if hypertable",
 		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.CreateIfMissing},
+			explorer: onIsHypertableError(existingColumns),
+			desc:     "create if missing, compatible, error checking if hypertable",
+		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: isNotHypertable(existingColumns),
 			desc:     "validate only, compatible, but existing is not a hypertable",
@@ -94,6 +149,10 @@ func TestPrepareDataSetFails(t *testing.T) {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: onPartByError(existingColumns),
 			desc:     "validate only, compatible, is hypertable, error checking partitioning",
+		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.CreateIfMissing},
+			explorer: onPartByError(existingColumns),
+			desc:     "create if missing, compatible, is hypertable, error checking partitioning",
 		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: notPartitionedProperly(existingColumns),
@@ -262,8 +321,16 @@ func (m *mocker) fetchTableColumns(db *pgx.Conn, schemaName, tableName string) (
 	return m.fetcColR, m.fetchColError
 }
 
-func (m *mocker) Create(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+func (m *mocker) CreateTable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
 	return m.tableCreateError
+}
+
+func (m *mocker) CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+	return nil
+}
+
+func (m *mocker) CreateTimescaleExtension(dbConn *pgx.Conn) error {
+	return nil
 }
 
 func (m *mocker) Drop(db *pgx.Conn, schema, table string, cascade bool) error {

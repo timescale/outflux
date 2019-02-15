@@ -2,8 +2,9 @@ package ts
 
 import (
 	"fmt"
-	"github.com/jackc/pgx"
 	"log"
+
+	"github.com/jackc/pgx"
 
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/schemamanagement"
@@ -40,34 +41,34 @@ func (sm *tsSchemaManager) PrepareDataSet(dataSet *idrf.DataSetInfo, strategy sc
 		return fmt.Errorf("could not prepare data set '%s'. Could not check if table exists. \n%v", dataSet.DataSetName, err)
 	}
 
-	strategyRequiresDrop := strategy == schemamanagement.DropAndCreate || strategy == schemamanagement.DropCascadeAndCreate
-	if strategyRequiresDrop {
+	switch strategy {
+	case schemamanagement.DropAndCreate:
 		return sm.prepareWithDropStrategy(dataSet, strategy, tableExists)
-	} else if strategy == schemamanagement.CreateIfMissing && !tableExists {
-		log.Printf("CreateIfMissing strategy: Table %s does not exist. Creating", dataSet.DataSetName)
-		return sm.creator.Create(sm.dbConn, dataSet)
-	} else if strategy != schemamanagement.CreateIfMissing && strategy != schemamanagement.ValidateOnly {
-		return fmt.Errorf("preparation step for strategy %v not implemented", strategy)
-	} else if strategy == schemamanagement.ValidateOnly && !tableExists {
-		return fmt.Errorf("validate only strategy selected, but table is not created in db")
+	case schemamanagement.DropCascadeAndCreate:
+		return sm.prepareWithDropStrategy(dataSet, strategy, tableExists)
+	case schemamanagement.CreateIfMissing:
+		return sm.prepareWithCreateIfMissing(dataSet, tableExists)
+	case schemamanagement.ValidateOnly:
+		return sm.validateOnly(dataSet, tableExists)
+	default:
+		panic("unexpected type")
+	}
+}
+
+func (sm *tsSchemaManager) validateOnly(dataSet *idrf.DataSetInfo, tableExists bool) error {
+	if !tableExists {
+		return fmt.Errorf("validate only strategy selected, but '%s' doesn't exist", dataSet.FullName())
 	}
 
 	log.Printf("Table %s.%s exists. Proceding only with validation", dataSet.DataSetSchema, dataSet.DataSetName)
-	existingTableColumns, err := sm.explorer.fetchTableColumns(sm.dbConn, dataSet.DataSetSchema, dataSet.DataSetName)
-	if err != nil {
-		return fmt.Errorf("could not retreive column information for table %s", dataSet.DataSetName)
-	}
-
-	err = isExistingTableCompatible(existingTableColumns, dataSet.Columns, dataSet.TimeColumn)
-	if err != nil {
-		return fmt.Errorf("existing table in target db is not compatible with required. %v", err)
+	if err := sm.validateColumns(dataSet); err != nil {
+		return err
 	}
 
 	timescaleExists, err := sm.explorer.timescaleExists(sm.dbConn)
 	if err != nil {
 		return fmt.Errorf("could not check if TimescaleDB is installed")
 	}
-
 	if !timescaleExists {
 		return fmt.Errorf("timescaledb extension not installed in database")
 	}
@@ -76,22 +77,11 @@ func (sm *tsSchemaManager) PrepareDataSet(dataSet *idrf.DataSetInfo, strategy sc
 	if err != nil {
 		return fmt.Errorf("could not check if table %s is hypertable", dataSet.DataSetName)
 	}
-
 	if !isHypertable {
 		return fmt.Errorf("existing table %s is not a hypertable", dataSet.DataSetName)
 	}
 
-	isPartitionedProperly, err := sm.explorer.isTimePartitionedBy(sm.dbConn, dataSet.DataSetSchema, dataSet.DataSetName, dataSet.TimeColumn)
-	if err != nil {
-		return fmt.Errorf("could not check if existing hypertable '%s' is partitioned properly\n%v", dataSet.DataSetName, err)
-	}
-
-	if !isPartitionedProperly {
-		return fmt.Errorf("existing hypertable '%s' is not partitioned by timestamp column: %s", dataSet.DataSetName, dataSet.TimeColumn)
-	}
-
-	log.Printf("Table is compatible, TimescaleDB is installed and hyptertable is properly set up for partitioning")
-	return nil
+	return sm.validatePartitioning(dataSet)
 }
 
 func (sm *tsSchemaManager) prepareWithDropStrategy(dataSet *idrf.DataSetInfo, strategy schemamanagement.SchemaStrategy, tableExists bool) error {
@@ -105,5 +95,69 @@ func (sm *tsSchemaManager) prepareWithDropStrategy(dataSet *idrf.DataSetInfo, st
 	}
 
 	log.Printf("Table %s.%s ready to be created", dataSet.DataSetSchema, dataSet.DataSetName)
-	return sm.creator.Create(sm.dbConn, dataSet)
+	return sm.creator.CreateTable(sm.dbConn, dataSet)
+}
+
+func (sm *tsSchemaManager) prepareWithCreateIfMissing(dataSet *idrf.DataSetInfo, tableExists bool) error {
+	if !tableExists {
+		log.Printf("CreateIfMissing strategy: Table %s does not exist. Creating", dataSet.FullName())
+		return sm.creator.CreateTable(sm.dbConn, dataSet)
+	}
+
+	if err := sm.validateColumns(dataSet); err != nil {
+		return err
+	}
+
+	timescaleExists, err := sm.explorer.timescaleExists(sm.dbConn)
+	if err != nil {
+		return fmt.Errorf("could not check if TimescaleDB is installed")
+	}
+
+	if !timescaleExists {
+		err := sm.creator.CreateTimescaleExtension(sm.dbConn)
+		if err != nil {
+			return err
+		}
+	}
+
+	isHypertable, err := sm.explorer.isHypertable(sm.dbConn, dataSet.DataSetSchema, dataSet.DataSetName)
+	if err != nil {
+		return fmt.Errorf("could not check if table %s is hypertable", dataSet.DataSetName)
+	}
+
+	if !isHypertable {
+		err := sm.creator.CreateHypertable(sm.dbConn, dataSet)
+		return err
+	}
+
+	return sm.validatePartitioning(dataSet)
+
+}
+
+func (sm *tsSchemaManager) validateColumns(dataSet *idrf.DataSetInfo) error {
+	existingTableColumns, err := sm.explorer.fetchTableColumns(sm.dbConn, dataSet.DataSetSchema, dataSet.DataSetName)
+	if err != nil {
+		return fmt.Errorf("could not retreive column information for table %s", dataSet.FullName())
+	}
+
+	err = isExistingTableCompatible(existingTableColumns, dataSet.Columns, dataSet.TimeColumn)
+	if err != nil {
+		return fmt.Errorf("existing table in target db is not compatible with required. %v", err)
+	}
+
+	return nil
+}
+
+func (sm *tsSchemaManager) validatePartitioning(dataSet *idrf.DataSetInfo) error {
+	isPartitionedProperly, err := sm.explorer.isTimePartitionedBy(sm.dbConn, dataSet.DataSetSchema, dataSet.DataSetName, dataSet.TimeColumn)
+	if err != nil {
+		return fmt.Errorf("could not check if existing hypertable '%s' is partitioned properly\n%v", dataSet.DataSetName, err)
+	}
+
+	if !isPartitionedProperly {
+		return fmt.Errorf("existing hypertable '%s' is not partitioned by timestamp column: %s", dataSet.FullName(), dataSet.TimeColumn)
+	}
+
+	log.Printf("existing hypertable '%s' is partitioned properly", dataSet.FullName())
+	return nil
 }

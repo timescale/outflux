@@ -17,6 +17,14 @@ func (set *DataSetInfo) String() string {
 	return fmt.Sprintf("DataSetInfo { dataSetName: %s, columns: %s, time column: %s }", set.DataSetName, set.Columns, set.TimeColumn)
 }
 
+func (set *DataSetInfo) FullName() string {
+	if set.DataSetSchema != "" {
+		return set.DataSetSchema + "." + set.DataSetName
+	}
+
+	return set.DataSetName
+}
+
 // ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column
 // with that name exists in the data set
 func (set DataSetInfo) ColumnNamed(columnName string) *ColumnInfo {
