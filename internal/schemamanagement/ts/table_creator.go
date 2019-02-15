@@ -3,6 +3,7 @@ package ts
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/timescale/outflux/internal/idrf"
@@ -12,6 +13,7 @@ const (
 	createTableQueryTemplate      = "CREATE TABLE %s(%s)"
 	columnDefTemplate             = "%s %s"
 	createHypertableQueryTemplate = "SELECT create_hypertable('%s', '%s');"
+	createTimescaleExtensionQuery = "CREATE EXTENSION IF NOT EXISTS timescaledb"
 )
 
 type tableCreator interface {
@@ -31,13 +33,23 @@ func (d *defaultTableCreator) Create(dbConn *sql.DB, info *idrf.DataSetInfo) err
 	}
 
 	query := dataSetToSQLTableDef(tableName, info)
+	log.Printf("Creating table with:\n %s", query)
 
 	rows, err := dbConn.Query(query)
 	if err != nil {
 		return err
 	}
 	rows.Close()
+
+	log.Printf("Preparing TimescaleDB extension:\n%s", createTimescaleExtensionQuery)
+	rows, err = dbConn.Query(createTimescaleExtensionQuery)
+	if err != nil {
+		return err
+	}
+	rows.Close()
+
 	hypertableQuery := fmt.Sprintf(createHypertableQueryTemplate, tableName, info.TimeColumn)
+	log.Printf("Creating hypertable with: %s", hypertableQuery)
 	rows, err = dbConn.Query(hypertableQuery)
 	if err != nil {
 		return err

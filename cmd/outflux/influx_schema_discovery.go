@@ -44,7 +44,7 @@ func discoverSchemaForMeasures(app *appContext, args *pipeline.ConnectionConfig,
 	discoveredDataSets := make([]*idrf.DataSetInfo, len(args.InputMeasures))
 	var err error
 	for i, measureName := range args.InputMeasures {
-		discoveredDataSets[i], err = schemaManager.FetchDataSet(args.InputDb, measureName)
+		discoveredDataSets[i], err = schemaManager.FetchDataSet("", measureName)
 		if err != nil {
 			log.Printf("Could not discover schema for measurement: %s\n", measureName)
 			return nil, err

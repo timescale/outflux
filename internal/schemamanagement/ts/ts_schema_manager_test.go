@@ -41,7 +41,7 @@ func TestPrepareDataSetFails(t *testing.T) {
 		dropper  tableDropper
 	}{
 		{
-			args:     prepareArgs{DataSet: dataSet},
+			args:     prepareArgs{DataSet: dataSet, Strategy:schemamanagement.ValidateOnly},
 			explorer: errorOnTableExistsExplorer(),
 			desc:     "error checking if target table exists",
 		}, {
@@ -74,6 +74,14 @@ func TestPrepareDataSetFails(t *testing.T) {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: onFetchColWith(wrongExistingColumns),
 			desc:     "validate only, incompatible tables",
+		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			explorer: onTsExistsError(existingColumns),
+			desc:     "validate only, can't check if timescale extension is created",
+		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			explorer: onTsNotExits(existingColumns),
+			desc:     "validate only, timescale extension not created",
 		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: onIsHypertableError(existingColumns),
@@ -163,52 +171,61 @@ func TestPrepareOk(t *testing.T) {
 
 func errorOnTableExistsExplorer() schemaExplorer {
 	errorTableFinder := &mocker{tableExistsR: false, tableExistsErr: fmt.Errorf("error")}
-	return newSchemaExplorerWith(errorTableFinder, nil, nil, nil)
+	return newSchemaExplorerWith(errorTableFinder, nil, nil, nil, nil)
 }
 
 func onTableExists(exists bool) schemaExplorer {
 	finder := &mocker{tableExistsR: exists}
-	return newSchemaExplorerWith(finder, nil, nil, nil)
+	return newSchemaExplorerWith(finder, nil, nil, nil, nil)
 }
 
 func onFetchColError() schemaExplorer {
 	mocker := &mocker{tableExistsR: true, fetchColError: fmt.Errorf("error")}
-	return newSchemaExplorerWith(mocker, mocker, nil, nil)
+	return newSchemaExplorerWith(mocker, mocker, nil, nil, nil)
 }
 
 func onFetchColWith(res []*columnDesc) schemaExplorer {
 	mocker := &mocker{tableExistsR: true, fetcColR: res}
-	return newSchemaExplorerWith(mocker, mocker, nil, nil)
+	return newSchemaExplorerWith(mocker, mocker, nil, nil, nil)
 }
 
+func onTsExistsError(cols []*columnDesc) schemaExplorer {
+	mocker := &mocker{tableExistsR: true, fetcColR: cols, tsExtErr: fmt.Errorf("error")}
+	return newSchemaExplorerWith(mocker, mocker, mocker, nil, mocker)
+}
+
+func onTsNotExits(cols []*columnDesc) schemaExplorer {
+	mocker := &mocker{tableExistsR: true, fetcColR: cols, tsExt: false}
+	return newSchemaExplorerWith(mocker, mocker, mocker, nil, mocker)
+}
 func onIsHypertableError(cols []*columnDesc) schemaExplorer {
-	mocker := &mocker{tableExistsR: true, fetcColR: cols, isHypertableErr: fmt.Errorf("error")}
-	return newSchemaExplorerWith(mocker, mocker, mocker, nil)
+	mocker := &mocker{tableExistsR: true, fetcColR: cols, tsExt: true, isHypertableErr: fmt.Errorf("error")}
+	return newSchemaExplorerWith(mocker, mocker, mocker, nil, mocker)
 }
 
 func isNotHypertable(cols []*columnDesc) schemaExplorer {
-	mocker := &mocker{tableExistsR: true, fetcColR: cols, isHyper: false}
-	return newSchemaExplorerWith(mocker, mocker, mocker, nil)
+	mocker := &mocker{tableExistsR: true, fetcColR: cols, tsExt: true, isHyper: false}
+	return newSchemaExplorerWith(mocker, mocker, mocker, nil, mocker)
 }
 
 func onPartByError(cols []*columnDesc) schemaExplorer {
-	mocker := &mocker{tableExistsR: true, fetcColR: cols, isHyper: true, isTimePartErr: fmt.Errorf("error")}
-	return newSchemaExplorerWith(mocker, mocker, mocker, mocker)
+	mocker := &mocker{tableExistsR: true, fetcColR: cols, tsExt: true, isHyper: true, isTimePartErr: fmt.Errorf("error")}
+	return newSchemaExplorerWith(mocker, mocker, mocker, mocker, mocker)
 }
 
 func notPartitionedProperly(cols []*columnDesc) schemaExplorer {
-	mocker := &mocker{tableExistsR: true, fetcColR: cols, isHyper: true, isTimePartBy: false}
-	return newSchemaExplorerWith(mocker, mocker, mocker, mocker)
+	mocker := &mocker{tableExistsR: true, fetcColR: cols, tsExt: true, isHyper: true, isTimePartBy: false}
+	return newSchemaExplorerWith(mocker, mocker, mocker, mocker, mocker)
 }
 
 func properMock(cols []*columnDesc) schemaExplorer {
-	mocker := &mocker{tableExistsR: true, fetcColR: cols, isHyper: true, isTimePartBy: true}
-	return newSchemaExplorerWith(mocker, mocker, mocker, mocker)
+	mocker := &mocker{tableExistsR: true, fetcColR: cols, tsExt: true, isHyper: true, isTimePartBy: true}
+	return newSchemaExplorerWith(mocker, mocker, mocker, mocker, mocker)
 }
 
 func properMockForCreateIfMissing(cols []*columnDesc) schemaExplorer {
 	mocker := &mocker{tableExistsR: false, fetchColError: fmt.Errorf("error")}
-	return newSchemaExplorerWith(mocker, mocker, nil, nil)
+	return newSchemaExplorerWith(mocker, mocker, nil, nil, nil)
 }
 
 func okOnTableCreate() tableCreator {
@@ -229,6 +246,8 @@ type mocker struct {
 	dropError        error
 	fetchColError    error
 	fetcColR         []*columnDesc
+	tsExt            bool
+	tsExtErr         error
 	isHypertableErr  error
 	isHyper          bool
 	isTimePartBy     bool
@@ -257,4 +276,8 @@ func (m *mocker) isHypertable(db *sql.DB, schemaName, tableName string) (bool, e
 
 func (m *mocker) isTimePartitionedBy(db *sql.DB, schema, table, time string) (bool, error) {
 	return m.isTimePartBy, m.isTimePartErr
+}
+
+func (m *mocker) timescaleExists(db *sql.DB) (bool, error) {
+	return m.tsExt, m.tsExtErr
 }

@@ -3,6 +3,7 @@ package ts
 import (
 	"database/sql"
 	"fmt"
+	"log"
 )
 
 const (
@@ -32,6 +33,7 @@ func (d *defaultTableDropper) Drop(db *sql.DB, schema, table string, cascade boo
 		query = fmt.Sprintf(dropTableQueryTemplate, name)
 	}
 
+	log.Printf("Executing: %s", query)
 	rows, err := db.Query(query)
 	if err != nil {
 		return err

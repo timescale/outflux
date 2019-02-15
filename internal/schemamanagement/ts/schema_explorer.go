@@ -18,6 +18,7 @@ const (
 								 	FROM timescaledb_information.hypertable
 									 WHERE  table_schema = $1 AND table_name=$2)`
 	hypertableDimensionsQueryTemplate = "SELECT partitioning_columns, partitioning_column_types FROM chunk_relation_size_pretty('%s') limit 1;"
+	timescaleCreatedQuery             = "SELECT EXISTS (SELECT 1 FROM from pg_extension WHERE extname = 'timescaledb')"
 	isNullableSignifyingValue         = "YES"
 )
 
@@ -37,34 +38,53 @@ type hypertableDimensionExplorer interface {
 	isTimePartitionedBy(db *sql.DB, schema, table, timeColumn string) (bool, error)
 }
 
+type timescaleExistsChecker interface {
+	timescaleExists(db *sql.DB) (bool, error)
+}
+
 type schemaExplorer interface {
 	tableFinder
 	columnFinder
 	hypertableChecker
 	hypertableDimensionExplorer
+	timescaleExistsChecker
 }
 
 type defaultTableFinder struct{}
 type defaultColumnFinder struct{}
 type defaultHyptertableChecker struct{}
 type defaultHypertableDimensionExplorer struct{}
-
+type defaultTimescaleExistsChecker struct{}
 type defaultSchemaExplorer struct {
 	tableFinder
 	columnFinder
 	hypertableChecker
 	hypertableDimensionExplorer
+	timescaleExistsChecker
 }
 
 func newSchemaExplorer() schemaExplorer {
 	return &defaultSchemaExplorer{
-		&defaultTableFinder{}, &defaultColumnFinder{}, &defaultHyptertableChecker{}, &defaultHypertableDimensionExplorer{},
+		&defaultTableFinder{},
+		&defaultColumnFinder{},
+		&defaultHyptertableChecker{},
+		&defaultHypertableDimensionExplorer{},
+		&defaultTimescaleExistsChecker{},
 	}
 }
 
-func newSchemaExplorerWith(tblFinder tableFinder, colFinder columnFinder, hyperChecker hypertableChecker, dimExplorerr hypertableDimensionExplorer) schemaExplorer {
+func newSchemaExplorerWith(
+	tblFinder tableFinder,
+	colFinder columnFinder,
+	hyperChecker hypertableChecker,
+	dimExplorerr hypertableDimensionExplorer,
+	tsChecker timescaleExistsChecker) schemaExplorer {
 	return &defaultSchemaExplorer{
-		tblFinder, colFinder, hyperChecker, dimExplorerr,
+		tblFinder,
+		colFinder,
+		hyperChecker,
+		dimExplorerr,
+		tsChecker,
 	}
 }
 
@@ -176,7 +196,7 @@ func (f *defaultHypertableDimensionExplorer) isTimePartitionedBy(db *sql.DB, sch
 		return false, err
 	}
 
-	if len(dimensions) < 1 {
+	if dimensions == nil || len(dimensions) < 1 {
 		return false, fmt.Errorf("hypertable didn't have no partitioning dimensions")
 	}
 
@@ -190,6 +210,22 @@ func (f *defaultHypertableDimensionExplorer) isTimePartitionedBy(db *sql.DB, sch
 	}
 
 	return true, nil
+}
+
+func (d *defaultTimescaleExistsChecker) timescaleExists(db *sql.DB) (bool, error){
+	rows, err := db.Query(timescaleCreatedQuery)
+	if err != nil {
+		return false, err
+	}
+
+	defer rows.Close()
+	exists := false
+	if !rows.Next() {
+		return false, fmt.Errorf("couldn't extract result from postgres response")
+	}
+
+	err = rows.Scan(&exists)
+	return exists, err
 }
 
 type columnDesc struct {

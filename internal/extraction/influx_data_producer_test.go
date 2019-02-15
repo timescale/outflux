@@ -14,12 +14,12 @@ import (
 func TestBuildSelectCommand(t *testing.T) {
 	db, measure := "db", "measure"
 	oneColumnExample := []*idrf.ColumnInfo{
-		&idrf.ColumnInfo{Name: "col1", DataType: idrf.IDRFBoolean, ForeignKey: nil},
+		{Name: "col1", DataType: idrf.IDRFBoolean, ForeignKey: nil},
 	}
 
 	twoColumnExample := []*idrf.ColumnInfo{
-		&idrf.ColumnInfo{Name: "col1", DataType: idrf.IDRFBoolean, ForeignKey: nil},
-		&idrf.ColumnInfo{Name: "col 2", DataType: idrf.IDRFBoolean, ForeignKey: nil},
+		{Name: "col1", DataType: idrf.IDRFBoolean, ForeignKey: nil},
+		{Name: "col 2", DataType: idrf.IDRFBoolean, ForeignKey: nil},
 	}
 
 	testCases := []struct {
@@ -30,27 +30,27 @@ func TestBuildSelectCommand(t *testing.T) {
 		{ // one column, no time boundaries
 			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "", To: "", ChunkSize: 1},
 			columns:  oneColumnExample,
-			expected: "SELECT \"col1\" FROM \"measure\"",
+			expected: "SELECT \"col1\"\nFROM \"measure\"",
 		}, { // two columns, space in one columns name, lower boundry
 			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "from", To: "", ChunkSize: 1},
 			columns:  twoColumnExample,
-			expected: "SELECT \"col1\", \"col 2\" FROM \"measure\" WHERE time >= 'from'",
+			expected: "SELECT \"col1\", \"col 2\"\nFROM \"measure\"\nWHERE time >= 'from'",
 		}, { // one column, upper boundry
 			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "", To: "to", ChunkSize: 1},
 			columns:  oneColumnExample,
-			expected: "SELECT \"col1\" FROM \"measure\" WHERE time <= 'to'",
+			expected: "SELECT \"col1\"\nFROM \"measure\"\nWHERE time <= 'to'",
 		}, { //double bounded
 			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "from", To: "to", ChunkSize: 1},
 			columns:  oneColumnExample,
-			expected: "SELECT \"col1\" FROM \"measure\" WHERE time >= 'from' AND time <= 'to'",
+			expected: "SELECT \"col1\"\nFROM \"measure\"\nWHERE time >= 'from' AND time <= 'to'",
 		}, { //double bounded with limit
 			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "from", To: "to", ChunkSize: 1, Limit: 1},
 			columns:  oneColumnExample,
-			expected: "SELECT \"col1\" FROM \"measure\" WHERE time >= 'from' AND time <= 'to' LIMIT 1",
+			expected: "SELECT \"col1\"\nFROM \"measure\"\nWHERE time >= 'from' AND time <= 'to' \nLIMIT 1",
 		}, { //no boundes with limit
 			config:   &config.MeasureExtraction{Database: db, Measure: measure, From: "", To: "", ChunkSize: 1, Limit: 1},
 			columns:  oneColumnExample,
-			expected: "SELECT \"col1\" FROM \"measure\" LIMIT 1",
+			expected: "SELECT \"col1\"\nFROM \"measure\" \nLIMIT 1",
 		},
 	}
 
@@ -58,7 +58,7 @@ func TestBuildSelectCommand(t *testing.T) {
 		result := buildSelectCommand(testCase.config, testCase.columns)
 
 		if result != testCase.expected {
-			t.Errorf("expected query: %s\n, got query: %s", testCase.expected, result)
+			t.Errorf("expected query: %s, got query: %s", testCase.expected, result)
 		}
 	}
 }
