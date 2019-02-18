@@ -31,10 +31,13 @@ func TestCreateTable(t *testing.T) {
 		t.Errorf("expected no error, got: %v", err)
 	}
 
-	tableeColumns := fmt.Sprintf(`SELECT column_name, data_type
+	tableColumns := fmt.Sprintf(`SELECT column_name, data_type
 	FROM information_schema.columns
 	WHERE table_schema = %s AND table_name = %s`, "'public'", "'name'")
-	rows := testutils.ExecuteTSQuery(db, tableeColumns)
+	rows, err := dbConn.Query(tableColumns)
+	if err != nil {
+		t.Error(err)
+	}
 	defer rows.Close()
 	currCol := 0
 	for rows.Next() {

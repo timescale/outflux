@@ -1,8 +1,8 @@
 package ts
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx"
 	"log"
 
 	"github.com/timescale/outflux/internal/idrf"
@@ -13,11 +13,11 @@ type tsSchemaManager struct {
 	explorer schemaExplorer
 	creator  tableCreator
 	dropper  tableDropper
-	dbConn   *sql.DB
+	dbConn   *pgx.Conn
 }
 
 // NewTSSchemaManager creates a new TimeScale Schema Manager
-func NewTSSchemaManager(dbConn *sql.DB) schemamanagement.SchemaManager {
+func NewTSSchemaManager(dbConn *pgx.Conn) schemamanagement.SchemaManager {
 	return &tsSchemaManager{
 		dbConn:   dbConn,
 		explorer: newSchemaExplorer(),

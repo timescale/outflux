@@ -9,6 +9,7 @@ import (
 type MigrationConfig struct {
 	Connection                           *ConnectionConfig
 	OutputSchemaStrategy                 schemamanagement.SchemaStrategy
+	OutputSchema                         string
 	From                                 string
 	To                                   string
 	Limit                                uint64

@@ -1,8 +1,8 @@
 package ts
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx"
 	"testing"
 
 	"github.com/timescale/outflux/internal/idrf"
@@ -41,7 +41,7 @@ func TestPrepareDataSetFails(t *testing.T) {
 		dropper  tableDropper
 	}{
 		{
-			args:     prepareArgs{DataSet: dataSet, Strategy:schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
 			explorer: errorOnTableExistsExplorer(),
 			desc:     "error checking if target table exists",
 		}, {
@@ -254,30 +254,30 @@ type mocker struct {
 	isTimePartErr    error
 }
 
-func (m *mocker) tableExists(db *sql.DB, schemaName, tableName string) (bool, error) {
+func (m *mocker) tableExists(db *pgx.Conn, schemaName, tableName string) (bool, error) {
 	return m.tableExistsR, m.tableExistsErr
 }
 
-func (m *mocker) fetchTableColumns(db *sql.DB, schemaName, tableName string) ([]*columnDesc, error) {
+func (m *mocker) fetchTableColumns(db *pgx.Conn, schemaName, tableName string) ([]*columnDesc, error) {
 	return m.fetcColR, m.fetchColError
 }
 
-func (m *mocker) Create(dbConn *sql.DB, info *idrf.DataSetInfo) error {
+func (m *mocker) Create(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
 	return m.tableCreateError
 }
 
-func (m *mocker) Drop(db *sql.DB, schema, table string, cascade bool) error {
+func (m *mocker) Drop(db *pgx.Conn, schema, table string, cascade bool) error {
 	return m.dropError
 }
 
-func (m *mocker) isHypertable(db *sql.DB, schemaName, tableName string) (bool, error) {
+func (m *mocker) isHypertable(db *pgx.Conn, schemaName, tableName string) (bool, error) {
 	return m.isHyper, m.isHypertableErr
 }
 
-func (m *mocker) isTimePartitionedBy(db *sql.DB, schema, table, time string) (bool, error) {
+func (m *mocker) isTimePartitionedBy(db *pgx.Conn, schema, table, time string) (bool, error) {
 	return m.isTimePartBy, m.isTimePartErr
 }
 
-func (m *mocker) timescaleExists(db *sql.DB) (bool, error) {
+func (m *mocker) timescaleExists(db *pgx.Conn) (bool, error) {
 	return m.tsExt, m.tsExtErr
 }

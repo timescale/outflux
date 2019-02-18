@@ -1,8 +1,8 @@
 package ts
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx"
 	"log"
 )
 
@@ -12,7 +12,7 @@ const (
 )
 
 type tableDropper interface {
-	Drop(db *sql.DB, schema, table string, cascade bool) error
+	Drop(db *pgx.Conn, schema, table string, cascade bool) error
 }
 
 type defaultTableDropper struct{}
@@ -20,7 +20,7 @@ type defaultTableDropper struct{}
 func newTableDropper() tableDropper {
 	return &defaultTableDropper{}
 }
-func (d *defaultTableDropper) Drop(db *sql.DB, schema, table string, cascade bool) error {
+func (d *defaultTableDropper) Drop(db *pgx.Conn, schema, table string, cascade bool) error {
 	name := table
 	if schema != "" {
 		name = schema + "." + name
@@ -34,10 +34,9 @@ func (d *defaultTableDropper) Drop(db *sql.DB, schema, table string, cascade boo
 	}
 
 	log.Printf("Executing: %s", query)
-	rows, err := db.Query(query)
+	_, err := db.Exec(query)
 	if err != nil {
 		return err
 	}
-	rows.Close()
 	return nil
 }
