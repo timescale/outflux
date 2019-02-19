@@ -29,7 +29,7 @@ const (
 	DefaultInputUser               = ""
 	DefaultInputPass               = ""
 	DefaultOutputConn              = "sslmode=disable"
-	DefaultUseEnvVars              = false
+	DefaultUseEnvVars              = true
 	DefaultOutputSchema            = ""
 	DefaultSchemaStrategy          = schemamanagement.CreateIfMissing
 	DefaultCommitStrategy          = ingestion.CommitOnEachBatch
