@@ -34,4 +34,5 @@ func AddConnectionFlagsToCmd(cmd *cobra.Command) {
 		fmt.Sprintf("If set to true, overrides the '%s' flag and tells outflux to use the PostgreSQL environemnt"+
 			" variables to establish the connection. Available flags: PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD"+
 			"PGSSLMODE PGSSLCERT PGSSLKEY PGSSLROOTCERT PGAPPNAME PGCONNECT_TIMEOUT", OutputConnFlag))
+
 }

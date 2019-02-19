@@ -1,11 +1,9 @@
 package connections
 
 import (
-	"github.com/jackc/pgx"
 	"log"
 
-	// Postgres driver
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx"
 )
 
 // TSConnectionService creates new timescale db connections
