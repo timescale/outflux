@@ -15,6 +15,7 @@ $ cd $GOPATH/src/github.com/timescale/outflux
 $ dep ensure -v
 
 # Install the Outflux binary:
+$ cd cmd/outlux
 $ go install 
 ```
 
@@ -24,9 +25,37 @@ $ go install
 
 It is recommended that you have some InfluxDB database with some data. For testing purposes you can check out the [TSBS Data Loader Tool](https://github.com/timescale/tsbs) part of the Time Series Benchmark Suite. It can generate large ammounts of data for and load them in influx. Data can be generated with [one command](https://github.com/timescale/tsbs#data-generation), just specify the format as 'influx', and them load it in with [another command](https://github.com/timescale/tsbs#data-generation).
 
+### Schema Transfer
+
+The Outflux CLI has two commands. The first one is `schema-transfer`. This command will discover the schema of a InfluxDB database, or specific measurements in a InfluxDB database, and depending on the strategy selected create or verify a TimescaleDB database that could hold the data.
+
+The possible flags for the command can be seen by running 
+
+```bash
+$ cd $GOPATH/bin/
+$ ./outflux schema-transfer --help
+```
+
+Usage of the is `outflux schema-transfer database [measure1 measure2 ...] [flags]`. Where database is the name of the InfluxDB database you wish to export. `[measure1 ...] ` are optional and if specified will export only those measurements from the selected database.
+
+For example `outflux schema-transfer benchmark cpu mem` will discover the schema for the `cpu` and `mem` measurements from the `benchmark` database.
+
+Available flags for schema-transfer are:
+
+| flag             | type    | default               | description |
+|------------------|---------|-----------------------|-------------|
+| input-host       | string  | http://localhost:8086 | Host of the input database, http(s)://location:port. |
+| input-pass       | string  |                       | Password to use when connecting to the input database |
+| input-user       | string  |                       | Username to use when connecting to the input database |
+| output-conn      | string  | sslmode=disable       | Connection string to use to connect to the output database, i.e. 'user=a password=a host=localhostport=5432 dbname=test sslmode=disable' (default ) |
+| output-schema    | string  |                       | The schema of the output database that the data will be inserted into |
+| schema-strategy  | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
+| use-env-vars     | bool    | true                  | If set to true, overrides the 'output-conn' flag and tells outflux to use the PostgreSQL environemnt variables to establish the connection. Available flags: PGHOST PGPORT PGDATABASE PGUSER PGPASSWORDPGSSLMODE PGSSLCERT PGSSLKEY PGSSLROOTCERT PGAPPNAME PGCONNECT_TIMEOUT (default true) |
+| quiet            | bool    | false                 | If specified will suppress any log to STDOUT |
+
 ### Migrate
 
-The Outlux CLI has only one command currently, `migrate`. The possible flags for the command can be seen by running:
+The second command of the Outflux CLI is `migrate`. The possible flags for the command can be seen by running:
 
 ```bash
 $ cd $GOPATH/bin/
@@ -37,7 +66,7 @@ Usage of the command is `outflux migrate database [measure1 measure2 ...] [flags
 
 For example `outflux migrate benchmark cpu mem` will export the `cpu` and `mem` measurements from the `benchmark` database. On the other hand `outflux migrate benchmark` will export all measurements in the `benchmark` database.
 
-### Available flags
+Available flags are:
 
 | flag                       | type    | default               | description|
 |----------------------------|---------|-----------------------|------------|
@@ -47,14 +76,12 @@ For example `outflux migrate benchmark cpu mem` will export the `cpu` and `mem` 
 | limit                      | uint64  | 0                     | If specified will limit the export points to its value. 0 = NO LIMIT |
 | from                       | string  |                       | If specified will export data with a timestamp >= of its value. Accepted format: RFC3339 |
 | to                         | string  |                       | If specified will export data with a timestamp <= of its value. Accepted format: RFC3339 |
-| output-db                  | string  |                       | Output (Target) database that the data will be inserted into |
-| output-db-ssl-mode         | string  | disable               | SSL mode to use when connecting to the output server. Valid options: disable, require, verify-ca, verify-full |
-| output-host                | string  | localhost:5432        | Host of the output database, location:port. |
-| output-user                | string  |                       | Username to use when connecting to the output database.
-| output-pass                | string  |                       | Password to use when connecting to the output database |
+| output-conn                | string  | sslmode=disable       | Connection string to use to connect to the output database, i.e. 'user=a password=a host=localhostport=5432 dbname=test sslmode=disable' (default ) |
 | output-schema              | string  | public                | The schema of the output database that the data will be inserted into. |
+| use-env-vars               | bool    | true                  | If set to true, overrides the 'output-conn' flag and tells outflux to use the PostgreSQL environemnt variables to establish the connection. Available flags: PGHOST PGPORT PGDATABASE PGUSER PGPASSWORDPGSSLMODE PGSSLCERT PGSSLKEY PGSSLROOTCERT PGAPPNAME PGCONNECT_TIMEOUT (default true) |
 | schema-strategy            | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
 | chunk-size                 | uint16  | 15000                 | The export query will request data in chunks of this size. Must be > 0 |
+| batch-size                 | uint16  | 8000                  | The size of the batch inserted in to the output database |
 | data-buffer                | uint16  | 15000                 | Size of the buffer holding exported data ready to be inserted in the output database |
 | max-parallel               | uint8   | 2                     | Number of parallel measure extractions. One InfluxDB measure is exported using 1 worker |
 | rollback-on-external-error | bool    | true                  | If set, when an error occurs while extracting the data, the insertion will be rollbacked. Otherwise it will try to commit |
@@ -62,15 +89,22 @@ For example `outflux migrate benchmark cpu mem` will export the `cpu` and `mem` 
 
 ### Examples
 
+* Use environment variables for determining output db connection
+```bash
+$ PGPORT=5433
+$ PGDATABASE=test
+$ PGUSER=test
+...
+$ ./outflux schema-transfer benchmark
+```
+
 * Export the complete 'benchmark' database on localhost:8086 to the targetdb database on localhost:5432
 
 ```bash
 $ outflux migrate benchmark \
 > --input-user=test \
 > --input-pass=test \
-> --output-db=targetdb \
-> --output-user=test \
-> --output-pass=test
+> --use-env-vars=false --output-conn='dbname=targetdb user=test password=test' \
 ```
 
 * Export only measurement 'cpu' from the 'benchmark' drop the existing 'cpu' table in 'targetdb' if exists, create if not
@@ -78,9 +112,8 @@ $ outflux migrate benchmark \
 $ outflux migrate benchmark cpu \
 > --input-user=test \
 > --input-pass=test \
-> --output-db=targetdb \
-> --output-user=test \
-> --output-pass=test \
+> --output-con='dbname=targetdb user=test pass=test'\
+> --use-env-vars=false \
 > --schema-strategy=DropAndCreate
 ```
 
@@ -89,9 +122,6 @@ $ outflux migrate benchmark cpu \
 $ ./outflux migrate benchmark cpu mem \
 > --input-user=test \
 > --input-pass=test \
-> --output-db=targetdb \
-> --output-user=test \
-> --output-pass=test \
 > --limit=1000000 \
 > --from=2019-01-01T09:00:00Z
 ```
