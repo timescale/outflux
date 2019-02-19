@@ -2,9 +2,10 @@ package ts
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/jackc/pgx"
 
-	"github.com/lib/pq"
 	"github.com/timescale/outflux/internal/idrf"
 )
 
@@ -17,9 +18,14 @@ const (
 		    						SELECT 1
 								 	FROM timescaledb_information.hypertable
 									 WHERE  table_schema = $1 AND table_name=$2)`
-	hypertableDimensionsQueryTemplate = "SELECT partitioning_columns, partitioning_column_types FROM chunk_relation_size_pretty('%s') limit 1;"
-	timescaleCreatedQuery             = "SELECT EXISTS (SELECT 1 FROM from pg_extension WHERE extname = 'timescaledb')"
-	isNullableSignifyingValue         = "YES"
+	hypertableDimensionsQueryTemplate = `SELECT column_name, column_type
+                                         FROM _timescaledb_catalog.dimension d
+              							 JOIN _timescaledb_catalog.hypertable h ON d.hypertable_id = h.id
+										 WHERE h.schema_name = $1 AND h.table_name = $2
+										 ORDER BY d.id ASC
+										 LIMIT 1;`
+	timescaleCreatedQuery     = "SELECT EXISTS (SELECT 1 FROM from pg_extension WHERE extname = 'timescaledb')"
+	isNullableSignifyingValue = "YES"
 )
 
 type tableFinder interface {
@@ -178,34 +184,32 @@ func (f *defaultHypertableDimensionExplorer) isTimePartitionedBy(db *pgx.Conn, s
 		schema = "public"
 	}
 
-	query := fmt.Sprintf(hypertableDimensionsQueryTemplate, schema+"."+table)
-	rows, err := db.Query(query)
+	rows, err := db.Query(hypertableDimensionsQueryTemplate, schema, table)
 	if err != nil {
 		return false, err
 	}
 
 	defer rows.Close()
-	var dimensions, dimensionTypes pq.StringArray
+	var partitioningColumn, dimensionType string
 
 	if !rows.Next() {
-		return false, fmt.Errorf("couldn't extract result from postgres response")
+		log.Printf("Table %s is not a hypertable", table)
+		return false, nil
 	}
 
-	err = rows.Scan(dimensions, dimensionTypes)
+	err = rows.Scan(&partitioningColumn, &dimensionType)
 	if err != nil {
 		return false, err
 	}
 
-	if dimensions == nil || len(dimensions) < 1 {
-		return false, fmt.Errorf("hypertable didn't have no partitioning dimensions")
-	}
-
-	firstDimType := pgTypeToIdrf(dimensionTypes[0])
-	if firstDimType != idrf.IDRFTimestamptz && firstDimType != idrf.IDRFTimestamp {
+	idrfDimType := pgTypeToIdrf(dimensionType)
+	if idrfDimType != idrf.IDRFTimestamptz && idrfDimType != idrf.IDRFTimestamp {
+		log.Printf("In order to import from influx, output hypertable should be partitioned by a timestamp, or timestamptz column")
+		log.Printf("Table %s is partitioned by column %s of type %s", table, partitioningColumn, dimensionType)
 		return false, nil
 	}
 
-	if dimensions[0] != timeColumn {
+	if partitioningColumn != timeColumn {
 		return false, nil
 	}
 
