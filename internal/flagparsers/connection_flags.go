@@ -7,22 +7,21 @@ import (
 // AddConnectionFlagsToCmd adds the flags required to connect to an Influx and Timescale database
 func AddConnectionFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().String(
-		InputHostFlag,
-		DefaultInputHost,
+		InputServerFlag,
+		DefaultInputServer,
 		"Host of the input database, http(s)://location:port.")
 	cmd.PersistentFlags().String(
 		InputUserFlag,
 		DefaultInputUser,
-		"Username to use when connecting to the input database")
+		"Username to use when connecting to the input database. If set overrides $INFLUX_USERNAME")
 	cmd.PersistentFlags().String(
 		InputPassFlag,
 		DefaultInputPass,
-		"Password to use when connecting to the input database")
+		"Password to use when connecting to the input database. If set overrides $INFLUX_PASSWORD")
 	cmd.PersistentFlags().String(
 		OutputConnFlag,
 		DefaultOutputConn,
-		"Connection string to use to connect to the output database, i.e. 'user=a password=a host=localhost"+
-			"port=5432 dbname=test sslmode=disable'")
+		"Connection string to use to connect to the output database, overrides values in the PG environment variables")
 	cmd.PersistentFlags().String(
 		OutputSchemaFlag,
 		DefaultOutputSchema,
