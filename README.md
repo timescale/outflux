@@ -48,7 +48,7 @@ Available flags for schema-transfer are:
 
 | flag             | type    | default               | description |
 |------------------|---------|-----------------------|-------------|
-| input-host       | string  | http://localhost:8086 | Host of the input database, http(s)://location:port. |
+| input-server     | string  | http://localhost:8086 | Location of the input database, http(s)://location:port. |
 | input-pass       | string  |                       | Password to use when connecting to the input database |
 | input-user       | string  |                       | Username to use when connecting to the input database |
 | output-conn      | string  | sslmode=disable       | Connection string to use to connect to the output database|
@@ -73,7 +73,7 @@ Available flags are:
 
 | flag                       | type    | default               | description|
 |----------------------------|---------|-----------------------|------------|
-| input-host                 | string  | http://localhost:8086 | Host of the input database, http(s)://location:port. |
+| input-server               | string  | http://localhost:8086 | Location of the input database, http(s)://location:port. |
 | input-pass                 | string  |                       | Password to use when connecting to the input database |
 | input-user                 | string  |                       | Username to use when connecting to the input database |
 | limit                      | uint64  | 0                     | If specified will limit the export points to its value. 0 = NO LIMIT |
@@ -100,10 +100,11 @@ $ PGUSER=test
 $ ./outflux schema-transfer benchmark
 ```
 
-* Export the complete 'benchmark' database on 'localhost:8086' to the 'targetdb' database on localhost:5432
+* Export the complete 'benchmark' database on 'localhost:8086' to the 'targetdb' database on localhost:5432. Use environment variable to set InfluxDB password
 
 ```bash
 $ PGDATABASE=some_default_db
+$ INFLUX_PASSWORD=test
 ...
 $ outflux migrate benchmark \
 > --input-user=test \
@@ -133,10 +134,18 @@ $ ./outflux migrate benchmark cpu mem \
 ## Connection 
 
 ### TimescaleDB connection params
-The connection parameters to the TimescaleDB instance can be passed to Outflux in several ways. One is through the Postgres Environment Variables. Supported envrionment variables are: PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORDPGSSLMODE, PGSSLCERT, PGSSLKEY, PGSSLROOTCERT PGAPPNAME PGCONNECT_TIMEOUT. If they are not specified defaults used are: host=localhost, dbname=postgres, pguser='user executing Outflux', and sslmode=disable.
+
+The connection parameters to the TimescaleDB instance can be passed to Outflux in several ways. One is through the Postgres Environment Variables. Supported envrionment variables are: `PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORDPGSSLMODE, PGSSLCERT, PGSSLKEY, PGSSLROOTCERT PGAPPNAME, PGCONNECT_TIMEOUT`. If they are not specified defaults used are: host=localhost, dbname=postgres, pguser='user executing Outflux', and sslmode=disable.
 
 The values of the enviroment variables can be **OVERRIDEN** by specifying the '--output-con' flag when executing Outflux. 
 
 The connection string can be in the format URI or DSN format:
 * example URI: "postgresql://username:password@host:port/dbname?connect_timeout=10"
 * example DSN: "user=username password=password host=1.2.3.4 port=5432 dbname=mydb sslmode=disable"
+
+### InfluxDB connection params
+
+The connection parameters to the InfluxDB instance can be passed also through flags or environment variables. Supported/Expected environment variables are: `INFLUX_USERNAME, INFLUX_PASSWORD`.
+These are the same environment variables that the InfluxDB CLI uses. 
+
+If they are not set, or if you wish to override them, you can do so with the `--input-user` and `--input-pass`. 

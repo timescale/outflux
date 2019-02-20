@@ -1,25 +1,29 @@
 package connections
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestInfluxConnectionServiceNewConnection(t *testing.T) {
-	clientGenerator := &defaultInfluxConnectionService{}
-	_, err := clientGenerator.NewConnection(nil)
-	if err == nil {
-		t.Error("Should not be able to create a client without connection params")
+	service := &defaultInfluxConnectionService{}
+	if _, err := service.NewConnection(nil); err == nil {
+		t.Error("should not be able to create a client without connection params")
 	}
 
-	serverParams := &InfluxConnectionParams{}
-
-	_, err = clientGenerator.NewConnection(serverParams)
-	if err == nil {
-		t.Error("Server address should not be accepted")
+	params := &InfluxConnectionParams{}
+	if _, err := service.NewConnection(params); err == nil {
+		t.Error("server address should not be accepted")
 	}
 
-	serverParams.Server = "http://someaddress"
-	influxClient, err := clientGenerator.NewConnection(serverParams)
+	params.Server = "http://someaddress"
+	if res, err := service.NewConnection(params); err != nil || res == nil {
+		t.Error("client should have been created without errors")
+	}
 
-	if err != nil || influxClient == nil {
-		t.Error("Client should have been created without errors")
+	//increase coverage
+	params.Username = "hyuck"
+	params.Password = "hyuck"
+	if res, err := service.NewConnection(params); err != nil || res == nil {
+		t.Error("client should have been created")
 	}
 }

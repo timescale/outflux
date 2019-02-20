@@ -2,8 +2,15 @@ package connections
 
 import (
 	"fmt"
+	"os"
 
 	influx "github.com/influxdata/influxdb/client/v2"
+)
+
+// Environment variable names to be used for the InfluxDB connection
+const (
+	UserEnvVar = "INFLUX_USERNAME"
+	PassEnvVar = "INFLUX_PASSWORD"
 )
 
 // InfluxConnectionParams represents the parameters required to open a InfluxDB connection
@@ -31,11 +38,20 @@ func (s *defaultInfluxConnectionService) NewConnection(params *InfluxConnectionP
 		return nil, fmt.Errorf("Connection params shouldn't be nil")
 	}
 
-	clientConfig := influx.HTTPConfig{
-		Addr:     params.Server,
-		Username: params.Username,
-		Password: params.Password,
+	var user, pass string
+
+	if params.Username != "" {
+		user = params.Username
+	} else {
+		user = os.Getenv(UserEnvVar)
 	}
+
+	if params.Password != "" {
+		pass = params.Password
+	} else {
+		pass = os.Getenv(PassEnvVar)
+	}
+	clientConfig := influx.HTTPConfig{Addr: params.Server, Username: user, Password: pass}
 
 	newClient, err := influx.NewHTTPClient(clientConfig)
 	return newClient, err

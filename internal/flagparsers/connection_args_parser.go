@@ -14,17 +14,8 @@ func FlagsToConnectionConfig(flags *pflag.FlagSet, args []string) (*pipeline.Con
 	}
 
 	inputUser, _ := flags.GetString(InputUserFlag)
-	if inputUser == "" {
-		return nil, fmt.Errorf("username to connect to the input database not specified, '%s' flag is required", InputUserFlag)
-	}
-
 	inputPass, _ := flags.GetString(InputPassFlag)
-	if inputPass == "" {
-		return nil, fmt.Errorf("password to connect to the input database not specified, '%s' flag is required", InputPassFlag)
-	}
-
-	inputHost, _ := flags.GetString(InputHostFlag)
-
+	inputHost, _ := flags.GetString(InputServerFlag)
 	outputConnString, _ := flags.GetString(OutputConnFlag)
 	schema, _ := flags.GetString(OutputSchemaFlag)
 

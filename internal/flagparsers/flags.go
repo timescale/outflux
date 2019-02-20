@@ -7,7 +7,7 @@ import (
 
 // Flags used in outflux and their default values
 const (
-	InputHostFlag               = "input-host"
+	InputServerFlag             = "input-server"
 	InputUserFlag               = "input-user"
 	InputPassFlag               = "input-pass"
 	OutputConnFlag              = "output-conn"
@@ -24,7 +24,7 @@ const (
 	RollbackOnExternalErrorFlag = "rollback-on-external-error"
 	BatchSizeFlag               = "batch-size"
 
-	DefaultInputHost               = "http://localhost:8086"
+	DefaultInputServer             = "http://localhost:8086"
 	DefaultInputUser               = ""
 	DefaultInputPass               = ""
 	DefaultOutputConn              = "sslmode=disable"
