@@ -27,10 +27,6 @@ func FlagsToConnectionConfig(flags *pflag.FlagSet, args []string) (*pipeline.Con
 
 	outputConnString, _ := flags.GetString(OutputConnFlag)
 	schema, _ := flags.GetString(OutputSchemaFlag)
-	useEnvVars, err := flags.GetBool(UseEnvVarsFlag)
-	if err != nil {
-		return nil, fmt.Errorf("use env vars flag could not be converted to boolean: %v", err)
-	}
 
 	return &pipeline.ConnectionConfig{
 		InputDb:            args[0],
@@ -40,6 +36,5 @@ func FlagsToConnectionConfig(flags *pflag.FlagSet, args []string) (*pipeline.Con
 		InputPass:          inputPass,
 		OutputDbConnString: outputConnString,
 		OutputSchema:       schema,
-		UseEnvVars:         useEnvVars,
 	}, nil
 }

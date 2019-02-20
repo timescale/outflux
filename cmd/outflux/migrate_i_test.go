@@ -4,9 +4,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/timescale/outflux/internal/ingestion"
 	"testing"
 	"time"
+
+	"github.com/timescale/outflux/internal/ingestion"
 
 	"github.com/timescale/outflux/internal/pipeline"
 	"github.com/timescale/outflux/internal/schemamanagement"
@@ -23,9 +24,9 @@ func TestMigrateSingleValue(t *testing.T) {
 	tags := make(map[string]string)
 	fieldValues := make(map[string]interface{})
 	fieldValues[field] = value
-	testutils.PrepareServersForITest(db)
-	testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
-	defer testutils.ClearServersAfterITest(db)
+	testutils.PrepareServersForITest(t, db)
+	testutils.CreateInfluxMeasure(t, db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
+	defer testutils.ClearServersAfterITest(t, db)
 
 	config := defaultConfig(db, measure)
 	appContext := initAppContext()
@@ -36,7 +37,7 @@ func TestMigrateSingleValue(t *testing.T) {
 
 	dbConn := testutils.OpenTSConn(db)
 	defer dbConn.Close()
-	rows, err := dbConn.Query("SELECT * FROM "+measure)
+	rows, err := dbConn.Query("SELECT * FROM " + measure)
 	if err != nil {
 		t.Error(err)
 	}
