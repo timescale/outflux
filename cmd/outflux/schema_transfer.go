@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/jackc/pgx"
 	"io/ioutil"
 	"log"
 	"time"
+
+	"github.com/jackc/pgx"
 
 	"github.com/spf13/cobra"
 	"github.com/timescale/outflux/internal/flagparsers"
@@ -70,12 +71,7 @@ func transferSchema(app *appContext, args *pipeline.SchemaTransferConfig) ([]*id
 	}
 
 	log.Println("Extracted data sets schema. Preparing output database")
-	var dbConn *pgx.Conn
-	if args.Connection.UseEnvVars {
-		dbConn, err = app.tscs.NewConnectionFromEnvVars()
-	} else {
-		dbConn, err = app.tscs.NewConnection(args.Connection.OutputDbConnString)
-	}
+	dbConn, err := app.tscs.NewConnection(args.Connection.OutputDbConnString)
 	if err != nil {
 		return nil, fmt.Errorf("could not open connection to output db\n%v", err)
 	}

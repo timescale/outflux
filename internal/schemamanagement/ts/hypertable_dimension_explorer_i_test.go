@@ -1,3 +1,5 @@
+// +build integration
+
 package ts
 
 import (
@@ -9,8 +11,8 @@ import (
 
 func TestIsTimePartitionedBy(t *testing.T) {
 	db := "test"
-	testutils.CreateTimescaleDb(db)
-	defer testutils.DeleteTimescaleDb(db)
+	testutils.CreateTimescaleDb(t, db)
+	defer testutils.DeleteTimescaleDb(t, db)
 
 	checker := defaultHypertableDimensionExplorer{}
 

@@ -25,6 +25,10 @@ $ go install
 
 It is recommended that you have some InfluxDB database with some data. For testing purposes you can check out the [TSBS Data Loader Tool](https://github.com/timescale/tsbs) part of the Time Series Benchmark Suite. It can generate large ammounts of data for and load them in influx. Data can be generated with [one command](https://github.com/timescale/tsbs#data-generation), just specify the format as 'influx', and them load it in with [another command](https://github.com/timescale/tsbs#data-generation).
 
+### !Connection params!
+Detailed information about how to pass the connection parameters to Outflux can be found at the bottom of this document at the [Connection](section)
+
+
 ### Schema Transfer
 
 The Outflux CLI has two commands. The first one is `schema-transfer`. This command will discover the schema of a InfluxDB database, or specific measurements in a InfluxDB database, and depending on the strategy selected create or verify a TimescaleDB database that could hold the data.
@@ -47,10 +51,9 @@ Available flags for schema-transfer are:
 | input-host       | string  | http://localhost:8086 | Host of the input database, http(s)://location:port. |
 | input-pass       | string  |                       | Password to use when connecting to the input database |
 | input-user       | string  |                       | Username to use when connecting to the input database |
-| output-conn      | string  | sslmode=disable       | Connection string to use to connect to the output database, i.e. 'user=a password=a host=localhostport=5432 dbname=test sslmode=disable' (default ) |
+| output-conn      | string  | sslmode=disable       | Connection string to use to connect to the output database|
 | output-schema    | string  |                       | The schema of the output database that the data will be inserted into |
 | schema-strategy  | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
-| use-env-vars     | bool    | true                  | If set to true, overrides the 'output-conn' flag and tells outflux to use the PostgreSQL environemnt variables to establish the connection. Available flags: PGHOST PGPORT PGDATABASE PGUSER PGPASSWORDPGSSLMODE PGSSLCERT PGSSLKEY PGSSLROOTCERT PGAPPNAME PGCONNECT_TIMEOUT (default true) |
 | quiet            | bool    | false                 | If specified will suppress any log to STDOUT |
 
 ### Migrate
@@ -76,9 +79,8 @@ Available flags are:
 | limit                      | uint64  | 0                     | If specified will limit the export points to its value. 0 = NO LIMIT |
 | from                       | string  |                       | If specified will export data with a timestamp >= of its value. Accepted format: RFC3339 |
 | to                         | string  |                       | If specified will export data with a timestamp <= of its value. Accepted format: RFC3339 |
-| output-conn                | string  | sslmode=disable       | Connection string to use to connect to the output database, i.e. 'user=a password=a host=localhostport=5432 dbname=test sslmode=disable' (default ) |
+| output-conn                | string  | sslmode=disable       | Connection string to use to connect to the output database|
 | output-schema              | string  | public                | The schema of the output database that the data will be inserted into. |
-| use-env-vars               | bool    | true                  | If set to true, overrides the 'output-conn' flag and tells outflux to use the PostgreSQL environemnt variables to establish the connection. Available flags: PGHOST PGPORT PGDATABASE PGUSER PGPASSWORDPGSSLMODE PGSSLCERT PGSSLKEY PGSSLROOTCERT PGAPPNAME PGCONNECT_TIMEOUT (default true) |
 | schema-strategy            | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
 | chunk-size                 | uint16  | 15000                 | The export query will request data in chunks of this size. Must be > 0 |
 | batch-size                 | uint16  | 8000                  | The size of the batch inserted in to the output database |
@@ -98,13 +100,15 @@ $ PGUSER=test
 $ ./outflux schema-transfer benchmark
 ```
 
-* Export the complete 'benchmark' database on localhost:8086 to the targetdb database on localhost:5432
+* Export the complete 'benchmark' database on 'localhost:8086' to the 'targetdb' database on localhost:5432
 
 ```bash
+$ PGDATABASE=some_default_db
+...
 $ outflux migrate benchmark \
 > --input-user=test \
 > --input-pass=test \
-> --use-env-vars=false --output-conn='dbname=targetdb user=test password=test' \
+> --output-conn='dbname=targetdb user=test password=test' \
 ```
 
 * Export only measurement 'cpu' from the 'benchmark' drop the existing 'cpu' table in 'targetdb' if exists, create if not
@@ -113,7 +117,6 @@ $ outflux migrate benchmark cpu \
 > --input-user=test \
 > --input-pass=test \
 > --output-con='dbname=targetdb user=test pass=test'\
-> --use-env-vars=false \
 > --schema-strategy=DropAndCreate
 ```
 
@@ -125,3 +128,15 @@ $ ./outflux migrate benchmark cpu mem \
 > --limit=1000000 \
 > --from=2019-01-01T09:00:00Z
 ```
+
+
+## Connection 
+
+### TimescaleDB connection params
+The connection parameters to the TimescaleDB instance can be passed to Outflux in several ways. One is through the Postgres Environment Variables. Supported envrionment variables are: PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORDPGSSLMODE, PGSSLCERT, PGSSLKEY, PGSSLROOTCERT PGAPPNAME PGCONNECT_TIMEOUT. If they are not specified defaults used are: host=localhost, dbname=postgres, pguser='user executing Outflux', and sslmode=disable.
+
+The values of the enviroment variables can be **OVERRIDEN** by specifying the '--output-con' flag when executing Outflux. 
+
+The connection string can be in the format URI or DSN format:
+* example URI: "postgresql://username:password@host:port/dbname?connect_timeout=10"
+* example DSN: "user=username password=password host=1.2.3.4 port=5432 dbname=mydb sslmode=disable"

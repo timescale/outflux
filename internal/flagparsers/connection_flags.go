@@ -1,7 +1,6 @@
 package flagparsers
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -28,11 +27,4 @@ func AddConnectionFlagsToCmd(cmd *cobra.Command) {
 		OutputSchemaFlag,
 		DefaultOutputSchema,
 		"The schema of the output database that the data will be inserted into")
-	cmd.PersistentFlags().Bool(
-		UseEnvVarsFlag,
-		DefaultUseEnvVars,
-		fmt.Sprintf("If set to true, overrides the '%s' flag and tells outflux to use the PostgreSQL environemnt"+
-			" variables to establish the connection. Available flags: PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD"+
-			"PGSSLMODE PGSSLCERT PGSSLKEY PGSSLROOTCERT PGAPPNAME PGCONNECT_TIMEOUT", OutputConnFlag))
-
 }
