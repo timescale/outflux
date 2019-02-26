@@ -1,4 +1,4 @@
-package ingestion
+package idrfconversion
 
 import (
 	"encoding/json"
@@ -8,11 +8,14 @@ import (
 	"github.com/timescale/outflux/internal/idrf"
 )
 
+// IdrfConverter defines methods to convert the results of an InfluxDB Query result row to IDRF
 type IdrfConverter interface {
-	ConvertValues(row idrf.Row) ([]interface{}, error)
+	Convert(row []interface{}) (idrf.Row, error)
 }
 
-func newIdrfConverter(dataSet *idrf.DataSetInfo) IdrfConverter {
+// NewIdrfConverter creates an instance of the IdrfConverter that converts the results
+// of an InfluxDB Query result row to IDRF
+func NewIdrfConverter(dataSet *idrf.DataSetInfo) IdrfConverter {
 	return &defaultIdrfConverter{dataSet}
 }
 
@@ -20,7 +23,7 @@ type defaultIdrfConverter struct {
 	dataSet *idrf.DataSetInfo
 }
 
-func (conv *defaultIdrfConverter) ConvertValues(row idrf.Row) ([]interface{}, error) {
+func (conv *defaultIdrfConverter) Convert(row []interface{}) (idrf.Row, error) {
 	if len(row) != len(conv.dataSet.Columns) {
 		return nil, fmt.Errorf(
 			"could not convert extracted row, number of extracted values is %d, expected %d values",

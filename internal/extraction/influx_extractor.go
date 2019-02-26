@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/timescale/outflux/internal/extraction/idrfconversion"
+
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/extraction/config"
@@ -37,9 +39,10 @@ func NewExtractor(extractionConfig *config.Config, connectionService connections
 		return nil, fmt.Errorf("DataSet info can not be nil")
 	}
 
+	converter := idrfconversion.NewIdrfConverter(extractionConfig.DataSet)
 	return &defaultInfluxExtractor{
 		config:   extractionConfig,
-		producer: NewDataProducer(extractionConfig.ExtractorID, connectionService),
+		producer: NewDataProducer(extractionConfig.ExtractorID, connectionService, converter),
 	}, nil
 }
 

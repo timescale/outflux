@@ -27,7 +27,6 @@ func NewIngestor(
 	dataChannel chan idrf.Row) Ingestor {
 	return &defaultIngestor{
 		config:           config,
-		converter:        newIdrfConverter(dataSet),
 		dataChannel:      dataChannel,
 		ingestionRoutine: NewIngestionRoutine(),
 		dbConn:           dbConn,
@@ -38,7 +37,6 @@ func NewIngestor(
 
 type defaultIngestor struct {
 	config           *IngestorConfig
-	converter        IdrfConverter
 	ingestionRoutine Routine
 	schemaManager    schemamanagement.SchemaManager
 	dbConn           *pgx.Conn
@@ -56,7 +54,6 @@ func (ing *defaultIngestor) Start(errorBroadcaster utils.ErrorBroadcaster) chan 
 		errorBroadcaster:        errorBroadcaster,
 		ackChannel:              ackChannel,
 		dataChannel:             ing.dataChannel,
-		converter:               ing.converter,
 		rollbackOnExternalError: ing.config.RollbackOnExternalError,
 		batchSize:               ing.config.BatchSize,
 		dbConn:                  ing.dbConn,

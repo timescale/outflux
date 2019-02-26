@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strings"
+
+	"github.com/timescale/outflux/internal/extraction/idrfconversion"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/connections"
-	"github.com/timescale/outflux/internal/extraction/config"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/utils"
 )
@@ -32,13 +32,18 @@ type DataProducer interface {
 type defaultDataProducer struct {
 	extractorID             string
 	influxConnectionService connections.InfluxConnectionService
+	converter               idrfconversion.IdrfConverter
 }
 
 // NewDataProducer creates a new implementation of the data producer
-func NewDataProducer(extractorID string, connectionService connections.InfluxConnectionService) DataProducer {
+func NewDataProducer(
+	extractorID string,
+	connectionService connections.InfluxConnectionService,
+	converter idrfconversion.IdrfConverter) DataProducer {
 	return &defaultDataProducer{
 		extractorID:             extractorID,
 		influxConnectionService: connectionService,
+		converter:               converter,
 	}
 }
 
@@ -82,8 +87,7 @@ func (dp *defaultDataProducer) Fetch(connectionParams *connections.InfluxConnect
 	totalRows := 0
 	for {
 		// Before requesting the next chunk, check if an error occured in some other goroutine
-		errorNotification := checkError(errorChannel)
-		if errorNotification != nil {
+		if checkError(errorChannel) != nil {
 			return
 		}
 
@@ -118,46 +122,14 @@ func (dp *defaultDataProducer) Fetch(connectionParams *connections.InfluxConnect
 		totalRows += len(rows.Values)
 		log.Printf("%s: Extracted %d rows from Influx", dp.extractorID, totalRows)
 		for _, valRow := range rows.Values {
-			dataChannel <- valRow
+			convertedRow, err := dp.converter.Convert(valRow)
+			if err != nil {
+				err = fmt.Errorf("extractor '%s': could not convert influx result to IDRF row\n%v", dp.extractorID, err)
+				errorBroadcaster.Broadcast(dp.extractorID, err)
+				return
+			}
+
+			dataChannel <- convertedRow
 		}
-	}
-}
-
-func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.ColumnInfo) string {
-	projection := buildProjection(columns)
-	var command string
-	if config.From != "" && config.To != "" {
-		command = fmt.Sprintf(selectQueryDoubleBoundTemplate, projection, config.Measure, config.From, config.To)
-	} else if config.From != "" {
-		command = fmt.Sprintf(selectQueryLowerBoundTemplate, projection, config.Measure, config.From)
-	} else if config.To != "" {
-		command = fmt.Sprintf(selectQueryUpperBoundTemplate, projection, config.Measure, config.To)
-	} else {
-		command = fmt.Sprintf(selectQueryNoBoundTemplate, projection, config.Measure)
-	}
-
-	if config.Limit == 0 {
-		return command
-	}
-
-	limit := fmt.Sprintf(limitSuffixTemplate, config.Limit)
-	return fmt.Sprintf("%s %s", command, limit)
-}
-
-func buildProjection(columns []*idrf.ColumnInfo) string {
-	columnNames := make([]string, len(columns))
-	for i, column := range columns {
-		columnNames[i] = fmt.Sprintf("\"%s\"", column.Name)
-	}
-
-	return strings.Join(columnNames, ", ")
-}
-
-func checkError(errorChannel chan error) error {
-	select {
-	case err := <-errorChannel:
-		return err
-	default:
-		return nil
 	}
 }
