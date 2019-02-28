@@ -3,38 +3,33 @@ package pipeline
 import (
 	"fmt"
 
-	"github.com/timescale/outflux/internal/connections"
-	extractionConfig "github.com/timescale/outflux/internal/extraction/config"
-	"github.com/timescale/outflux/internal/idrf"
+	"github.com/timescale/outflux/internal/extraction/config"
+)
+
+const (
+	extractorIDTemplate = "%s_ext"
 )
 
 type extractionConfCreator interface {
-	createExtractionConf(pipeNum int, conf *MigrationConfig, dataSet *idrf.DataSetInfo) *extractionConfig.Config
+	create(pipeID string, db, measure string, conf *MigrationConfig) *config.ExtractionConfig
 }
 
 type defaultExtractionConfCreator struct{}
 
-func (d *defaultExtractionConfCreator) createExtractionConf(pipeNum int, conf *MigrationConfig, dataSet *idrf.DataSetInfo) *extractionConfig.Config {
-	measureExtractionConf := &extractionConfig.MeasureExtraction{
-		Database:  conf.Connection.InputDb,
-		Measure:   dataSet.DataSetName,
+func (d *defaultExtractionConfCreator) create(pipeID, db, measure string, conf *MigrationConfig) *config.ExtractionConfig {
+	measureExtractionConf := &config.MeasureExtraction{
+		Database:  db,
+		Measure:   measure,
 		From:      conf.From,
 		To:        conf.To,
 		ChunkSize: conf.ChunkSize,
 		Limit:     conf.Limit,
 	}
-	connection := &connections.InfluxConnectionParams{
-		Server:   conf.Connection.InputHost,
-		Username: conf.Connection.InputUser,
-		Password: conf.Connection.InputPass,
-	}
 
-	ex := &extractionConfig.Config{
-		ExtractorID:       fmt.Sprintf("pipe_%d_ext", pipeNum),
+	ex := &config.ExtractionConfig{
+		ExtractorID:       fmt.Sprintf(extractorIDTemplate, pipeID),
 		MeasureExtraction: measureExtractionConf,
-		Connection:        connection,
-		DataSet:           dataSet,
-		DataChannel:       make(chan idrf.Row, conf.DataBuffer),
+		DataBufferSize:    conf.DataBuffer,
 	}
 
 	return ex

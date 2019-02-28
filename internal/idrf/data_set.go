@@ -3,14 +3,16 @@
 // functions for safe initialization of the structures
 package idrf
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // DataSetInfo represents DDL description of a single data set (table, measurement) in IDRF
 type DataSetInfo struct {
-	DataSetName   string
-	DataSetSchema string
-	Columns       []*ColumnInfo
-	TimeColumn    string
+	DataSetName string
+	Columns     []*ColumnInfo
+	TimeColumn  string
 }
 
 func (set *DataSetInfo) String() string {
@@ -29,8 +31,18 @@ func (set DataSetInfo) ColumnNamed(columnName string) *ColumnInfo {
 	return nil
 }
 
+// SchemaAndTable splits the data set identifier, "schema.table" -> "schema", "table"
+func (set DataSetInfo) SchemaAndTable() (string, string) {
+	dataSetNameParts := strings.SplitN(set.DataSetName, ".", 2)
+	if len(dataSetNameParts) > 1 {
+		return dataSetNameParts[0], dataSetNameParts[1]
+	}
+
+	return "", dataSetNameParts[0]
+}
+
 // NewDataSet creates a new instance of DataSetInfo with checked arguments
-func NewDataSet(schema, dataSetName string, columns []*ColumnInfo, timeColumn string) (*DataSetInfo, error) {
+func NewDataSet(dataSetName string, columns []*ColumnInfo, timeColumn string) (*DataSetInfo, error) {
 	if len(dataSetName) == 0 {
 		return nil, fmt.Errorf("data set name can't be empty")
 	}
@@ -64,7 +76,7 @@ func NewDataSet(schema, dataSetName string, columns []*ColumnInfo, timeColumn st
 		return nil, fmt.Errorf("time column %s, not found in columns array", timeColumn)
 	}
 
-	return &DataSetInfo{dataSetName, schema, columns, timeColumn}, nil
+	return &DataSetInfo{dataSetName, columns, timeColumn}, nil
 }
 
 // ColumnInfo represents DDL description of a single column in IDRF

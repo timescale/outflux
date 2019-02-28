@@ -2,9 +2,10 @@ package ts
 
 import (
 	"fmt"
-	"github.com/jackc/pgx"
 	"log"
 	"strings"
+
+	"github.com/jackc/pgx"
 
 	"github.com/timescale/outflux/internal/idrf"
 )
@@ -17,7 +18,9 @@ const (
 )
 
 type tableCreator interface {
-	Create(dbConn *pgx.Conn, info *idrf.DataSetInfo) error
+	CreateTable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error
+	CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error
+	CreateTimescaleExtension(dbConn *pgx.Conn) error
 }
 
 func newTableCreator() tableCreator {
@@ -26,12 +29,8 @@ func newTableCreator() tableCreator {
 
 type defaultTableCreator struct{}
 
-func (d *defaultTableCreator) Create(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+func (d *defaultTableCreator) CreateTable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
 	tableName := info.DataSetName
-	if info.DataSetSchema != "" {
-		tableName = info.DataSetSchema + "." + tableName
-	}
-
 	query := dataSetToSQLTableDef(tableName, info)
 	log.Printf("Creating table with:\n %s", query)
 
@@ -54,6 +53,19 @@ func (d *defaultTableCreator) Create(dbConn *pgx.Conn, info *idrf.DataSetInfo) e
 	}
 
 	return nil
+}
+
+func (d *defaultTableCreator) CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+	hypertableQuery := fmt.Sprintf(createHypertableQueryTemplate, info.DataSetName, info.TimeColumn)
+	log.Printf("Creating hypertable with: %s", hypertableQuery)
+	_, err := dbConn.Exec(hypertableQuery)
+	return err
+}
+
+func (d *defaultTableCreator) CreateTimescaleExtension(dbConn *pgx.Conn) error {
+	log.Printf("Preparing TimescaleDB extension:\n%s", createTimescaleExtensionQuery)
+	_, err := dbConn.Exec(createTimescaleExtensionQuery)
+	return err
 }
 
 func dataSetToSQLTableDef(tableName string, dataSet *idrf.DataSetInfo) string {

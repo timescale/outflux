@@ -2,7 +2,6 @@ package influx
 
 import (
 	"fmt"
-	"log"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/idrf"
@@ -33,28 +32,11 @@ func NewInfluxSchemaManager(
 	}
 }
 
-func (sm *influxSchemaManager) DiscoverDataSets() ([]*idrf.DataSetInfo, error) {
-	measurements, err := sm.measureExplorer.FetchAvailableMeasurements(sm.influxClient, sm.database)
-	if err != nil {
-		return nil, err
-	}
-
-	dataSets := make([]*idrf.DataSetInfo, len(measurements))
-	for i, measure := range measurements {
-		dataSets[i], err = sm.dataSetConstructor.construct(measure)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return dataSets, nil
+func (sm *influxSchemaManager) DiscoverDataSets() ([]string, error) {
+	return sm.measureExplorer.FetchAvailableMeasurements(sm.influxClient, sm.database)
 }
 
-func (sm *influxSchemaManager) FetchDataSet(schema, name string) (*idrf.DataSetInfo, error) {
-	if schema != "" {
-		log.Printf("schema argument set to '%s' for fetching data set of an Influx database will be ignored", schema)
-	}
-
+func (sm *influxSchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSetInfo, error) {
 	measurements, err := sm.measureExplorer.FetchAvailableMeasurements(sm.influxClient, sm.database)
 	if err != nil {
 		return nil, err
@@ -62,17 +44,17 @@ func (sm *influxSchemaManager) FetchDataSet(schema, name string) (*idrf.DataSetI
 
 	measureMissing := true
 	for _, returnedMeasure := range measurements {
-		if returnedMeasure == name {
+		if returnedMeasure == dataSetIdentifier {
 			measureMissing = false
 			break
 		}
 	}
 
 	if measureMissing {
-		return nil, fmt.Errorf("measure '%s' not found in database '%s'", name, sm.database)
+		return nil, fmt.Errorf("measure '%s' not found in database '%s'", dataSetIdentifier, sm.database)
 	}
 
-	return sm.dataSetConstructor.construct(name)
+	return sm.dataSetConstructor.construct(dataSetIdentifier)
 }
 
 func (sm *influxSchemaManager) PrepareDataSet(dataSet *idrf.DataSetInfo, strategy schemamanagement.SchemaStrategy) error {

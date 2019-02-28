@@ -1,6 +1,10 @@
-package ingestion
+package config
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/timescale/outflux/internal/schemamanagement"
+)
 
 // IngestorConfig holds all the properties required to create and run an ingestor
 type IngestorConfig struct {
@@ -8,6 +12,7 @@ type IngestorConfig struct {
 	BatchSize               uint16
 	RollbackOnExternalError bool
 	CommitStrategy          CommitStrategy
+	SchemaStrategy          schemamanagement.SchemaStrategy
 }
 
 // CommitStrategy describes how the ingestor should handle the ingested data
@@ -19,7 +24,6 @@ const (
 	CommitOnEnd CommitStrategy = iota + 1
 	CommitOnEachBatch
 )
-
 
 // ParseStrategyString returns the enum value matching the string, or an error
 func ParseStrategyString(strategy string) (CommitStrategy, error) {

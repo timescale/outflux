@@ -19,13 +19,13 @@ func initMigrateCmd() *cobra.Command {
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initAppContext()
-			migrateArgs, err := flagparsers.FlagsToMigrateConfig(cmd.Flags(), args)
+			connArgs, migrateArgs, err := flagparsers.FlagsToMigrateConfig(cmd.Flags(), args)
 			if err != nil {
 				log.Fatal(err)
 				return
 			}
 
-			errors := migrate(app, migrateArgs)
+			errors := migrate(app, connArgs, migrateArgs)
 			if errors != nil {
 				err = preparePipeErrors(errors)
 				log.Fatal(err)
@@ -47,25 +47,15 @@ func initMigrateCmd() *cobra.Command {
 	return migrateCmd
 }
 
-func migrate(app *appContext, args *pipeline.MigrationConfig) []error {
+func migrate(app *appContext, connArgs *pipeline.ConnectionConfig, args *pipeline.MigrationConfig) []error {
 	if args.Quiet {
 		log.SetFlags(0)
 		log.SetOutput(ioutil.Discard)
 	}
 
-	discoveredDataSets, err := transferSchema(app, args.ToSchemaTransferConfig())
-
-	if err != nil {
-		return []error{err}
-	}
-
 	startTime := time.Now()
-	log.Printf("Creating %d execution pipelines\n", len(discoveredDataSets))
-	pipelines, err := app.ps.CreatePipelines(discoveredDataSets, args)
-	if err != nil {
-		return []error{err}
-	}
-
+	log.Printf("Creating %d execution pipelines\n", len(connArgs.InputMeasures))
+	pipelines := app.pipeService.Create(connArgs, args)
 	pipelineSemaphore := semaphore.NewWeighted(int64(args.MaxParallel))
 	ctx := context.Background()
 	pipeChannels := makePipeChannels(len(pipelines))
@@ -96,12 +86,12 @@ func migrate(app *appContext, args *pipeline.MigrationConfig) []error {
 	return nil
 }
 
-func pipeRoutine(ctx context.Context, semaphore *semaphore.Weighted, pipe pipeline.ExecutionPipeline,
+func pipeRoutine(ctx context.Context, semaphore *semaphore.Weighted, pipe pipeline.Pipe,
 	pipeChannel chan error) {
 	_ = semaphore.Acquire(ctx, 1)
 
 	log.Printf("%s starting execution\n", pipe.ID())
-	err := pipe.Start()
+	err := pipe.Run()
 	if err != nil {
 		log.Printf("%s: %v\n", pipe.ID(), err)
 		pipeChannel <- err

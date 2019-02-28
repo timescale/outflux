@@ -3,9 +3,6 @@ package config
 import (
 	"fmt"
 	"time"
-
-	"github.com/timescale/outflux/internal/connections"
-	"github.com/timescale/outflux/internal/idrf"
 )
 
 const (
@@ -48,11 +45,9 @@ func ValidateMeasureExtractionConfig(config *MeasureExtraction) error {
 	return nil
 }
 
-// Config combines everthing needed to create and start an Extractor
-type Config struct {
+// ExtractionConfig combines everthing needed to create and start an Extractor
+type ExtractionConfig struct {
 	ExtractorID       string
 	MeasureExtraction *MeasureExtraction
-	Connection        *connections.InfluxConnectionParams
-	DataSet           *idrf.DataSetInfo
-	DataChannel       chan idrf.Row
+	DataBufferSize    uint16
 }

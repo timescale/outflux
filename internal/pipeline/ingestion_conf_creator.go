@@ -3,21 +3,26 @@ package pipeline
 import (
 	"fmt"
 
-	"github.com/timescale/outflux/internal/ingestion"
+	"github.com/timescale/outflux/internal/ingestion/config"
+)
+
+const (
+	ingestorIDTemplate = "%s_ing"
 )
 
 type ingestionConfCreator interface {
-	create(pipeNum int, conf *MigrationConfig) *ingestion.IngestorConfig
+	create(pipeID string, conf *MigrationConfig) *config.IngestorConfig
 }
 
 type defaultIngestionConfCreator struct {
 }
 
-func (s *defaultIngestionConfCreator) create(pipeNum int, conf *MigrationConfig) *ingestion.IngestorConfig {
-	return &ingestion.IngestorConfig{
-		IngestorID:              fmt.Sprintf("pipe_%d_ing", pipeNum),
+func (s *defaultIngestionConfCreator) create(pipeID string, conf *MigrationConfig) *config.IngestorConfig {
+	return &config.IngestorConfig{
+		IngestorID:              fmt.Sprintf(ingestorIDTemplate, pipeID),
 		BatchSize:               conf.BatchSize,
 		RollbackOnExternalError: conf.RollbackAllMeasureExtractionsOnError,
 		CommitStrategy:          conf.CommitStrategy,
+		SchemaStrategy:          conf.OutputSchemaStrategy,
 	}
 }

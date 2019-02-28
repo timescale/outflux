@@ -1,7 +1,7 @@
 package flagparsers
 
 import (
-	"github.com/timescale/outflux/internal/ingestion"
+	ingestionConfig "github.com/timescale/outflux/internal/ingestion/config"
 	"github.com/timescale/outflux/internal/schemamanagement"
 )
 
@@ -30,7 +30,7 @@ const (
 	DefaultOutputConn              = "sslmode=disable"
 	DefaultOutputSchema            = ""
 	DefaultSchemaStrategy          = schemamanagement.CreateIfMissing
-	DefaultCommitStrategy          = ingestion.CommitOnEachBatch
+	DefaultCommitStrategy          = ingestionConfig.CommitOnEachBatch
 	DefaultDataBufferSize          = 15000
 	DefaultChunkSize               = 15000
 	DefaultLimit                   = 0

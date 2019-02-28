@@ -42,6 +42,6 @@ func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSetInfo, err
 	allColumns := []*idrf.ColumnInfo{idrfTimeColumn}
 	allColumns = append(allColumns, idrfTags...)
 	allColumns = append(allColumns, idrfFields...)
-	dataSet, err := idrf.NewDataSet("", measure, allColumns, "time")
+	dataSet, err := idrf.NewDataSet(measure, allColumns, "time")
 	return dataSet, err
 }
