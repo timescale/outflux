@@ -50,11 +50,6 @@ func (e *Extractor) Start(errChan chan error) error {
 	id := e.Config.ExtractorID
 	dataDef := e.cachedElementData.DataDef
 	measureConf := e.Config.MeasureExtraction
-	if measureConf.Limit == 0 {
-		log.Printf("Skipping data transfer for measure '%s', limit set to 0", dataDef.DataSetName)
-		close(e.cachedElementData.Data)
-		return nil
-	}
 
 	log.Printf("Starting extractor '%s' for measure: %s\n", id, dataDef.DataSetName)
 	intChunkSize := int(measureConf.ChunkSize)

@@ -11,12 +11,13 @@ const (
 
 // MeasureExtraction holds config properties for a single measure
 type MeasureExtraction struct {
-	Database  string
-	Measure   string
-	From      string
-	To        string
-	ChunkSize uint16
-	Limit     uint64
+	Database   string
+	Measure    string
+	From       string
+	To         string
+	ChunkSize  uint16
+	Limit      uint64
+	SchemaOnly bool
 }
 
 // ValidateMeasureExtractionConfig validates the fields

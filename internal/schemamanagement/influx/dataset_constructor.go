@@ -7,10 +7,12 @@ import (
 	"github.com/timescale/outflux/internal/schemamanagement/influx/influxqueries"
 )
 
+// DataSetConstructor builds a idrf.DataSetInfo for a given measure
 type dataSetConstructor interface {
 	construct(measure string) (*idrf.DataSetInfo, error)
 }
 
+// NewDataSetConstructor creates a new instance of a DataSetConstructor
 func newDataSetConstructor(db string, client influx.Client, queryService influxqueries.InfluxQueryService) dataSetConstructor {
 	return &defaultDSConstructor{
 		database:      db,

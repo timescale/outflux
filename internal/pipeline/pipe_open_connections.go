@@ -11,13 +11,13 @@ import (
 func (p *defPipe) openConnections() (influx.Client, *pgx.Conn, error) {
 	influxConn, err := p.infConnService.NewConnection(influxConnParams(p.conf.connections))
 	if err != nil {
-		return nil, nil, fmt.Errorf("%s: could not open connection to Influx Server\n%v", err)
+		return nil, nil, fmt.Errorf("%s: could not open connection to Influx Server\n%v", p.id, err)
 	}
 
 	tsConn, err := p.tsConnService.NewConnection(p.conf.connections.OutputDbConnString)
 	if err != nil {
 		influxConn.Close()
-		return nil, nil, fmt.Errorf("%s: could not open connection to TimescaleDB Server\n%v", err)
+		return nil, nil, fmt.Errorf("%s: could not open connection to TimescaleDB Server\n%v", p.id, err)
 	}
 
 	return influxConn, tsConn, nil

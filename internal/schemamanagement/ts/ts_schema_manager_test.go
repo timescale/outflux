@@ -2,15 +2,16 @@ package ts
 
 import (
 	"fmt"
-	"github.com/jackc/pgx"
 	"testing"
 
+	"github.com/jackc/pgx"
+
 	"github.com/timescale/outflux/internal/idrf"
-	"github.com/timescale/outflux/internal/schemamanagement"
+	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
 
 type prepareArgs struct {
-	Strategy schemamanagement.SchemaStrategy
+	Strategy schemaconfig.SchemaStrategy
 	DataSet  *idrf.DataSetInfo
 }
 
@@ -37,72 +38,72 @@ func TestPrepareDataSetFails(t *testing.T) {
 		explorer schemaExplorer
 		creator  tableCreator
 		desc     string
-		strat    schemamanagement.SchemaStrategy
+		strat    schemaconfig.SchemaStrategy
 		dropper  tableDropper
 	}{
 		{
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: errorOnTableExistsExplorer(),
 			desc:     "error checking if target table exists",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.DropAndCreate},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.DropAndCreate},
 			explorer: onTableExists(false),
 			creator:  errorOnCreateTable(),
-			strat:    schemamanagement.DropAndCreate,
+			strat:    schemaconfig.DropAndCreate,
 			desc:     "drop strategy, table doesn't exist, error on create",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.DropAndCreate},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.DropAndCreate},
 			explorer: onTableExists(true),
 			creator:  okOnTableCreate(),
 			dropper:  errorOnDrop(),
-			strat:    schemamanagement.DropAndCreate,
+			strat:    schemaconfig.DropAndCreate,
 			desc:     "drop strategy, table exists, error on drop",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.CreateIfMissing},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.CreateIfMissing},
 			explorer: onTableExists(false),
 			creator:  errorOnCreateTable(),
 			desc:     "create if missing, table doesn't exist, error on table create",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: onTableExists(false),
 			desc:     "validate only strategy, table doesn't exist",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: onFetchColError(),
 			desc:     "validate only, table exists, error on fetch columns",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: onFetchColWith(wrongExistingColumns),
 			desc:     "validate only, incompatible tables",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: onTsExistsError(existingColumns),
 			desc:     "validate only, can't check if timescale extension is created",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: onTsNotExits(existingColumns),
 			desc:     "validate only, timescale extension not created",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: onIsHypertableError(existingColumns),
 			desc:     "validate only, compatible, error checking if hypertable",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: isNotHypertable(existingColumns),
 			desc:     "validate only, compatible, but existing is not a hypertable",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: onPartByError(existingColumns),
 			desc:     "validate only, compatible, is hypertable, error checking partitioning",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: notPartitionedProperly(existingColumns),
 			desc:     "validate only, compatible, is hypertable, partitioned by another column",
 		},
 	}
 
 	for _, testC := range testCases {
-		manager := &tsSchemaManager{
+		manager := &TSSchemaManager{
 			explorer: testC.explorer,
 			dropper:  testC.dropper,
 			creator:  testC.creator,
@@ -136,19 +137,19 @@ func TestPrepareOk(t *testing.T) {
 		explorer schemaExplorer
 		creator  tableCreator
 		desc     string
-		strat    schemamanagement.SchemaStrategy
+		strat    schemaconfig.SchemaStrategy
 		dropper  tableDropper
 	}{
 		{
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.ValidateOnly},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: properMock(existingColumns),
 			desc:     "validate only, compatible",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.CreateIfMissing},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.CreateIfMissing},
 			explorer: properMock(existingColumns),
 			desc:     "create if missing, table exists, compatible",
 		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemamanagement.CreateIfMissing},
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.CreateIfMissing},
 			explorer: properMockForCreateIfMissing(existingColumns),
 			creator:  okOnTableCreate(),
 			desc:     "validate not called if need to create",
@@ -156,7 +157,7 @@ func TestPrepareOk(t *testing.T) {
 	}
 
 	for _, testC := range testCases {
-		manager := tsSchemaManager{
+		manager := TSSchemaManager{
 			explorer: testC.explorer,
 			dropper:  testC.dropper,
 			creator:  testC.creator,
@@ -252,6 +253,8 @@ type mocker struct {
 	isHyper          bool
 	isTimePartBy     bool
 	isTimePartErr    error
+	createHyperErr   error
+	extErr           error
 }
 
 func (m *mocker) tableExists(db *pgx.Conn, schemaName, tableName string) (bool, error) {
@@ -262,11 +265,19 @@ func (m *mocker) fetchTableColumns(db *pgx.Conn, schemaName, tableName string) (
 	return m.fetcColR, m.fetchColError
 }
 
-func (m *mocker) Create(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+func (m *mocker) CreateTable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
 	return m.tableCreateError
 }
 
-func (m *mocker) Drop(db *pgx.Conn, schema, table string, cascade bool) error {
+func (m *mocker) CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+	return m.createHyperErr
+}
+
+func (m *mocker) CreateTimescaleExtension(dbConn *pgx.Conn) error {
+	return m.extErr
+}
+
+func (m *mocker) Drop(db *pgx.Conn, table string, cascade bool) error {
 	return m.dropError
 }
 

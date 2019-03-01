@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/timescale/outflux/internal/flagparsers"
 	"github.com/timescale/outflux/internal/pipeline"
-	influxSchema "github.com/timescale/outflux/internal/schemamanagement/influx"
 )
 
 func initSchemaTransferCmd() *cobra.Command {
@@ -20,13 +19,13 @@ func initSchemaTransferCmd() *cobra.Command {
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initAppContext()
-			connArgs, schemaTransferArgs, err := flagparsers.FlagsToSchemaTransferConfig(cmd.Flags(), args)
+			connArgs, migArgs, err := flagparsers.FlagsToSchemaTransferConfig(cmd.Flags(), args)
 			if err != nil {
 				log.Fatal(err)
 				return
 			}
 
-			err = transferSchema(app, connArgs, schemaTransferArgs)
+			err = transferSchema(app, connArgs, migArgs)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -38,7 +37,7 @@ func initSchemaTransferCmd() *cobra.Command {
 	return schemaTransferCmd
 }
 
-func transferSchema(app *appContext, connArgs *pipeline.ConnectionConfig, args *pipeline.SchemaTransferConfig) error {
+func transferSchema(app *appContext, connArgs *pipeline.ConnectionConfig, args *pipeline.MigrationConfig) error {
 	if args.Quiet {
 		log.SetFlags(0)
 		log.SetOutput(ioutil.Discard)
@@ -56,9 +55,7 @@ func transferSchema(app *appContext, connArgs *pipeline.ConnectionConfig, args *
 		}
 	}
 
-	// SELECT * FROM measure LIMIT 0
-	migrateConfig := args.ToMigrationConfig()
-	pipes := app.pipeService.Create(connArgs, migrateConfig)
+	pipes := app.pipeService.Create(connArgs, args)
 	for _, pipe := range pipes {
 		err := pipe.Run()
 		if err != nil {
@@ -82,7 +79,7 @@ func discoverMeasures(app *appContext, connArgs *pipeline.ConnectionConfig) ([]s
 		return nil, err
 	}
 
-	schemaManager := influxSchema.NewInfluxSchemaManager(client, app.influxQueryService, connArgs.InputDb)
+	schemaManager := app.schemaManagerService.Influx(client, connArgs.InputDb)
 	client.Close()
 	return schemaManager.DiscoverDataSets()
 }

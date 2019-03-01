@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/timescale/outflux/internal/schemamanagement"
+	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
 
 // IngestorConfig holds all the properties required to create and run an ingestor
@@ -12,7 +12,7 @@ type IngestorConfig struct {
 	BatchSize               uint16
 	RollbackOnExternalError bool
 	CommitStrategy          CommitStrategy
-	SchemaStrategy          schemamanagement.SchemaStrategy
+	SchemaStrategy          schemaconfig.SchemaStrategy
 }
 
 // CommitStrategy describes how the ingestor should handle the ingested data

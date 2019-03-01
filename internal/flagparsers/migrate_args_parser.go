@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/pflag"
 	ingestionConfig "github.com/timescale/outflux/internal/ingestion/config"
 	"github.com/timescale/outflux/internal/pipeline"
-	"github.com/timescale/outflux/internal/schemamanagement"
+	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
 
 // FlagsToMigrateConfig extracts the config for running a migration from the flags of the command
@@ -18,8 +18,8 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*pipeline.Connec
 	}
 
 	strategyAsStr, err := flags.GetString(SchemaStrategyFlag)
-	var strategy schemamanagement.SchemaStrategy
-	if strategy, err = schemamanagement.ParseStrategyString(strategyAsStr); err != nil {
+	var strategy schemaconfig.SchemaStrategy
+	if strategy, err = schemaconfig.ParseStrategyString(strategyAsStr); err != nil {
 		return nil, nil, err
 	}
 

@@ -1,4 +1,4 @@
-package schemamanagement
+package schemaconfig
 
 import "fmt"
 

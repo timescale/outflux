@@ -53,7 +53,7 @@ func (p *defPipe) Run() error {
 	}
 
 	// run them
-	if p.conf.extraction.MeasureExtraction.Limit == 0 {
+	if p.conf.extraction.MeasureExtraction.SchemaOnly {
 		log.Printf("No data transfer will occur")
 		return nil
 	}

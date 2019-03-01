@@ -55,19 +55,19 @@ func migrate(app *appContext, connArgs *pipeline.ConnectionConfig, args *pipelin
 
 	startTime := time.Now()
 	log.Printf("Creating %d execution pipelines\n", len(connArgs.InputMeasures))
-	pipelines := app.pipeService.Create(connArgs, args)
+	pipes := app.pipeService.Create(connArgs, args)
 	pipelineSemaphore := semaphore.NewWeighted(int64(args.MaxParallel))
 	ctx := context.Background()
-	pipeChannels := makePipeChannels(len(pipelines))
+	pipeChannels := makePipeChannels(len(pipes))
 
 	// schedule all pipelines, as soon a value in the semaphore is available, execution will start
-	for i, pipe := range pipelines {
+	for i, pipe := range pipes {
 		go pipeRoutine(ctx, pipelineSemaphore, pipe, pipeChannels[i])
 	}
 
 	log.Println("All pipelines scheduled")
 	hasError := false
-	pipeErrors := make([]error, len(pipelines))
+	pipeErrors := make([]error, len(pipes))
 	for i, pipeChannel := range pipeChannels {
 		pipeErrors[i] = <-pipeChannel
 		if pipeErrors[i] != nil {
@@ -111,10 +111,7 @@ func makePipeChannels(numChannels int) []chan error {
 }
 
 func preparePipeErrors(errors []error) error {
-	errString := `
----------------------------------------------
-Migration finished with errors:
-`
+	errString := "Migration finished with errors:\n"
 	for _, err := range errors {
 		errString += err.Error() + "\n"
 	}

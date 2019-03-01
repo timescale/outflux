@@ -70,35 +70,35 @@ func TestNewDataSet(t *testing.T) {
 	intColumn, _ := NewColumn("Col 1", IDRFTimestamp)
 	columns := []*ColumnInfo{column}
 	noTimestampTimeColumns := []*ColumnInfo{intColumn}
-	if _, error := NewDataSet("schema", "", columns, "Col 1"); error == nil {
+	if _, error := NewDataSet("", columns, "Col 1"); error == nil {
 		t.Error("Should not be able to create a data set with an empty name")
 	}
 
 	noColumns := []*ColumnInfo{}
-	if _, error := NewDataSet("schema", "Data Set", noColumns, ""); error == nil {
+	if _, error := NewDataSet("Data Set", noColumns, ""); error == nil {
 		t.Error("Should not be able to create a data set without columns")
 	}
 
 	duplicateColumns := []*ColumnInfo{column, column}
-	if _, error := NewDataSet("schema", "data set", duplicateColumns, "Col 1"); error == nil {
+	if _, error := NewDataSet("data set", duplicateColumns, "Col 1"); error == nil {
 		t.Error("Should not be able to create a data set with duplicate columns")
 	}
 
-	if dataSet, error := NewDataSet("schema", "Data Set", columns, "Col 2"); error == nil || dataSet != nil {
+	if dataSet, error := NewDataSet("Data Set", columns, "Col 2"); error == nil || dataSet != nil {
 		t.Error("Data Set should not have been created, time column not in column set")
 	}
 
-	if dataSet, error := NewDataSet("schema", "Data Set", noTimestampTimeColumns, "Col 1"); error != nil || dataSet == nil {
+	if dataSet, error := NewDataSet("Data Set", noTimestampTimeColumns, "Col 1"); error != nil || dataSet == nil {
 		t.Error("Data Set should not have been created, time column not a timestamp")
 	}
 
-	dataSet, err := NewDataSet("", "Data Set", columns, "Col 1")
+	dataSet, err := NewDataSet("Data Set", columns, "Col 1")
 	if err != nil || dataSet == nil {
-		t.Error("Data Set should have been created, schema is optional")
+		t.Errorf("Data Set should have been created. Unexepcted err: %v", err)
 	}
 
-	if dataSet.DataSetName != "Data Set" || dataSet.DataSetSchema != "" {
-		t.Errorf("Data set named %s, instead of %s", dataSet.DataSetSchema+"."+dataSet.DataSetName, "Data Set")
+	if dataSet.DataSetName != "Data Set" {
+		t.Errorf("Data set named %s, instead of %s", dataSet.DataSetName, "Data Set")
 	}
 
 	if len(dataSet.Columns) != 1 && dataSet.TimeColumn != "Col 1" {
@@ -114,7 +114,7 @@ func TestColumnNamed(t *testing.T) {
 
 	column, _ := NewColumn(goodColumnName, expectedColumnType)
 	columns := []*ColumnInfo{column}
-	dataSet, _ := NewDataSet("", "Data Set", columns, "Col 1")
+	dataSet, _ := NewDataSet("Data Set", columns, "Col 1")
 
 	goodColumn := dataSet.ColumnNamed(goodColumnName)
 	if goodColumn == nil {
