@@ -7,7 +7,7 @@ import (
 	"github.com/timescale/outflux/internal/schemamanagement/influx/influxqueries"
 )
 
-// DataSetConstructor builds a idrf.DataSetInfo for a given measure
+// DataSetConstructor builds a idrf.DataSet for a given measure
 type dataSetConstructor interface {
 	construct(measure string) (*idrf.DataSet, error)
 }

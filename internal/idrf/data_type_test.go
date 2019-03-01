@@ -50,22 +50,3 @@ func TestCanFitInto(t *testing.T) {
 		}
 	}
 }
-
-/*
-if d == other {
-		return true
-	}
-
-	if d == IDRFInteger32 {
-		return other == IDRFSingle || other == IDRFDouble || other == IDRFInteger64
-	}
-
-	if d == IDRFInteger64 {
-		return other == IDRFDouble
-	}
-
-	if d == IDRFTimestamp {
-		return other == IDRFTimestamptz
-	}
-
-	return false*/

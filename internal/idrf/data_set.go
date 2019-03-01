@@ -16,7 +16,7 @@ type DataSet struct {
 }
 
 func (set *DataSet) String() string {
-	return fmt.Sprintf("DataSetInfo { dataSetName: %s, columns: %s, time column: %s }", set.DataSetName, set.Columns, set.TimeColumn)
+	return fmt.Sprintf("DataSet { dataSetName: %s, columns: %s, time column: %s }", set.DataSetName, set.Columns, set.TimeColumn)
 }
 
 // ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column
@@ -41,7 +41,7 @@ func (set *DataSet) SchemaAndTable() (string, string) {
 	return "", dataSetNameParts[0]
 }
 
-// NewDataSet creates a new instance of DataSetInfo with checked arguments
+// NewDataSet creates a new instance of DataSet with checked arguments
 func NewDataSet(dataSetName string, columns []*ColumnInfo, timeColumn string) (*DataSet, error) {
 	if len(dataSetName) == 0 {
 		return nil, fmt.Errorf("data set name can't be empty")
