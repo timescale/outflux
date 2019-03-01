@@ -18,8 +18,6 @@ type ingestDataArgs struct {
 	ackChannel chan bool
 	// the input channel that delivers the data to be inserted
 	dataChannel chan idrf.Row
-	// the IDRF to SQL converter
-	converter IdrfConverter
 	// on each ${batchSize} rows inserted the ingestor checks if there is an error in some of the other goroutines
 	batchSize uint16
 	// if an error occured in another goroutine should a rollback be done
@@ -87,14 +85,7 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 	}
 
 	for row := range args.dataChannel {
-		batch[batchInserts], err = args.converter.ConvertValues(row)
-		if err != nil {
-			err = fmt.Errorf("could not convert idrf row\n%v", err)
-			args.errorBroadcaster.Broadcast(args.ingestorID, err)
-			_ = tx.Rollback()
-			return
-		}
-
+		batch[batchInserts] = row
 		batchInserts++
 		if batchInserts < args.batchSize {
 			continue

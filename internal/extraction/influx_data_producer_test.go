@@ -64,7 +64,7 @@ func TestBuildSelectCommand(t *testing.T) {
 }
 
 func TestFetchWhenErrorsHappenOnErrSub(t *testing.T) {
-	producer := defaultDataProducer{"id", &mockConnService{}}
+	producer := defaultDataProducer{"id", &mockConnService{}, nil}
 	query := influx.Query{}
 	dataChannel := make(chan idrf.Row)
 	errorChannel := make(chan error, 1)
@@ -82,7 +82,7 @@ func TestFetchWhenErrorsHappenOnErrSub(t *testing.T) {
 	}
 }
 func TestFetchWhenErrorsHappenOnClientCreate(t *testing.T) {
-	producer := defaultDataProducer{"id", errorReturningConnService()}
+	producer := defaultDataProducer{"id", errorReturningConnService(), nil}
 	query := influx.Query{}
 	dataChannel := make(chan idrf.Row)
 	errorChannel := make(chan error, 1)
@@ -104,7 +104,7 @@ func TestFetchWhenErrorsHappenOnClientCreate(t *testing.T) {
 
 func TestFetchWhenErrorsHappenOnQueryAsChunk(t *testing.T) {
 	mockedClient := errorReturningMockClient()
-	producer := defaultDataProducer{"id", mockedConnService(mockedClient)}
+	producer := defaultDataProducer{"id", mockedConnService(mockedClient), nil}
 
 	query := influx.Query{}
 	dataChannel := make(chan idrf.Row)

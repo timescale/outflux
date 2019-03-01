@@ -1,4 +1,4 @@
-package ingestion
+package idrfconversion
 
 import (
 	"encoding/json"
@@ -57,7 +57,7 @@ func TestConvertValues(t *testing.T) {
 
 	for _, tc := range tcs {
 		conv := &defaultIdrfConverter{dataSet: tc.ds}
-		res, err := conv.ConvertValues(tc.in)
+		res, err := conv.Convert(tc.in)
 		if tc.expectErr && err == nil {
 			t.Error("expected an error, none received")
 		}
