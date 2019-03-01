@@ -34,12 +34,12 @@ func (sm *TSSchemaManager) DiscoverDataSets() ([]string, error) {
 }
 
 // FetchDataSet not implemented
-func (sm *TSSchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSetInfo, error) {
+func (sm *TSSchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSet, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
 // PrepareDataSet prepares a table in TimeScale compatible with the provided dataSet
-func (sm *TSSchemaManager) PrepareDataSet(dataSet *idrf.DataSetInfo, strategy schemaconfig.SchemaStrategy) error {
+func (sm *TSSchemaManager) PrepareDataSet(dataSet *idrf.DataSet, strategy schemaconfig.SchemaStrategy) error {
 	log.Printf("Selected Schema Strategy: %s", strategy.String())
 	schema, table := dataSet.SchemaAndTable()
 	tableExists, err := sm.explorer.tableExists(sm.dbConn, schema, table)
@@ -61,7 +61,7 @@ func (sm *TSSchemaManager) PrepareDataSet(dataSet *idrf.DataSetInfo, strategy sc
 	}
 }
 
-func (sm *TSSchemaManager) validateOnly(dataSet *idrf.DataSetInfo, tableExists bool) error {
+func (sm *TSSchemaManager) validateOnly(dataSet *idrf.DataSet, tableExists bool) error {
 	if !tableExists {
 		return fmt.Errorf("validate only strategy selected, but '%s' doesn't exist", dataSet.DataSetName)
 	}
@@ -90,7 +90,7 @@ func (sm *TSSchemaManager) validateOnly(dataSet *idrf.DataSetInfo, tableExists b
 
 	return sm.validatePartitioning(dataSet)
 }
-func (sm *TSSchemaManager) prepareWithDropStrategy(dataSet *idrf.DataSetInfo, strategy schemaconfig.SchemaStrategy, tableExists bool) error {
+func (sm *TSSchemaManager) prepareWithDropStrategy(dataSet *idrf.DataSet, strategy schemaconfig.SchemaStrategy, tableExists bool) error {
 	if tableExists {
 		log.Printf("Table %s exists, dropping it", dataSet.DataSetName)
 		cascade := strategy == schemaconfig.DropCascadeAndCreate
@@ -104,7 +104,7 @@ func (sm *TSSchemaManager) prepareWithDropStrategy(dataSet *idrf.DataSetInfo, st
 	return sm.creator.CreateTable(sm.dbConn, dataSet)
 }
 
-func (sm *TSSchemaManager) prepareWithCreateIfMissing(dataSet *idrf.DataSetInfo, tableExists bool) error {
+func (sm *TSSchemaManager) prepareWithCreateIfMissing(dataSet *idrf.DataSet, tableExists bool) error {
 	if !tableExists {
 		log.Printf("CreateIfMissing strategy: Table %s does not exist. Creating", dataSet.DataSetName)
 		return sm.creator.CreateTable(sm.dbConn, dataSet)
@@ -141,7 +141,7 @@ func (sm *TSSchemaManager) prepareWithCreateIfMissing(dataSet *idrf.DataSetInfo,
 
 }
 
-func (sm *TSSchemaManager) validateColumns(dataSet *idrf.DataSetInfo) error {
+func (sm *TSSchemaManager) validateColumns(dataSet *idrf.DataSet) error {
 	schema, table := dataSet.SchemaAndTable()
 	existingTableColumns, err := sm.explorer.fetchTableColumns(sm.dbConn, schema, table)
 	if err != nil {
@@ -156,7 +156,7 @@ func (sm *TSSchemaManager) validateColumns(dataSet *idrf.DataSetInfo) error {
 	return nil
 }
 
-func (sm *TSSchemaManager) validatePartitioning(dataSet *idrf.DataSetInfo) error {
+func (sm *TSSchemaManager) validatePartitioning(dataSet *idrf.DataSet) error {
 	schema, table := dataSet.SchemaAndTable()
 	isPartitionedProperly, err := sm.explorer.isTimePartitionedBy(sm.dbConn, schema, table, dataSet.TimeColumn)
 	if err != nil {

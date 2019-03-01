@@ -47,12 +47,12 @@ func TestConvertValues(t *testing.T) {
 	cols := []*idrf.ColumnInfo{(&idrf.ColumnInfo{DataType: idrf.IDRFString})}
 	tcs := []struct {
 		in        idrf.Row
-		ds        *idrf.DataSetInfo
+		ds        *idrf.DataSet
 		expectErr bool
 	}{
-		{in: make([]interface{}, 1), ds: &idrf.DataSetInfo{}, expectErr: true},
-		{in: make([]interface{}, 0), ds: &idrf.DataSetInfo{}, expectErr: false},
-		{in: []interface{}{"1"}, ds: &idrf.DataSetInfo{Columns: cols}, expectErr: false},
+		{in: make([]interface{}, 1), ds: &idrf.DataSet{}, expectErr: true},
+		{in: make([]interface{}, 0), ds: &idrf.DataSet{}, expectErr: false},
+		{in: []interface{}{"1"}, ds: &idrf.DataSet{Columns: cols}, expectErr: false},
 	}
 
 	for _, tc := range tcs {

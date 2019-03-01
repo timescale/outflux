@@ -43,7 +43,7 @@ func TestFetchDataSet(t *testing.T) {
 	badMeasure := "b"
 	goodMeasure := "a"
 	measures := []string{goodMeasure}
-	dataSet := &idrf.DataSetInfo{DataSetName: goodMeasure}
+	dataSet := &idrf.DataSet{DataSetName: goodMeasure}
 	// Test cases
 	cases := []struct {
 		desc       string
@@ -52,7 +52,7 @@ func TestFetchDataSet(t *testing.T) {
 		reqMeasure string
 		msErr      error
 		dsErr      error
-		ds         *idrf.DataSetInfo
+		ds         *idrf.DataSet
 	}{
 		{desc: "error discovering measures", expectErr: true, msErr: genericError},
 		{desc: "requested measure is missing", expectErr: true, measures: measures, reqMeasure: badMeasure},
@@ -91,10 +91,10 @@ func (i *ismMeasureExp) FetchAvailableMeasurements(influxClient influx.Client, d
 }
 
 type ismDSCons struct {
-	ds    *idrf.DataSetInfo
+	ds    *idrf.DataSet
 	dsErr error
 }
 
-func (i *ismDSCons) construct(measure string) (*idrf.DataSetInfo, error) {
+func (i *ismDSCons) construct(measure string) (*idrf.DataSet, error) {
 	return i.ds, i.dsErr
 }

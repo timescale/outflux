@@ -18,8 +18,8 @@ const (
 )
 
 type tableCreator interface {
-	CreateTable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error
-	CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error
+	CreateTable(dbConn *pgx.Conn, info *idrf.DataSet) error
+	CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSet) error
 	CreateTimescaleExtension(dbConn *pgx.Conn) error
 }
 
@@ -29,7 +29,7 @@ func newTableCreator() tableCreator {
 
 type defaultTableCreator struct{}
 
-func (d *defaultTableCreator) CreateTable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+func (d *defaultTableCreator) CreateTable(dbConn *pgx.Conn, info *idrf.DataSet) error {
 	tableName := info.DataSetName
 	query := dataSetToSQLTableDef(tableName, info)
 	log.Printf("Creating table with:\n %s", query)
@@ -55,7 +55,7 @@ func (d *defaultTableCreator) CreateTable(dbConn *pgx.Conn, info *idrf.DataSetIn
 	return nil
 }
 
-func (d *defaultTableCreator) CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+func (d *defaultTableCreator) CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSet) error {
 	hypertableQuery := fmt.Sprintf(createHypertableQueryTemplate, info.DataSetName, info.TimeColumn)
 	log.Printf("Creating hypertable with: %s", hypertableQuery)
 	_, err := dbConn.Exec(hypertableQuery)
@@ -68,7 +68,7 @@ func (d *defaultTableCreator) CreateTimescaleExtension(dbConn *pgx.Conn) error {
 	return err
 }
 
-func dataSetToSQLTableDef(tableName string, dataSet *idrf.DataSetInfo) string {
+func dataSetToSQLTableDef(tableName string, dataSet *idrf.DataSet) string {
 	columnDefinitions := make([]string, len(dataSet.Columns))
 	for i, column := range dataSet.Columns {
 		dataType := idrfToPgType(column.DataType)

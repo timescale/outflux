@@ -5,69 +5,27 @@ import (
 	"testing"
 )
 
-func TestNewForeignKey(t *testing.T) {
-	// If column doesn't exist in data set error is returned
-	dataSetNoColumns := DataSetInfo{DataSetName: "ds", Columns: []*ColumnInfo{}}
-	wrongColumnName := "Wrong Column"
-	goodColumnName := "Column 1"
-
-	foreignKey, error := NewForeignKey(&dataSetNoColumns, wrongColumnName)
-	if error == nil || foreignKey != nil {
-		t.Error("Error should have been returned because column is not in data set")
+func TestSchemaAndTable(t *testing.T) {
+	tss := []struct {
+		in  string
+		exp []string
+	}{
+		{in: "name", exp: []string{"", "name"}},
+		{in: "schema.table", exp: []string{"schema", "table"}},
+		{in: "db.rp.measure", exp: []string{"db", "rp.measure"}},
 	}
-
-	dataSetWithColumns := DataSetInfo{DataSetName: "ds", Columns: []*ColumnInfo{
-		&ColumnInfo{Name: goodColumnName, DataType: IDRFTimestamp},
-	}}
-
-	foreignKey, error = NewForeignKey(&dataSetWithColumns, wrongColumnName)
-	if error == nil || foreignKey != nil {
-		t.Error("Error should have been returned because column is not in data set")
-	}
-
-	foreignKey, error = NewForeignKey(&dataSetWithColumns, goodColumnName)
-	if error != nil || foreignKey == nil {
-		t.Error("Error should not have been returned, column is in the data set")
+	for _, ts := range tss {
+		ds := &DataSet{DataSetName: ts.in}
+		schema, table := ds.SchemaAndTable()
+		str := ds.String()
+		if schema != ts.exp[0] || table != ts.exp[1] {
+			t.Errorf("%s\nexpected: %s %s, got %s %s", str, ts.exp[0], ts.exp[1], schema, table)
+		}
 	}
 }
-
-func TestNewColumn(t *testing.T) {
-	if _, err := NewColumn("", IDRFDouble); err == nil {
-		t.Error("Empty column name should not be allowed")
-	}
-
-	if col, err := NewColumn("Col Name", IDRFBoolean); col == nil || err != nil {
-		t.Error("Column should have been created")
-	}
-}
-
-func TestNewColumnWithFK(t *testing.T) {
-	foreignColumn := "Col1"
-	goodDataSet := DataSetInfo{
-		DataSetName: "DSName",
-		Columns:     []*ColumnInfo{&ColumnInfo{Name: foreignColumn, DataType: IDRFBoolean}},
-	}
-	goodForeignKey, err := NewForeignKey(&goodDataSet, foreignColumn)
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-
-	if _, err := NewColumnWithFK("", IDRFBoolean, goodForeignKey); err == nil {
-		t.Error("Empty column name should not be allowed")
-	}
-
-	if _, err := NewColumnWithFK("Col 2", IDRFDouble, goodForeignKey); err == nil {
-		t.Error("Error because column type is not the same as the referenced foreign column")
-	}
-
-	if column, err := NewColumnWithFK("Col 2", IDRFBoolean, goodForeignKey); err != nil || column == nil {
-		t.Error("Should have created the column")
-	}
-}
-
 func TestNewDataSet(t *testing.T) {
 	column, _ := NewColumn("Col 1", IDRFTimestamp)
-	intColumn, _ := NewColumn("Col 1", IDRFTimestamp)
+	intColumn, _ := NewColumn("Col 1", IDRFInteger32)
 	columns := []*ColumnInfo{column}
 	noTimestampTimeColumns := []*ColumnInfo{intColumn}
 	if _, error := NewDataSet("", columns, "Col 1"); error == nil {
@@ -84,12 +42,16 @@ func TestNewDataSet(t *testing.T) {
 		t.Error("Should not be able to create a data set with duplicate columns")
 	}
 
-	if dataSet, error := NewDataSet("Data Set", columns, "Col 2"); error == nil || dataSet != nil {
+	if _, error := NewDataSet("Data Set", columns, "Col 2"); error == nil {
 		t.Error("Data Set should not have been created, time column not in column set")
 	}
 
-	if dataSet, error := NewDataSet("Data Set", noTimestampTimeColumns, "Col 1"); error != nil || dataSet == nil {
+	if _, error := NewDataSet("Data Set", noTimestampTimeColumns, "Col 1"); error == nil {
 		t.Error("Data Set should not have been created, time column not a timestamp")
+	}
+
+	if _, error := NewDataSet("Data Set", columns, ""); error == nil {
+		t.Error("data set should not have been created with time column empty")
 	}
 
 	dataSet, err := NewDataSet("Data Set", columns, "Col 1")

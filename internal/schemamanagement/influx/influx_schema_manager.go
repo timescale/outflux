@@ -38,7 +38,7 @@ func (sm *SchemaManager) DiscoverDataSets() ([]string, error) {
 
 // FetchDataSet for a given data set identifier (retention.measureName, or just measureName)
 // returns the idrf.DataSetInfo describing it
-func (sm *SchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSetInfo, error) {
+func (sm *SchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSet, error) {
 	measurements, err := sm.measureExplorer.FetchAvailableMeasurements(sm.influxClient, sm.database)
 	if err != nil {
 		return nil, err
@@ -60,6 +60,6 @@ func (sm *SchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSetIn
 }
 
 // PrepareDataSet NOT IMPLEMENTED
-func (sm *SchemaManager) PrepareDataSet(dataSet *idrf.DataSetInfo, strategy schemaconfig.SchemaStrategy) error {
+func (sm *SchemaManager) PrepareDataSet(dataSet *idrf.DataSet, strategy schemaconfig.SchemaStrategy) error {
 	panic(fmt.Errorf("not implemented"))
 }

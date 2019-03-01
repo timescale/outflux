@@ -8,6 +8,6 @@ import (
 // SchemaManager defines methods for schema discovery and preparation
 type SchemaManager interface {
 	DiscoverDataSets() ([]string, error)
-	FetchDataSet(dataSetIdentifier string) (*idrf.DataSetInfo, error)
-	PrepareDataSet(*idrf.DataSetInfo, schemaconfig.SchemaStrategy) error
+	FetchDataSet(dataSetIdentifier string) (*idrf.DataSet, error)
+	PrepareDataSet(*idrf.DataSet, schemaconfig.SchemaStrategy) error
 }

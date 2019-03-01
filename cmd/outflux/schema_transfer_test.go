@@ -105,8 +105,8 @@ type tdmsm struct {
 	discoverCalled bool
 }
 
-func (t *tdmsm) DiscoverDataSets() ([]string, error)                              { t.discoverCalled = true; return t.m, nil }
-func (t *tdmsm) FetchDataSet(dataSetIdentifier string) (*idrf.DataSetInfo, error) { return nil, nil }
-func (t *tdmsm) PrepareDataSet(dataSet *idrf.DataSetInfo, strategy schemaconfig.SchemaStrategy) error {
+func (t *tdmsm) DiscoverDataSets() ([]string, error)                          { t.discoverCalled = true; return t.m, nil }
+func (t *tdmsm) FetchDataSet(dataSetIdentifier string) (*idrf.DataSet, error) { return nil, nil }
+func (t *tdmsm) PrepareDataSet(dataSet *idrf.DataSet, strategy schemaconfig.SchemaStrategy) error {
 	return nil
 }

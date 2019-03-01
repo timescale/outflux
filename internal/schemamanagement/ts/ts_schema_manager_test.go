@@ -12,7 +12,7 @@ import (
 
 type prepareArgs struct {
 	Strategy schemaconfig.SchemaStrategy
-	DataSet  *idrf.DataSetInfo
+	DataSet  *idrf.DataSet
 }
 
 func TestPrepareDataSetFails(t *testing.T) {
@@ -20,7 +20,7 @@ func TestPrepareDataSetFails(t *testing.T) {
 		{Name: "time", DataType: idrf.IDRFTimestamptz},
 		{Name: "a", DataType: idrf.IDRFString},
 	}
-	dataSet := &idrf.DataSetInfo{
+	dataSet := &idrf.DataSet{
 		DataSetName: "ds",
 		Columns:     exampleColumns,
 		TimeColumn:  "time",
@@ -121,7 +121,7 @@ func TestPrepareOk(t *testing.T) {
 		{Name: "time", DataType: idrf.IDRFTimestamptz},
 		{Name: "a", DataType: idrf.IDRFString},
 	}
-	dataSet := &idrf.DataSetInfo{
+	dataSet := &idrf.DataSet{
 		DataSetName: "ds",
 		Columns:     exampleColumns,
 		TimeColumn:  "time",
@@ -265,11 +265,11 @@ func (m *mocker) fetchTableColumns(db *pgx.Conn, schemaName, tableName string) (
 	return m.fetcColR, m.fetchColError
 }
 
-func (m *mocker) CreateTable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+func (m *mocker) CreateTable(dbConn *pgx.Conn, info *idrf.DataSet) error {
 	return m.tableCreateError
 }
 
-func (m *mocker) CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSetInfo) error {
+func (m *mocker) CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSet) error {
 	return m.createHyperErr
 }
 

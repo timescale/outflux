@@ -9,7 +9,7 @@ import (
 
 // DataSetConstructor builds a idrf.DataSetInfo for a given measure
 type dataSetConstructor interface {
-	construct(measure string) (*idrf.DataSetInfo, error)
+	construct(measure string) (*idrf.DataSet, error)
 }
 
 // NewDataSetConstructor creates a new instance of a DataSetConstructor
@@ -29,7 +29,7 @@ type defaultDSConstructor struct {
 	influxClient  influx.Client
 }
 
-func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSetInfo, error) {
+func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSet, error) {
 	idrfTags, err := d.tagExplorer.DiscoverMeasurementTags(d.influxClient, d.database, measure)
 	if err != nil {
 		return nil, err

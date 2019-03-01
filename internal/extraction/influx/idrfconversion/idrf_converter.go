@@ -15,12 +15,12 @@ type IdrfConverter interface {
 
 // NewIdrfConverter creates an instance of the IdrfConverter that converts the results
 // of an InfluxDB Query result row to IDRF
-func NewIdrfConverter(dataSet *idrf.DataSetInfo) IdrfConverter {
+func NewIdrfConverter(dataSet *idrf.DataSet) IdrfConverter {
 	return &defaultIdrfConverter{dataSet}
 }
 
 type defaultIdrfConverter struct {
-	dataSet *idrf.DataSetInfo
+	dataSet *idrf.DataSet
 }
 
 func (conv *defaultIdrfConverter) Convert(row []interface{}) (idrf.Row, error) {
