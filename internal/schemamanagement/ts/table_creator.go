@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	createTableQueryTemplate      = "CREATE TABLE %s(%s)"
-	columnDefTemplate             = "%s %s"
+	createTableQueryTemplate      = "CREATE TABLE \"%s\"(%s)"
+	columnDefTemplate             = "\"%s\" %s"
 	createHypertableQueryTemplate = "SELECT create_hypertable('%s', '%s');"
 	createTimescaleExtensionQuery = "CREATE EXTENSION IF NOT EXISTS timescaledb"
 )
