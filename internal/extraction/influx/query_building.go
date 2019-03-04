@@ -1,4 +1,4 @@
-package extraction
+package influx
 
 import (
 	"fmt"
@@ -6,6 +6,14 @@ import (
 
 	"github.com/timescale/outflux/internal/extraction/config"
 	"github.com/timescale/outflux/internal/idrf"
+)
+
+const (
+	selectQueryDoubleBoundTemplate = "SELECT %s\nFROM \"%s\"\nWHERE time >= '%s' AND time <= '%s'"
+	selectQueryLowerBoundTemplate  = "SELECT %s\nFROM \"%s\"\nWHERE time >= '%s'"
+	selectQueryUpperBoundTemplate  = "SELECT %s\nFROM \"%s\"\nWHERE time <= '%s'"
+	selectQueryNoBoundTemplate     = "SELECT %s\nFROM \"%s\""
+	limitSuffixTemplate            = "\nLIMIT %d"
 )
 
 func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.ColumnInfo) string {

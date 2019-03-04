@@ -1,9 +1,13 @@
 package schemamanagement
 
-import "github.com/timescale/outflux/internal/idrf"
+import (
+	"github.com/timescale/outflux/internal/idrf"
+	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
+)
 
+// SchemaManager defines methods for schema discovery and preparation
 type SchemaManager interface {
-	DiscoverDataSets() ([]*idrf.DataSetInfo, error)
-	FetchDataSet(schema, name string) (*idrf.DataSetInfo, error)
-	PrepareDataSet(dataSet *idrf.DataSetInfo, strategy SchemaStrategy) error
+	DiscoverDataSets() ([]string, error)
+	FetchDataSet(dataSetIdentifier string) (*idrf.DataSet, error)
+	PrepareDataSet(*idrf.DataSet, schemaconfig.SchemaStrategy) error
 }

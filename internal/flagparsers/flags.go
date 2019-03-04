@@ -1,8 +1,8 @@
 package flagparsers
 
 import (
-	"github.com/timescale/outflux/internal/ingestion"
-	"github.com/timescale/outflux/internal/schemamanagement"
+	ingestionConfig "github.com/timescale/outflux/internal/ingestion/config"
+	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
 
 // Flags used in outflux and their default values
@@ -29,8 +29,8 @@ const (
 	DefaultInputPass               = ""
 	DefaultOutputConn              = "sslmode=disable"
 	DefaultOutputSchema            = ""
-	DefaultSchemaStrategy          = schemamanagement.CreateIfMissing
-	DefaultCommitStrategy          = ingestion.CommitOnEachBatch
+	DefaultSchemaStrategy          = schemaconfig.CreateIfMissing
+	DefaultCommitStrategy          = ingestionConfig.CommitOnEachBatch
 	DefaultDataBufferSize          = 15000
 	DefaultChunkSize               = 15000
 	DefaultLimit                   = 0

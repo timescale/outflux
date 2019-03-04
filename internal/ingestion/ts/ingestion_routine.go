@@ -1,4 +1,4 @@
-package ingestion
+package ts
 
 import (
 	"fmt"
@@ -6,14 +6,15 @@ import (
 
 	"github.com/jackc/pgx"
 	"github.com/timescale/outflux/internal/idrf"
+	"github.com/timescale/outflux/internal/ingestion/config"
 	"github.com/timescale/outflux/internal/utils"
 )
 
 type ingestDataArgs struct {
 	// id of the ingestor used to subscribe and unsubscribe to errors from other goroutines
 	ingestorID string
-	// the error broadcaster that delivers errors from other goroutines and can also send errors to them
-	errorBroadcaster utils.ErrorBroadcaster
+	// channel delivering errors that happened in other routines
+	errChan chan error
 	// the channel notified when the ingestor has completed
 	ackChannel chan bool
 	// the input channel that delivers the data to be inserted
@@ -31,51 +32,39 @@ type ingestDataArgs struct {
 	// name of schema where the table is
 	schemaName string
 	// commit strategy
-	commitStrategy CommitStrategy
+	commitStrategy config.CommitStrategy
 }
 
 // Routine defines an interface that consumes a channel of idrf.Rows and
 // and writes them to a TimescaleDB
 type Routine interface {
-	ingestData(args *ingestDataArgs)
+	ingest(args *ingestDataArgs) error
 }
 
-// NewIngestionRoutine creates an instance of the routine that will ingest data in the target db
-func NewIngestionRoutine() Routine {
-	return &defaultIngestionRoutine{}
+// NewRoutine creates a new
+func NewRoutine() Routine {
+	return &defaultRoutine{}
 }
 
-type defaultIngestionRoutine struct{}
+type defaultRoutine struct{}
 
-func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
+func (routine *defaultRoutine) ingest(args *ingestDataArgs) error {
 	log.Printf("Starting data ingestor '%s'", args.ingestorID)
-	defer close(args.ackChannel)
-	defer args.dbConn.Close()
 
-	errorChannel, err := args.errorBroadcaster.Subscribe(args.ingestorID)
-	if err != nil {
-		err = fmt.Errorf("ingestor '%s': could not subscribe for errors.\n%v", args.ingestorID, err)
-		args.errorBroadcaster.Broadcast(args.ingestorID, err)
-		log.Printf("%s: Data ingestor closing early", args.ingestorID)
-		return
-	}
-
-	defer args.errorBroadcaster.Unsubscribe(args.ingestorID)
-
-	err = utils.CheckError(errorChannel)
+	err := utils.CheckError(args.errChan)
 	if err != nil {
 		log.Printf("%s: received external error before starting data insertion. Quitting\n", args.ingestorID)
-		return
+		return nil
 	}
 
-	var tx *pgx.Tx
-	if tx, err = openTx(args); err != nil {
-		return
+	tx, err := openTx(args)
+	if err != nil {
+		return err
 	}
 
 	numInserts := uint(0)
 	batchInserts := uint16(0)
-	log.Printf("Will batch insert %d rows at once. With strategy: %v", args.batchSize, args.commitStrategy)
+	log.Printf("Will batch insert %d rows at once. With commit strategy: %v", args.batchSize, args.commitStrategy)
 	batch := make([][]interface{}, args.batchSize)
 	var tableIdentifier *pgx.Identifier
 	if args.schemaName != "" {
@@ -91,58 +80,54 @@ func (routine *defaultIngestionRoutine) ingestData(args *ingestDataArgs) {
 			continue
 		}
 
-		if args.rollbackOnExternalError && utils.CheckError(errorChannel) != nil {
+		if args.rollbackOnExternalError && utils.CheckError(args.errChan) != nil {
 			log.Printf("%s: Error received from outside of ingestor. Rolling back\n", args.ingestorID)
 			_ = tx.Rollback()
-			return
+			return nil
 		}
 
 		numInserts += uint(batchInserts)
 		batchInserts = 0
 		if err = copyToDb(args, tableIdentifier, tx, batch); err != nil {
-			return
+			return err
 		}
-
-		if args.commitStrategy != CommitOnEachBatch {
+		if args.commitStrategy != config.CommitOnEachBatch {
 			continue
 		}
-
 		if err = commitTx(args, tx); err != nil {
-			return
+			return err
 		}
-
 		if tx, err = openTx(args); err != nil {
-			return
+			return err
 		}
 	}
 
-	if args.rollbackOnExternalError && utils.CheckError(errorChannel) != nil {
+	if args.rollbackOnExternalError && utils.CheckError(args.errChan) != nil {
 		log.Printf("%s: Error received from outside of ingestor. Rollbacking\n", args.ingestorID)
 		_ = tx.Rollback()
-		return
+		return nil
 	}
 
 	if batchInserts > 0 {
 		batch = batch[:batchInserts]
 		if err = copyToDb(args, tableIdentifier, tx, batch); err != nil {
-			return
+			return err
 		}
 		numInserts += uint(batchInserts)
 	}
 
 	if err = commitTx(args, tx); err != nil {
-		return
+		return err
 	}
 
 	log.Printf("Ingestor '%s' complete. Inserted %d rows.\n", args.ingestorID, numInserts)
-	args.ackChannel <- true
+	return nil
 }
 
 func commitTx(args *ingestDataArgs, tx *pgx.Tx) error {
 	err := tx.Commit()
 	if err != nil {
 		log.Printf("%s could not commit transaction in output db\n%v", args.ingestorID, err)
-		args.errorBroadcaster.Broadcast(args.ingestorID, err)
 	}
 
 	return err
@@ -153,7 +138,6 @@ func copyToDb(args *ingestDataArgs, identifier *pgx.Identifier, tx *pgx.Tx, batc
 	_, err := args.dbConn.CopyFrom(*identifier, args.colNames, source)
 	if err != nil {
 		log.Printf("%s could not insert batch of rows in output db\n%v", args.ingestorID, err)
-		args.errorBroadcaster.Broadcast(args.ingestorID, err)
 		_ = tx.Rollback()
 	}
 
@@ -163,8 +147,7 @@ func copyToDb(args *ingestDataArgs, identifier *pgx.Identifier, tx *pgx.Tx, batc
 func openTx(args *ingestDataArgs) (*pgx.Tx, error) {
 	tx, err := args.dbConn.Begin()
 	if err != nil {
-		err = fmt.Errorf("%s: could not create transaction\n%v", args.ingestorID, err)
-		args.errorBroadcaster.Broadcast(args.ingestorID, err)
+		return nil, fmt.Errorf("%s: could not create transaction\n%v", args.ingestorID, err)
 	}
 
 	return tx, err

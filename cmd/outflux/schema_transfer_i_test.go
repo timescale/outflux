@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/timescale/outflux/internal/pipeline"
-	"github.com/timescale/outflux/internal/schemamanagement"
+	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 	"github.com/timescale/outflux/internal/testutils"
 )
 
@@ -24,17 +24,19 @@ func TestSchemaTransfer(t *testing.T) {
 	testutils.CreateInfluxMeasure(t, db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
 	defer testutils.ClearServersAfterITest(t, db)
 
-	config := &pipeline.SchemaTransferConfig{
-		Connection: &pipeline.ConnectionConfig{
-			InputHost:          testutils.InfluxHost,
-			InputDb:            db,
-			InputMeasures:      []string{measure},
-			OutputDbConnString: fmt.Sprintf(testutils.TsConnStringTemplate, db),
-		},
-		OutputSchemaStrategy: schemamanagement.DropAndCreate,
+	connConf := &pipeline.ConnectionConfig{
+		InputHost:          testutils.InfluxHost,
+		InputDb:            db,
+		InputMeasures:      []string{measure},
+		OutputDbConnString: fmt.Sprintf(testutils.TsConnStringTemplate, db),
+	}
+	config := &pipeline.MigrationConfig{
+		ChunkSize:            1,
+		OutputSchemaStrategy: schemaconfig.DropAndCreate,
+		SchemaOnly:           true,
 	}
 	appContext := initAppContext()
-	_, err := transferSchema(appContext, config)
+	err := transferSchema(appContext, connConf, config)
 	if err != nil {
 		t.Error(err)
 	}
@@ -80,25 +82,28 @@ func TestOutputConnOverridesEnvVars(t *testing.T) {
 	os.Setenv("PGPORT", "5433")
 	os.Setenv("PGPASSWORD", "postgres")
 
-	// connection should fail, wrong db
-	config := &pipeline.SchemaTransferConfig{
-		Connection: &pipeline.ConnectionConfig{
-			InputHost:     testutils.InfluxHost,
-			InputDb:       db,
-			InputMeasures: []string{measure},
-		},
-		OutputSchemaStrategy: schemamanagement.DropAndCreate,
+	connConf := &pipeline.ConnectionConfig{
+		InputHost:     testutils.InfluxHost,
+		InputDb:       db,
+		InputMeasures: []string{measure},
+	}
+	config := &pipeline.MigrationConfig{
+		ChunkSize:            1,
+		OutputSchemaStrategy: schemaconfig.DropAndCreate,
+		SchemaOnly:           true,
 	}
 	appContext := initAppContext()
-	_, err := transferSchema(appContext, config)
+
+	// connection should fail, wrong db
+	err := transferSchema(appContext, connConf, config)
 	if err == nil {
 		t.Error("expected error, none received")
 	}
 
 	// Conn String that will override database and user
 	connString := fmt.Sprintf("user=postgres dbname=%s", db)
-	config.Connection.OutputDbConnString = connString
-	_, err = transferSchema(appContext, config)
+	connConf.OutputDbConnString = connString
+	err = transferSchema(appContext, connConf, config)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

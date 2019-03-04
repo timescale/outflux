@@ -1,5 +1,3 @@
-// +build integration
-
 package main
 
 import (
@@ -7,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/timescale/outflux/internal/ingestion"
+	ingestionConfig "github.com/timescale/outflux/internal/ingestion/config"
+	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 
 	"github.com/timescale/outflux/internal/pipeline"
-	"github.com/timescale/outflux/internal/schemamanagement"
 	"github.com/timescale/outflux/internal/testutils"
 )
 
@@ -28,53 +26,54 @@ func TestMigrateSingleValue(t *testing.T) {
 	testutils.CreateInfluxMeasure(t, db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
 	defer testutils.ClearServersAfterITest(t, db)
 
-	config := defaultConfig(db, measure)
+	// run
+	connConf, config := defaultConfig(db, measure)
 	appContext := initAppContext()
-	errs := migrate(appContext, config)
+	errs := migrate(appContext, connConf, config)
 	if errs != nil {
 		t.Error(errs[0])
 	}
 
+	// check
 	dbConn := testutils.OpenTSConn(db)
 	defer dbConn.Close()
 	rows, err := dbConn.Query("SELECT * FROM " + measure)
 	if err != nil {
 		t.Error(err)
 	}
+	defer rows.Close()
 
 	var time time.Time
 	var field1 int
 	if !rows.Next() {
-		t.Error("couldn't check state of TS DB")
+		t.Fatal("couldn't check state of TS DB")
 	}
 
 	err = rows.Scan(&time, &field1)
 	if err != nil {
-		t.Error("couldn't check state of TS DB")
+		t.Fatal("couldn't check state of TS DB")
 	}
 
 	if time.Before(start) || field1 != value {
 		t.Errorf("expected time > %v and field1=%d\ngot: time %s, field1=%d", start, value, time, field1)
 	}
-	rows.Close()
 }
 
-func defaultConfig(db string, measure string) *pipeline.MigrationConfig {
+func defaultConfig(db string, measure string) (*pipeline.ConnectionConfig, *pipeline.MigrationConfig) {
 	connConfig := &pipeline.ConnectionConfig{
 		InputHost:          testutils.InfluxHost,
 		InputDb:            db,
 		InputMeasures:      []string{measure},
 		OutputDbConnString: fmt.Sprintf(testutils.TsConnStringTemplate, db),
 	}
-	return &pipeline.MigrationConfig{
-		Connection:                           connConfig,
-		OutputSchemaStrategy:                 schemamanagement.CreateIfMissing,
+	return connConfig, &pipeline.MigrationConfig{
+		OutputSchemaStrategy:                 schemaconfig.CreateIfMissing,
 		ChunkSize:                            1,
-		Quiet:                                false,
 		DataBuffer:                           1,
 		MaxParallel:                          1,
 		RollbackAllMeasureExtractionsOnError: true,
 		BatchSize:                            1,
-		CommitStrategy:                       ingestion.CommitOnEachBatch,
+		CommitStrategy:                       ingestionConfig.CommitOnEachBatch,
+		Quiet:                                true,
 	}
 }

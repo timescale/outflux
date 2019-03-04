@@ -18,7 +18,7 @@ func TestCreateTable(t *testing.T) {
 	creator := &defaultTableCreator{}
 	dbConn := testutils.OpenTSConn(db)
 	defer dbConn.Close()
-	dataSet := &idrf.DataSetInfo{
+	dataSet := &idrf.DataSet{
 		DataSetName: "name",
 		Columns: []*idrf.ColumnInfo{
 			&idrf.ColumnInfo{Name: "col1", DataType: idrf.IDRFTimestamptz},
@@ -26,7 +26,7 @@ func TestCreateTable(t *testing.T) {
 		},
 		TimeColumn: "col1",
 	}
-	err := creator.Create(dbConn, dataSet)
+	err := creator.CreateTable(dbConn, dataSet)
 	if err != nil {
 		t.Errorf("expected no error, got: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestCreateTable(t *testing.T) {
 	}
 
 	// Creating the table again should fail
-	err = creator.Create(dbConn, dataSet)
+	err = creator.CreateTable(dbConn, dataSet)
 	if err == nil {
 		t.Error("table creation should have failed because table exists")
 	}

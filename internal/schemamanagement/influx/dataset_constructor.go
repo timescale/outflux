@@ -7,10 +7,12 @@ import (
 	"github.com/timescale/outflux/internal/schemamanagement/influx/influxqueries"
 )
 
+// DataSetConstructor builds a idrf.DataSet for a given measure
 type dataSetConstructor interface {
-	construct(measure string) (*idrf.DataSetInfo, error)
+	construct(measure string) (*idrf.DataSet, error)
 }
 
+// NewDataSetConstructor creates a new instance of a DataSetConstructor
 func newDataSetConstructor(db string, client influx.Client, queryService influxqueries.InfluxQueryService) dataSetConstructor {
 	return &defaultDSConstructor{
 		database:      db,
@@ -27,7 +29,7 @@ type defaultDSConstructor struct {
 	influxClient  influx.Client
 }
 
-func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSetInfo, error) {
+func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSet, error) {
 	idrfTags, err := d.tagExplorer.DiscoverMeasurementTags(d.influxClient, d.database, measure)
 	if err != nil {
 		return nil, err
@@ -42,6 +44,6 @@ func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSetInfo, err
 	allColumns := []*idrf.ColumnInfo{idrfTimeColumn}
 	allColumns = append(allColumns, idrfTags...)
 	allColumns = append(allColumns, idrfFields...)
-	dataSet, err := idrf.NewDataSet("", measure, allColumns, "time")
+	dataSet, err := idrf.NewDataSet(measure, allColumns, "time")
 	return dataSet, err
 }
