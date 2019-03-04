@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	pipeIDTemplate = "pipe_%d"
+	pipeIDTemplate = "pipe_%s"
 )
 
 // PipeService defines methods for creating pipelines
@@ -45,7 +45,7 @@ func NewPipeService(
 func (s *pipeService) Create(connConf *ConnectionConfig, conf *MigrationConfig) []Pipe {
 	pipes := make([]Pipe, len(connConf.InputMeasures))
 	for i, measure := range connConf.InputMeasures {
-		pipeID := fmt.Sprintf(pipeIDTemplate, i)
+		pipeID := fmt.Sprintf(pipeIDTemplate, measure)
 		pipeConf := &PipeConfig{
 			extraction:  s.extractionConfCreator.create(pipeID, connConf.InputDb, measure, conf),
 			ingestion:   s.ingestionConfCreator.create(pipeID, conf),

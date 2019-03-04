@@ -32,9 +32,8 @@ func NewMeasureExplorer(queryService influxqueries.InfluxQueryService) MeasureEx
 // or an error if the query could not be executed, or the result was in an unexpected format
 func (me *defaultMeasureExplorer) FetchAvailableMeasurements(influxClient influx.Client, database string) ([]string, error) {
 	result, err := me.queryService.ExecuteShowQuery(influxClient, database, showMeasurementsQuery)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error executing query: %s\nerror: %v", showMeasurementsQuery, err)
 	}
 
 	measureNames := make([]string, len(result.Values))

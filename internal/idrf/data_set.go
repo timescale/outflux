@@ -16,7 +16,7 @@ type DataSet struct {
 }
 
 func (set *DataSet) String() string {
-	return fmt.Sprintf("DataSet { dataSetName: %s, columns: %s, time column: %s }", set.DataSetName, set.Columns, set.TimeColumn)
+	return fmt.Sprintf("DataSet { Name: %s, Columns: %s, Time Column: %s }", set.DataSetName, set.Columns, set.TimeColumn)
 }
 
 // ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column

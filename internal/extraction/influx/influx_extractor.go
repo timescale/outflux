@@ -27,11 +27,15 @@ func (e *Extractor) ID() string {
 
 // Prepare discoveres the data set schema for the measure in the config
 func (e *Extractor) Prepare() (*idrf.Bundle, error) {
-	discoveredDataSet, err := e.SM.FetchDataSet(e.Config.MeasureExtraction.Measure)
+	measureName := e.Config.MeasureExtraction.Measure
+	log.Printf("Discovering influx schema for measurement: %s", measureName)
+
+	discoveredDataSet, err := e.SM.FetchDataSet(measureName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: could not fetch data set definition for measure: %s\n%v", e.ID(), measureName, err)
 	}
 
+	log.Printf("Discovered: %s", discoveredDataSet.String())
 	e.cachedElementData = &idrf.Bundle{
 		DataDef: discoveredDataSet,
 		Data:    make(chan idrf.Row, e.Config.DataBufferSize),

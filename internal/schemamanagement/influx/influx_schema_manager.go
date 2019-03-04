@@ -41,7 +41,7 @@ func (sm *SchemaManager) DiscoverDataSets() ([]string, error) {
 func (sm *SchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSet, error) {
 	measurements, err := sm.measureExplorer.FetchAvailableMeasurements(sm.influxClient, sm.database)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not fetch available measurements from InfluxDB\n%v", err)
 	}
 
 	measureMissing := true
