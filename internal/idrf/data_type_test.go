@@ -12,6 +12,7 @@ func TestCanFitInto(t *testing.T) {
 		IDRFBoolean,
 		IDRFTimestamptz,
 		IDRFTimestamp,
+		IDRFJson,
 		IDRFUnknown,
 	}
 

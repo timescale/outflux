@@ -17,6 +17,7 @@ func TestPgTypeToIdrf(t *testing.T) {
 		{"double precision", idrf.IDRFDouble},
 		{"integer", idrf.IDRFInteger32},
 		{"bigint", idrf.IDRFInteger64},
+		{"jsonb", idrf.IDRFJson},
 		{"asdasd", idrf.IDRFUnknown},
 	}
 

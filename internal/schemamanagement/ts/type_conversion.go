@@ -21,6 +21,10 @@ func pgTypeToIdrf(pgType string) idrf.DataType {
 		return idrf.IDRFInteger32
 	case "bigint":
 		return idrf.IDRFInteger64
+	case "jsonb":
+		return idrf.IDRFJson
+	case "json":
+		return idrf.IDRFJson
 	default:
 		return idrf.IDRFUnknown
 	}
@@ -44,6 +48,8 @@ func idrfToPgType(dataType idrf.DataType) string {
 		return "BIGINT"
 	case idrf.IDRFSingle:
 		return "FLOAT"
+	case idrf.IDRFJson:
+		return "JSONB"
 	default:
 		panic("Unexpected value")
 	}
