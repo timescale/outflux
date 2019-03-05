@@ -21,14 +21,7 @@ type defValidator struct {
 	id string
 }
 
-// validate checks if the selected 'columnsToCombine' can be replaced by a JSON column named 'resCol'
-// in the originData set
 func (v *defValidator) validate(originData *idrf.DataSet, resCol string, columnsToCombine map[string]bool) error {
-	if resCol == "" {
-		return fmt.Errorf(errResColumnEmptyFmt, v.id)
-	}
-
-	// To avoid duplicates, the combined column name cannot already exist UNLESS it is being combined "away"
 	_, resColumnNamedAsACombinedColumn := columnsToCombine[resCol]
 	if !resColumnNamedAsACombinedColumn && originData.ColumnNamed(resCol) != nil {
 		return fmt.Errorf(errCombinedColumnIsDuplicateFmt, v.id, resCol)

@@ -25,9 +25,6 @@ func TestValidator(t *testing.T) {
 		expectErr  bool
 	}{
 		{
-			desc:      "res column is empty",
-			expectErr: true,
-		}, {
 			desc:       "res column named the same as a column not designated for combination",
 			expectErr:  true,
 			res:        threeCol[1].Name,
