@@ -21,6 +21,7 @@ func TestConvertByType(t *testing.T) {
 		{json.Number("1"), idrf.IDRFDouble, float64(1), true},
 		{"1", idrf.IDRFString, "1", false},
 		{nil, idrf.IDRFBoolean, nil, false},
+		{"{\"a\":1}", idrf.IDRFJson, "{\"a\":1}", false},
 	}
 
 	for _, tc := range tcs {

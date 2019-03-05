@@ -13,6 +13,7 @@ const (
 	IDRFBoolean
 	IDRFTimestamptz
 	IDRFTimestamp
+	IDRFJson
 	IDRFUnknown
 )
 
@@ -34,6 +35,8 @@ func (d DataType) String() string {
 		return "IDRFInteger64"
 	case IDRFSingle:
 		return "IDRFSingle"
+	case IDRFJson:
+		return "IDRFJson"
 	case IDRFUnknown:
 		return "IDRFUnknown"
 	default:

@@ -19,6 +19,7 @@ func TestIdrfToPgType(t *testing.T) {
 		{idrf.IDRFTimestamp, "TIMESTAMP"},
 		{idrf.IDRFTimestamptz, "TIMESTAMPTZ"},
 		{idrf.IDRFSingle, "FLOAT"},
+		{idrf.IDRFJson, "JSONB"},
 	}
 
 	for _, tc := range testCases {
