@@ -30,7 +30,7 @@ func NewFieldExplorer(queryService influxqueries.InfluxQueryService) FieldExplor
 func (fe *defaultFieldExplorer) DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.ColumnInfo, error) {
 	fields, err := fe.fetchMeasurementFields(influxClient, database, measurement)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching fields for measurement '%s'\n%v", measurement, err)
 	}
 
 	return convertFields(fields)
@@ -41,7 +41,7 @@ func (fe *defaultFieldExplorer) fetchMeasurementFields(influxClient influx.Clien
 	result, err := fe.queryService.ExecuteShowQuery(influxClient, database, showFieldsQuery)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error executing query: %s\n%v", showFieldsQuery, err)
 	}
 
 	if len(result.Values) == 0 {
@@ -73,7 +73,7 @@ func convertFields(fieldsWithType [][2]string) ([]*idrf.ColumnInfo, error) {
 		idrfColumn, err := idrf.NewColumn(field[0], columnType)
 
 		if err != nil {
-			return nil, fmt.Errorf("could not convert fields to IDRF. " + err.Error())
+			return nil, fmt.Errorf("could not convert fields to IDRF. \n%v", err.Error())
 		}
 
 		columns[i] = idrfColumn

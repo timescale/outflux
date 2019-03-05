@@ -9,7 +9,7 @@ type ColumnInfo struct {
 }
 
 func (c ColumnInfo) String() string {
-	return fmt.Sprintf("ColumnInfo { name: %s, dataType: %s}", c.Name, c.DataType.String())
+	return fmt.Sprintf("ColumnInfo{%s, %s}", c.Name, c.DataType.String())
 }
 
 // NewColumn creates a new ColumnInfo without a foreign key while checking the arguments

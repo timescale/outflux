@@ -33,7 +33,7 @@ func (te *defaultTagExplorer) DiscoverMeasurementTags(influxClient influx.Client
 	tags, err := te.fetchMeasurementTags(influxClient, database, measure)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error fetching tags for measurement '%s'\n%v", measure, err)
 	}
 
 	return convertTags(tags)
@@ -44,7 +44,7 @@ func (te *defaultTagExplorer) fetchMeasurementTags(influxClient influx.Client, d
 	result, err := te.queryService.ExecuteShowQuery(influxClient, database, showTagsQuery)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error executing query: %s\n%v", showTagsQuery, err)
 	}
 
 	if len(result.Values) == 0 {
@@ -71,7 +71,7 @@ func convertTags(tags []string) ([]*idrf.ColumnInfo, error) {
 		idrfColumn, err := idrf.NewColumn(tag, idrf.IDRFString)
 
 		if err != nil {
-			return nil, fmt.Errorf("Could not convert tags to IDRF. " + err.Error())
+			return nil, fmt.Errorf("Could not convert tags to IDRF. \n%v" + err.Error())
 		}
 
 		columns[i] = idrfColumn

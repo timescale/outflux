@@ -1,6 +1,8 @@
 package influx
 
 import (
+	"fmt"
+
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/schemamanagement/influx/discovery"
@@ -32,12 +34,12 @@ type defaultDSConstructor struct {
 func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSet, error) {
 	idrfTags, err := d.tagExplorer.DiscoverMeasurementTags(d.influxClient, d.database, measure)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not discover the tags of measurement '%s'\n%v", measure, err)
 	}
 
 	idrfFields, err := d.fieldExplorer.DiscoverMeasurementFields(d.influxClient, d.database, measure)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not discover the fields of measure '%s'\n%v", measure, err)
 	}
 
 	idrfTimeColumn, _ := idrf.NewColumn("time", idrf.IDRFTimestamp)
