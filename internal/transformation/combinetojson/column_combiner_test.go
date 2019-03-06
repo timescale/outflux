@@ -37,7 +37,7 @@ func TestCombiner(t *testing.T) {
 			toCombine: map[string]bool{cols[0].Name: true, cols[1].Name: true},
 			expect:    []*idrf.ColumnInfo{resCol, cols[2], cols[3]},
 		}, {
-			desc:      "combine cols with not combined in between them",
+			desc:      "combine cols that are not adjacent",
 			cols:      cols,
 			toCombine: map[string]bool{cols[1].Name: true, cols[3].Name: true},
 			expect:    []*idrf.ColumnInfo{cols[0], resCol, cols[2]},

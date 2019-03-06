@@ -10,19 +10,25 @@ type columnCombiner interface {
 
 type defColCombiner struct{}
 
-// arguments have already been validated
-// result column is placed at the position of the first column designated to be combined
-func (d *defColCombiner) combine(columns []*idrf.ColumnInfo, toCombine map[string]bool, result string) []*idrf.ColumnInfo {
+// combine takes an array of the original column definitions (originalColumns), a set
+// of column names (columnNamesToReplace) which will be replaced with a single JSON type column,
+// and resultColumn is the name of the new JSON column.
+// The arguments have already been validated.
+// resultColumnName column is placed at the position of the first column designated to be combined/replaced
+func (d *defColCombiner) combine(
+	originalColumns []*idrf.ColumnInfo,
+	columnNamesToReplace map[string]bool,
+	resultColumnName string) []*idrf.ColumnInfo {
 	jsonColumnAdded := false
-	numNewColumns := len(columns) - len(toCombine) + 1
+	numNewColumns := len(originalColumns) - len(columnNamesToReplace) + 1
 	newColumns := make([]*idrf.ColumnInfo, numNewColumns)
 	currentColumn := 0
-	for _, originalColumn := range columns {
-		_, isCombinedColumn := toCombine[originalColumn.Name]
-		if isCombinedColumn && !jsonColumnAdded {
-			newColumns[currentColumn], _ = idrf.NewColumn(result, idrf.IDRFJson)
+	for _, originalColumn := range originalColumns {
+		_, shouldReplaceColumn := columnNamesToReplace[originalColumn.Name]
+		if shouldReplaceColumn && !jsonColumnAdded {
+			newColumns[currentColumn], _ = idrf.NewColumn(resultColumnName, idrf.IDRFJson)
 			jsonColumnAdded = true
-		} else if isCombinedColumn && jsonColumnAdded {
+		} else if shouldReplaceColumn && jsonColumnAdded {
 			continue
 		} else {
 			newColumns[currentColumn] = originalColumn

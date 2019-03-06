@@ -37,8 +37,8 @@ func (e *Extractor) Prepare() (*idrf.Bundle, error) {
 
 	log.Printf("Discovered: %s", discoveredDataSet.String())
 	e.cachedElementData = &idrf.Bundle{
-		DataDef: discoveredDataSet,
-		Data:    make(chan idrf.Row, e.Config.DataBufferSize),
+		DataDef:  discoveredDataSet,
+		DataChan: make(chan idrf.Row, e.Config.DataBufferSize),
 	}
 
 	return e.cachedElementData, nil
@@ -71,7 +71,7 @@ func (e *Extractor) Start(errChan chan error) error {
 
 	idrfConverter := idrfconversion.NewIdrfConverter(dataDef)
 	producerArgs := &producerArgs{
-		dataChannel: e.cachedElementData.Data,
+		dataChannel: e.cachedElementData.DataChan,
 		errChannel:  errChan,
 		query:       query,
 		converter:   idrfConverter,

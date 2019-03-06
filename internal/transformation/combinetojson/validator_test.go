@@ -55,7 +55,7 @@ func TestValidator(t *testing.T) {
 
 	val := &defValidator{}
 	for _, testCase := range testCases {
-		err := val.validate("id", testCase.originData, testCase.res, testCase.toCombine)
+		err := val.validate(testCase.originData, testCase.res, testCase.toCombine)
 		if err == nil && testCase.expectErr {
 			t.Errorf("test:%s\nexpected error, none got", testCase.desc)
 		} else if err != nil && !testCase.expectErr {

@@ -70,7 +70,7 @@ func TestPrepare(t *testing.T) {
 
 		if trans.cachedInputBundle == nil {
 			t.Errorf("test: %s\ninput bundle wasn't cached", tc.desc)
-		} else if bund.Data == nil {
+		} else if bund.DataChan == nil {
 			t.Errorf("test: %s\noutput data channel not created", tc.desc)
 		} else if bund.DataDef.DataSetName != in.DataDef.DataSetName || bund.DataDef.TimeColumn != in.DataDef.TimeColumn {
 			t.Errorf("test: %s\noutput data set, did not match expectations", tc.desc)
@@ -83,7 +83,7 @@ type mock struct {
 	combRes []*idrf.ColumnInfo
 }
 
-func (m *mock) validate(transformerID string, originData *idrf.DataSet, resCol string, columnsToCombine map[string]bool) error {
+func (m *mock) validate(originData *idrf.DataSet, resCol string, columnsToCombine map[string]bool) error {
 	return m.valErr
 }
 

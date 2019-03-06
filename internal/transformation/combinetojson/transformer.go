@@ -27,7 +27,7 @@ func NewTransformer(id string, columnsToCombine []string, resultColumn string) *
 
 	return &Transformer{
 		id: id, columnsToCombine: columnsSet, resultColumn: resultColumn,
-		validator: &defValidator{}, colColmbiner: &defColCombiner{},
+		validator: &defValidator{id: id}, colColmbiner: &defColCombiner{},
 	}
 }
 
@@ -41,7 +41,7 @@ func (c *Transformer) ID() string {
 func (c *Transformer) Prepare(input *idrf.Bundle) (*idrf.Bundle, error) {
 	originDataSet := input.DataDef
 
-	validationErr := c.validator.validate(c.id, originDataSet, c.resultColumn, c.columnsToCombine)
+	validationErr := c.validator.validate(originDataSet, c.resultColumn, c.columnsToCombine)
 	if validationErr != nil {
 		return nil, validationErr
 	}
@@ -54,8 +54,8 @@ func (c *Transformer) Prepare(input *idrf.Bundle) (*idrf.Bundle, error) {
 
 	c.cachedInputBundle = input
 	return &idrf.Bundle{
-		DataDef: newDataSet,
-		Data:    make(chan idrf.Row, c.bufferSize),
+		DataDef:  newDataSet,
+		DataChan: make(chan idrf.Row, c.bufferSize),
 	}, nil
 }
 
