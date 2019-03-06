@@ -11,7 +11,7 @@ import (
 // DataSet represents DDL description of a single data set (table, measurement) in IDRF
 type DataSet struct {
 	DataSetName string
-	Columns     []*ColumnInfo
+	Columns     []*Column
 	TimeColumn  string
 }
 
@@ -21,7 +21,7 @@ func (set *DataSet) String() string {
 
 // ColumnNamed returns the ColumnInfo for a column given it's name, or nil if no column
 // with that name exists in the data set
-func (set *DataSet) ColumnNamed(columnName string) *ColumnInfo {
+func (set *DataSet) ColumnNamed(columnName string) *Column {
 	for _, column := range set.Columns {
 		if columnName == column.Name {
 			return column
@@ -42,7 +42,7 @@ func (set *DataSet) SchemaAndTable() (string, string) {
 }
 
 // NewDataSet creates a new instance of DataSet with checked arguments
-func NewDataSet(dataSetName string, columns []*ColumnInfo, timeColumn string) (*DataSet, error) {
+func NewDataSet(dataSetName string, columns []*Column, timeColumn string) (*DataSet, error) {
 	if len(dataSetName) == 0 {
 		return nil, fmt.Errorf("data set name can't be empty")
 	}

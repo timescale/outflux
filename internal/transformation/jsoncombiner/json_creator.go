@@ -1,4 +1,4 @@
-package combinetojson
+package jsoncombiner
 
 import (
 	"encoding/json"

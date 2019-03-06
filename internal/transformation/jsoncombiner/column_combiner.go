@@ -1,11 +1,11 @@
-package combinetojson
+package jsoncombiner
 
 import (
 	"github.com/timescale/outflux/internal/idrf"
 )
 
 type columnCombiner interface {
-	combine([]*idrf.ColumnInfo, map[string]bool, string) []*idrf.ColumnInfo
+	combine([]*idrf.Column, map[string]bool, string) []*idrf.Column
 }
 
 type defColCombiner struct{}
@@ -16,12 +16,12 @@ type defColCombiner struct{}
 // The arguments have already been validated.
 // resultColumnName column is placed at the position of the first column designated to be combined/replaced
 func (d *defColCombiner) combine(
-	originalColumns []*idrf.ColumnInfo,
+	originalColumns []*idrf.Column,
 	columnNamesToReplace map[string]bool,
-	resultColumnName string) []*idrf.ColumnInfo {
+	resultColumnName string) []*idrf.Column {
 	jsonColumnAdded := false
 	numNewColumns := len(originalColumns) - len(columnNamesToReplace) + 1
-	newColumns := make([]*idrf.ColumnInfo, numNewColumns)
+	newColumns := make([]*idrf.Column, numNewColumns)
 	currentColumn := 0
 	for _, originalColumn := range originalColumns {
 		_, shouldReplaceColumn := columnNamesToReplace[originalColumn.Name]

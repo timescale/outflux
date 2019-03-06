@@ -42,8 +42,8 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 					[]string{"1"},
 				},
 			},
-			expectedTags: []*idrf.ColumnInfo{
-				&idrf.ColumnInfo{
+			expectedTags: []*idrf.Column{
+				&idrf.Column{
 					Name:     "1",
 					DataType: idrf.IDRFString,
 				},

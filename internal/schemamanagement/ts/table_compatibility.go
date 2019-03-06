@@ -6,7 +6,7 @@ import (
 	"github.com/timescale/outflux/internal/idrf"
 )
 
-func isExistingTableCompatible(existingColumns []*columnDesc, requiredColumns []*idrf.ColumnInfo, timeCol string) error {
+func isExistingTableCompatible(existingColumns []*columnDesc, requiredColumns []*idrf.Column, timeCol string) error {
 	columnsByName := make(map[string]*columnDesc)
 	for _, column := range existingColumns {
 		columnsByName[column.columnName] = column

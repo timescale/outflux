@@ -17,7 +17,7 @@ type testCase struct {
 	showQueryResult  *influxqueries.InfluxShowResult
 	showQueryError   error
 	expectedMeasures []string
-	expectedTags     []*idrf.ColumnInfo
+	expectedTags     []*idrf.Column
 }
 
 func TestNewMeasureExplorer(t *testing.T) {

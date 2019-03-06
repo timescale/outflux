@@ -1,4 +1,4 @@
-package combinetojson
+package jsoncombiner
 
 import (
 	"testing"
@@ -7,12 +7,12 @@ import (
 )
 
 func TestValidator(t *testing.T) {
-	twoCol := []*idrf.ColumnInfo{
+	twoCol := []*idrf.Column{
 		{Name: "col1", DataType: idrf.IDRFTimestamp},
 		{Name: "col2", DataType: idrf.IDRFBoolean},
 	}
 
-	threeCol := []*idrf.ColumnInfo{
+	threeCol := []*idrf.Column{
 		{Name: "col1", DataType: idrf.IDRFTimestamp},
 		{Name: "col2", DataType: idrf.IDRFBoolean},
 		{Name: "col3", DataType: idrf.IDRFDouble},

@@ -16,7 +16,7 @@ type prepareArgs struct {
 }
 
 func TestPrepareDataSetFails(t *testing.T) {
-	exampleColumns := []*idrf.ColumnInfo{
+	exampleColumns := []*idrf.Column{
 		{Name: "time", DataType: idrf.IDRFTimestamptz},
 		{Name: "a", DataType: idrf.IDRFString},
 	}
@@ -117,7 +117,7 @@ func TestPrepareDataSetFails(t *testing.T) {
 }
 
 func TestPrepareOk(t *testing.T) {
-	exampleColumns := []*idrf.ColumnInfo{
+	exampleColumns := []*idrf.Column{
 		{Name: "time", DataType: idrf.IDRFTimestamptz},
 		{Name: "a", DataType: idrf.IDRFString},
 	}

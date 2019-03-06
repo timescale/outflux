@@ -15,7 +15,7 @@ const (
 // FieldExplorer defines an API for discoering InfluxDB fields of a specified measurement
 type FieldExplorer interface {
 	// DiscoverMeasurementFields creates the ColumnInfo for the Fields of a given measurement
-	DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.ColumnInfo, error)
+	DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.Column, error)
 }
 
 type defaultFieldExplorer struct {
@@ -27,7 +27,7 @@ func NewFieldExplorer(queryService influxqueries.InfluxQueryService) FieldExplor
 	return &defaultFieldExplorer{queryService}
 }
 
-func (fe *defaultFieldExplorer) DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.ColumnInfo, error) {
+func (fe *defaultFieldExplorer) DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.Column, error) {
 	fields, err := fe.fetchMeasurementFields(influxClient, database, measurement)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching fields for measurement '%s'\n%v", measurement, err)
@@ -66,8 +66,8 @@ func (fe *defaultFieldExplorer) fetchMeasurementFields(influxClient influx.Clien
 	return fieldKeys, nil
 }
 
-func convertFields(fieldsWithType [][2]string) ([]*idrf.ColumnInfo, error) {
-	columns := make([]*idrf.ColumnInfo, len(fieldsWithType))
+func convertFields(fieldsWithType [][2]string) ([]*idrf.Column, error) {
+	columns := make([]*idrf.Column, len(fieldsWithType))
 	for i, field := range fieldsWithType {
 		columnType := convertDataType(field[1])
 		idrfColumn, err := idrf.NewColumn(field[0], columnType)

@@ -1,4 +1,4 @@
-package combinetojson
+package jsoncombiner
 
 import (
 	"encoding/json"
@@ -9,9 +9,9 @@ import (
 )
 
 func TestCacheItems(t *testing.T) {
-	cols := []*idrf.ColumnInfo{&idrf.ColumnInfo{Name: "col1", DataType: idrf.IDRFTimestamp},
-		&idrf.ColumnInfo{Name: "col2", DataType: idrf.IDRFBoolean},
-		&idrf.ColumnInfo{Name: "col3", DataType: idrf.IDRFBoolean},
+	cols := []*idrf.Column{&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamp},
+		&idrf.Column{Name: "col2", DataType: idrf.IDRFBoolean},
+		&idrf.Column{Name: "col3", DataType: idrf.IDRFBoolean},
 	}
 	columnsToCombine := map[string]bool{"col2": true, "col3": true}
 	inputDs, _ := idrf.NewDataSet("ds", cols, cols[0].Name)
@@ -37,13 +37,13 @@ func TestCacheItems(t *testing.T) {
 	}
 }
 func TestPrepare(t *testing.T) {
-	colsBefore := []*idrf.ColumnInfo{
-		&idrf.ColumnInfo{Name: "col1", DataType: idrf.IDRFTimestamp},
-		&idrf.ColumnInfo{Name: "col2", DataType: idrf.IDRFBoolean},
-		&idrf.ColumnInfo{Name: "col3", DataType: idrf.IDRFInteger32},
+	colsBefore := []*idrf.Column{
+		&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamp},
+		&idrf.Column{Name: "col2", DataType: idrf.IDRFBoolean},
+		&idrf.Column{Name: "col3", DataType: idrf.IDRFInteger32},
 	}
 	originDs, _ := idrf.NewDataSet("ds", colsBefore, colsBefore[0].Name)
-	cols := []*idrf.ColumnInfo{colsBefore[0], &idrf.ColumnInfo{Name: "col2", DataType: idrf.IDRFJson}}
+	cols := []*idrf.Column{colsBefore[0], &idrf.Column{Name: "col2", DataType: idrf.IDRFJson}}
 	testCases := []struct {
 		desc      string
 		ds        *idrf.DataSet
@@ -186,12 +186,12 @@ func TestTransformerStart(t *testing.T) {
 	outData = make(chan idrf.Row, 1)
 	inData = make(chan idrf.Row, 1)
 	errChan = make(chan error)
-	inCols := []*idrf.ColumnInfo{
-		&idrf.ColumnInfo{Name: "col1", DataType: idrf.IDRFTimestamp},
-		&idrf.ColumnInfo{Name: "col2", DataType: idrf.IDRFBoolean},
+	inCols := []*idrf.Column{
+		&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamp},
+		&idrf.Column{Name: "col2", DataType: idrf.IDRFBoolean},
 	}
-	outCols := []*idrf.ColumnInfo{
-		inCols[0], &idrf.ColumnInfo{Name: "col2", DataType: idrf.IDRFJson},
+	outCols := []*idrf.Column{
+		inCols[0], &idrf.Column{Name: "col2", DataType: idrf.IDRFJson},
 	}
 	inDataDef, _ := idrf.NewDataSet("ds", inCols, inCols[0].Name)
 	outDataDef, _ := idrf.NewDataSet("ds", outCols, outCols[0].Name)
@@ -231,9 +231,9 @@ func TestRowTransform(t *testing.T) {
 	}
 
 	// good conversion
-	cols := []*idrf.ColumnInfo{
-		&idrf.ColumnInfo{Name: "col1", DataType: idrf.IDRFTimestamp},
-		&idrf.ColumnInfo{Name: "res", DataType: idrf.IDRFJson},
+	cols := []*idrf.Column{
+		&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamp},
+		&idrf.Column{Name: "res", DataType: idrf.IDRFJson},
 	}
 
 	outDs, _ := idrf.NewDataSet("ds", cols, "col1")
@@ -257,14 +257,14 @@ func TestRowTransform(t *testing.T) {
 
 type mock struct {
 	valErr  error
-	combRes []*idrf.ColumnInfo
+	combRes []*idrf.Column
 }
 
 func (m *mock) validate(originData *idrf.DataSet, resCol string, columnsToCombine map[string]bool) error {
 	return m.valErr
 }
 
-func (m *mock) combine(columns []*idrf.ColumnInfo, toCombine map[string]bool, result string) []*idrf.ColumnInfo {
+func (m *mock) combine(columns []*idrf.Column, toCombine map[string]bool, result string) []*idrf.Column {
 	return m.combRes
 }
 
