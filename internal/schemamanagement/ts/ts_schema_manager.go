@@ -73,7 +73,7 @@ func (sm *TSSchemaManager) validateOnly(dataSet *idrf.DataSet, tableExists bool)
 
 	timescaleExists, err := sm.explorer.timescaleExists(sm.dbConn)
 	if err != nil {
-		return fmt.Errorf("could not check if TimescaleDB is installed")
+		return fmt.Errorf("could not check if TimescaleDB is installed\n%v", err)
 	}
 	if !timescaleExists {
 		return fmt.Errorf("timescaledb extension not installed in database")

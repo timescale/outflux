@@ -24,7 +24,7 @@ const (
 										 WHERE h.schema_name = $1 AND h.table_name = $2
 										 ORDER BY d.id ASC
 										 LIMIT 1;`
-	timescaleCreatedQuery     = "SELECT EXISTS (SELECT 1 FROM from pg_extension WHERE extname = 'timescaledb')"
+	timescaleCreatedQuery     = "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb')"
 	isNullableSignifyingValue = "YES"
 )
 
