@@ -1,4 +1,4 @@
-package pipeline
+package cli
 
 // ConnectionConfig holds all arguments required to establish a connection to an input and output db
 type ConnectionConfig struct {

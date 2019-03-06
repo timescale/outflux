@@ -4,10 +4,7 @@ import (
 	"log"
 
 	"github.com/timescale/outflux/internal/extraction"
-
 	"github.com/timescale/outflux/internal/ingestion"
-
-	"github.com/timescale/outflux/internal/connections"
 )
 
 // Pipe connects an extractor and an ingestor
@@ -16,13 +13,18 @@ type Pipe interface {
 	ID() string
 }
 
+// NewPipe creates an implementation of the Pipe interface
+func NewPipe(id string, ing ingestion.Ingestor, ext extraction.Extractor, prepareOnly bool) Pipe {
+	return &defPipe{
+		id, ing, ext, prepareOnly,
+	}
+}
+
 type defPipe struct {
-	id               string
-	conf             *PipeConfig
-	tsConnService    connections.TSConnectionService
-	infConnService   connections.InfluxConnectionService
-	ingestorService  ingestion.IngestorService
-	extractorService extraction.ExtractorService
+	id          string
+	ingestor    ingestion.Ingestor
+	extractor   extraction.Extractor
+	prepareOnly bool
 }
 
 func (p *defPipe) ID() string {
@@ -30,33 +32,17 @@ func (p *defPipe) ID() string {
 }
 
 func (p *defPipe) Run() error {
-	// open connections
-	influxConn, tsConn, err := p.openConnections()
+	// prepare elements
+	err := p.prepareElements(p.extractor, p.ingestor)
 	if err != nil {
 		return err
 	}
 
-	// defer close connections
-	defer influxConn.Close()
-	defer tsConn.Close()
-
-	// create ingestor and extractor
-	extractor, ingestor, err := p.createElements(influxConn, tsConn)
-	if err != nil {
-		return err
-	}
-
-	// prepare them
-	err = p.prepareElements(p.conf.connections, extractor, ingestor)
-	if err != nil {
-		return err
-	}
-
-	// run them
-	if p.conf.extraction.MeasureExtraction.SchemaOnly {
+	if p.prepareOnly {
 		log.Printf("No data transfer will occur")
 		return nil
 	}
 
-	return p.run(extractor, ingestor)
+	// run them
+	return p.run(p.extractor, p.ingestor)
 }

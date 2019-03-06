@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/timescale/outflux/internal/pipeline"
+	"github.com/timescale/outflux/internal/cli"
 	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 	"github.com/timescale/outflux/internal/testutils"
 )
@@ -24,13 +24,13 @@ func TestSchemaTransfer(t *testing.T) {
 	testutils.CreateInfluxMeasure(t, db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
 	defer testutils.ClearServersAfterITest(t, db)
 
-	connConf := &pipeline.ConnectionConfig{
+	connConf := &cli.ConnectionConfig{
 		InputHost:          testutils.InfluxHost,
 		InputDb:            db,
 		InputMeasures:      []string{measure},
 		OutputDbConnString: fmt.Sprintf(testutils.TsConnStringTemplate, db),
 	}
-	config := &pipeline.MigrationConfig{
+	config := &cli.MigrationConfig{
 		ChunkSize:            1,
 		OutputSchemaStrategy: schemaconfig.DropAndCreate,
 		SchemaOnly:           true,
@@ -82,12 +82,12 @@ func TestOutputConnOverridesEnvVars(t *testing.T) {
 	os.Setenv("PGPORT", "5433")
 	os.Setenv("PGPASSWORD", "postgres")
 
-	connConf := &pipeline.ConnectionConfig{
+	connConf := &cli.ConnectionConfig{
 		InputHost:     testutils.InfluxHost,
 		InputDb:       db,
 		InputMeasures: []string{measure},
 	}
-	config := &pipeline.MigrationConfig{
+	config := &cli.MigrationConfig{
 		ChunkSize:            1,
 		OutputSchemaStrategy: schemaconfig.DropAndCreate,
 		SchemaOnly:           true,

@@ -6,8 +6,9 @@ import (
 	"time"
 
 	influx "github.com/influxdata/influxdb/client/v2"
+	"github.com/jackc/pgx"
+	"github.com/timescale/outflux/internal/cli"
 	"github.com/timescale/outflux/internal/idrf"
-	"github.com/timescale/outflux/internal/pipeline"
 	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
 
@@ -15,7 +16,7 @@ func TestDiscoverMeasuresErrorNewConnection(t *testing.T) {
 	app := &appContext{
 		ics: &mockService{inflConnErr: fmt.Errorf("error")},
 	}
-	connArgs := &pipeline.ConnectionConfig{}
+	connArgs := &cli.ConnectionConfig{}
 	res, err := discoverMeasures(app, connArgs)
 	if res != nil || err == nil {
 		t.Errorf("expected error, none received")
@@ -30,7 +31,7 @@ func TestDiscoverMeasures(t *testing.T) {
 		ics:                  mockAll,
 		schemaManagerService: mockAll,
 	}
-	connArgs := &pipeline.ConnectionConfig{}
+	connArgs := &cli.ConnectionConfig{}
 	_, err := discoverMeasures(app, connArgs)
 	if err != nil {
 		t.Errorf("unexpected error:%v", err)
@@ -44,8 +45,27 @@ func TestDiscoverMeasures(t *testing.T) {
 func TestTransferSchemaErrorOnDiscoverMeasures(t *testing.T) {
 	mockAll := &mockService{inflConnErr: fmt.Errorf("error")}
 	app := &appContext{ics: mockAll}
-	connArgs := &pipeline.ConnectionConfig{}
-	stArgs := &pipeline.MigrationConfig{}
+	connArgs := &cli.ConnectionConfig{}
+	stArgs := &cli.MigrationConfig{}
+	err := transferSchema(app, connArgs, stArgs)
+	if err == nil {
+		t.Errorf("expected err, none got")
+	}
+}
+
+func TestSchemaTransferErrorOnOpenConn(t *testing.T) {
+	mockClient := &tdmc{}
+	mockSchemaMngr := &tdmsm{m: []string{"a"}}
+	pipe := &mockPipe{runErr: fmt.Errorf("error"), counter: &runCounter{}}
+	mockAll := &mockService{
+		inflConn:      mockClient,
+		inflSchemMngr: mockSchemaMngr,
+		pipe:          pipe,
+	}
+	mockTsConn := &mockTsConnSer{tsConnErr: fmt.Errorf("error")}
+	app := &appContext{ics: mockAll, tscs: mockTsConn, pipeService: mockAll, schemaManagerService: mockAll}
+	connArgs := &cli.ConnectionConfig{}
+	stArgs := &cli.MigrationConfig{Quiet: true}
 	err := transferSchema(app, connArgs, stArgs)
 	if err == nil {
 		t.Errorf("expected err, none got")
@@ -59,11 +79,12 @@ func TestTransferSchemaErrorOnRun(t *testing.T) {
 	mockAll := &mockService{
 		inflConn:      mockClient,
 		inflSchemMngr: mockSchemaMngr,
-		pipes:         []pipeline.Pipe{pipe},
+		pipe:          pipe,
 	}
-	app := &appContext{ics: mockAll, pipeService: mockAll, schemaManagerService: mockAll}
-	connArgs := &pipeline.ConnectionConfig{}
-	stArgs := &pipeline.MigrationConfig{Quiet: true}
+	mockTsConn := &mockTsConnSer{tsConn: &pgx.Conn{}}
+	app := &appContext{ics: mockAll, tscs: mockTsConn, pipeService: mockAll, schemaManagerService: mockAll}
+	connArgs := &cli.ConnectionConfig{}
+	stArgs := &cli.MigrationConfig{Quiet: true}
 	err := transferSchema(app, connArgs, stArgs)
 	if err == nil {
 		t.Errorf("expected err, none got")
@@ -74,14 +95,32 @@ func TestTransferSchemaErrorOnRun(t *testing.T) {
 	}
 }
 
+func TestErrorOnPipeCreate(t *testing.T) {
+	mockClient := &tdmc{}
+	mockSchemaMngr := &tdmsm{m: []string{"a"}}
+	mockAll := &mockService{
+		inflConn:      mockClient,
+		inflSchemMngr: mockSchemaMngr,
+		pipeErr:       fmt.Errorf("error"),
+	}
+	mockTsConn := &mockTsConnSer{tsConn: &pgx.Conn{}}
+	app := &appContext{ics: mockAll, tscs: mockTsConn, pipeService: mockAll, schemaManagerService: mockAll}
+	connArgs := &cli.ConnectionConfig{}
+	stArgs := &cli.MigrationConfig{Quiet: true}
+	err := transferSchema(app, connArgs, stArgs)
+	if err == nil {
+		t.Errorf("expected err, none got")
+	}
+}
 func TestTransferSchema(t *testing.T) {
 	pipe := &mockPipe{counter: &runCounter{}}
 	mockAll := &mockService{
-		pipes: []pipeline.Pipe{pipe},
+		pipe:     pipe,
+		inflConn: &mockInfConn{},
 	}
-	app := &appContext{ics: mockAll, pipeService: mockAll, schemaManagerService: mockAll}
-	connArgs := &pipeline.ConnectionConfig{InputMeasures: []string{"a"}}
-	stArgs := &pipeline.MigrationConfig{}
+	app := &appContext{ics: mockAll, tscs: &mockTsConnSer{tsConn: &pgx.Conn{}}, pipeService: mockAll, schemaManagerService: mockAll}
+	connArgs := &cli.ConnectionConfig{InputMeasures: []string{"a"}}
+	stArgs := &cli.MigrationConfig{}
 	err := transferSchema(app, connArgs, stArgs)
 	if err != nil {
 		t.Errorf("unexpected error:%v", err)

@@ -1,4 +1,4 @@
-package pipeline
+package cli
 
 import (
 	ingestionConf "github.com/timescale/outflux/internal/ingestion/config"

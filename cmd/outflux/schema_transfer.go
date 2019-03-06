@@ -6,11 +6,11 @@ import (
 	"log"
 	"time"
 
+	"github.com/timescale/outflux/internal/cli"
 	"github.com/timescale/outflux/internal/connections"
 
 	"github.com/spf13/cobra"
-	"github.com/timescale/outflux/internal/flagparsers"
-	"github.com/timescale/outflux/internal/pipeline"
+	"github.com/timescale/outflux/internal/cli/flagparsers"
 )
 
 func initSchemaTransferCmd() *cobra.Command {
@@ -37,7 +37,7 @@ func initSchemaTransferCmd() *cobra.Command {
 	return schemaTransferCmd
 }
 
-func transferSchema(app *appContext, connArgs *pipeline.ConnectionConfig, args *pipeline.MigrationConfig) error {
+func transferSchema(app *appContext, connArgs *cli.ConnectionConfig, args *cli.MigrationConfig) error {
 	if args.Quiet {
 		log.SetFlags(0)
 		log.SetOutput(ioutil.Discard)
@@ -55,11 +55,10 @@ func transferSchema(app *appContext, connArgs *pipeline.ConnectionConfig, args *
 		}
 	}
 
-	pipes := app.pipeService.Create(connArgs, args)
-	for _, pipe := range pipes {
-		err := pipe.Run()
+	for _, measure := range connArgs.InputMeasures {
+		err := routine(app, connArgs, args, measure)
 		if err != nil {
-			return fmt.Errorf("could not transfer schema for one of the measures\n%v", err)
+			return fmt.Errorf("could not transfer schema for measurement '%s'\n%v", measure, err)
 		}
 	}
 
@@ -68,7 +67,7 @@ func transferSchema(app *appContext, connArgs *pipeline.ConnectionConfig, args *
 	return nil
 }
 
-func discoverMeasures(app *appContext, connArgs *pipeline.ConnectionConfig) ([]string, error) {
+func discoverMeasures(app *appContext, connArgs *cli.ConnectionConfig) ([]string, error) {
 	client, err := app.ics.NewConnection(&connections.InfluxConnectionParams{
 		Server:   connArgs.InputHost,
 		Username: connArgs.InputUser,
@@ -82,4 +81,26 @@ func discoverMeasures(app *appContext, connArgs *pipeline.ConnectionConfig) ([]s
 	schemaManager := app.schemaManagerService.Influx(client, connArgs.InputDb)
 	client.Close()
 	return schemaManager.DiscoverDataSets()
+}
+
+func routine(
+	app *appContext,
+	connArgs *cli.ConnectionConfig,
+	args *cli.MigrationConfig,
+	measure string) error {
+
+	infConn, pgConn, err := openConnections(app, connArgs)
+	if err != nil {
+		return fmt.Errorf("could not open connections to input and output database\n%v", err)
+	}
+	defer infConn.Close()
+	defer pgConn.Close()
+
+	pipe, err := app.pipeService.Create(infConn, pgConn, measure, connArgs, args)
+	if err != nil {
+		return fmt.Errorf("could not create execution pipeline for measure '%s'\n%v", measure, err)
+	}
+
+	log.Printf("%s starting execution\n", pipe.ID())
+	return pipe.Run()
 }

@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/spf13/pflag"
-	"github.com/timescale/outflux/internal/pipeline"
+	"github.com/timescale/outflux/internal/cli"
 	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
 
 // FlagsToSchemaTransferConfig extracts the config for running schema transfer from the flags of the command
-func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*pipeline.ConnectionConfig, *pipeline.MigrationConfig, error) {
+func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*cli.ConnectionConfig, *cli.MigrationConfig, error) {
 	connectionArgs, err := FlagsToConnectionConfig(flags, args)
 	if err != nil {
 		return nil, nil, err
@@ -25,7 +25,7 @@ func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*pipeline
 	if err != nil {
 		return nil, nil, fmt.Errorf("value for the '%s' flag must be a true or false", QuietFlag)
 	}
-	return connectionArgs, &pipeline.MigrationConfig{
+	return connectionArgs, &cli.MigrationConfig{
 		OutputSchemaStrategy: strategy,
 		Quiet:                quiet,
 		SchemaOnly:           true,

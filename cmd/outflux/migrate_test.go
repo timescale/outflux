@@ -5,7 +5,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/timescale/outflux/internal/pipeline"
+	"github.com/jackc/pgx"
+
+	"github.com/timescale/outflux/internal/cli"
 )
 
 func TestPreparePipeErrors(t *testing.T) {
@@ -31,26 +33,59 @@ func TestPreparePipeErrors(t *testing.T) {
 }
 func TestMigrateNoPipes(t *testing.T) {
 	app := &appContext{
-		pipeService: &mockService{pipes: []pipeline.Pipe{}},
+		pipeService: &mockService{},
 	}
 
-	conn := &pipeline.ConnectionConfig{}
-	mig := &pipeline.MigrationConfig{Quiet: true}
+	conn := &cli.ConnectionConfig{}
+	mig := &cli.MigrationConfig{Quiet: true}
 	err := migrate(app, conn, mig)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
 
+func TestOpenConnectionsReturnsError(t *testing.T) {
+	app := &appContext{
+		ics: &mockService{inflConnErr: fmt.Errorf("error")},
+	}
+
+	conn := &cli.ConnectionConfig{
+		InputMeasures: []string{"a"},
+	}
+	mig := &cli.MigrationConfig{MaxParallel: 1}
+	err := migrate(app, conn, mig)
+	if err == nil {
+		t.Error("expected error, none received")
+	}
+}
+
+func TestMigrateCreatePipeReturnsError(t *testing.T) {
+	app := &appContext{
+		ics:         &mockService{inflConn: &mockInfConn{}},
+		tscs:        &mockTsConnSer{tsConn: &pgx.Conn{}},
+		pipeService: &mockService{pipeErr: fmt.Errorf("error")},
+	}
+
+	conn := &cli.ConnectionConfig{
+		InputMeasures: []string{"a"},
+	}
+	mig := &cli.MigrationConfig{MaxParallel: 1}
+	err := migrate(app, conn, mig)
+	if err == nil {
+		t.Error("expected error, none received")
+	}
+}
 func TestMigratePipeReturnsError(t *testing.T) {
 	errorReturningPipe := &mockPipe{runErr: fmt.Errorf("error")}
 	app := &appContext{
+		ics:  &mockService{inflConn: &mockInfConn{}},
+		tscs: &mockTsConnSer{tsConn: &pgx.Conn{}},
 		pipeService: &mockService{
-			pipes: []pipeline.Pipe{errorReturningPipe},
+			pipe: errorReturningPipe,
 		},
 	}
-	conn := &pipeline.ConnectionConfig{}
-	mig := &pipeline.MigrationConfig{MaxParallel: 1}
+	conn := &cli.ConnectionConfig{InputMeasures: []string{"a"}}
+	mig := &cli.MigrationConfig{MaxParallel: 1}
 	err := migrate(app, conn, mig)
 	if err == nil {
 		t.Errorf("expected error, none received")
@@ -62,15 +97,13 @@ func TestMigratePipeReturnsError(t *testing.T) {
 func TestMigratePipesWaitForSemaphore(t *testing.T) {
 	counter := &runCounter{lock: sync.Mutex{}}
 	goodPipe1 := &mockPipe{counter: counter}
-	goodPipe2 := &mockPipe{counter: counter}
-	goodPipe3 := &mockPipe{counter: counter}
 	app := &appContext{
 		pipeService: &mockService{
-			pipes: []pipeline.Pipe{goodPipe1, goodPipe2, goodPipe3},
+			pipe: goodPipe1,
 		},
 	}
-	conn := &pipeline.ConnectionConfig{}
-	mig := &pipeline.MigrationConfig{MaxParallel: 2}
+	conn := &cli.ConnectionConfig{}
+	mig := &cli.MigrationConfig{MaxParallel: 2}
 	err := migrate(app, conn, mig)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -78,5 +111,48 @@ func TestMigratePipesWaitForSemaphore(t *testing.T) {
 
 	if counter.maxRunning > int32(mig.MaxParallel) {
 		t.Errorf("number of concurrent pipelines (%d) was too damn high (allowed %d)", counter.maxRunning, mig.MaxParallel)
+	}
+}
+
+func TestOpenConnections(t *testing.T) {
+	// error on new influx con
+	app := &appContext{
+		ics: &mockService{
+			inflConnErr: fmt.Errorf("some error"),
+		},
+	}
+
+	// error on open influx conn
+	_, _, err := openConnections(app, &cli.ConnectionConfig{})
+	if err == nil {
+		t.Errorf("expected error, none received")
+	}
+
+	// error on open ts conn
+	mockIcs := &mockService{inflConn: &mockInfConn{}}
+	mockTs := &mockTsConnSer{tsConnErr: fmt.Errorf("error")}
+	app = &appContext{
+		ics:  mockIcs,
+		tscs: mockTs,
+	}
+	_, _, err = openConnections(app, &cli.ConnectionConfig{})
+	if err == nil {
+		t.Error("expected error, none received")
+	} else if !mockIcs.inflConn.(*mockInfConn).closeCalled {
+		t.Error("close not called on influx connection")
+	}
+
+	// no error
+	mockIcs = &mockService{inflConn: &mockInfConn{}}
+	mockTs = &mockTsConnSer{tsConn: &pgx.Conn{}}
+	app = &appContext{
+		ics:  mockIcs,
+		tscs: mockTs,
+	}
+	_, _, err = openConnections(app, &cli.ConnectionConfig{})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	} else if mockIcs.inflConn.(*mockInfConn).closeCalled {
+		t.Error("close method was called on influx connection")
 	}
 }
