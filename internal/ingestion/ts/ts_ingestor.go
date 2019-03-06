@@ -42,7 +42,7 @@ func (i *TSIngestor) Start(errChan chan error) error {
 	ingestArgs := &ingestDataArgs{
 		ingestorID:              i.Config.IngestorID,
 		errChan:                 errChan,
-		dataChannel:             i.cachedBundle.Data,
+		dataChannel:             i.cachedBundle.DataChan,
 		rollbackOnExternalError: i.Config.RollbackOnExternalError,
 		batchSize:               i.Config.BatchSize,
 		dbConn:                  i.DbConn,
