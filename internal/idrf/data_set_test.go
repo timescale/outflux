@@ -26,18 +26,18 @@ func TestSchemaAndTable(t *testing.T) {
 func TestNewDataSet(t *testing.T) {
 	column, _ := NewColumn("Col 1", IDRFTimestamp)
 	intColumn, _ := NewColumn("Col 1", IDRFInteger32)
-	columns := []*ColumnInfo{column}
-	noTimestampTimeColumns := []*ColumnInfo{intColumn}
+	columns := []*Column{column}
+	noTimestampTimeColumns := []*Column{intColumn}
 	if _, error := NewDataSet("", columns, "Col 1"); error == nil {
 		t.Error("Should not be able to create a data set with an empty name")
 	}
 
-	noColumns := []*ColumnInfo{}
+	noColumns := []*Column{}
 	if _, error := NewDataSet("Data Set", noColumns, ""); error == nil {
 		t.Error("Should not be able to create a data set without columns")
 	}
 
-	duplicateColumns := []*ColumnInfo{column, column}
+	duplicateColumns := []*Column{column, column}
 	if _, error := NewDataSet("data set", duplicateColumns, "Col 1"); error == nil {
 		t.Error("Should not be able to create a data set with duplicate columns")
 	}
@@ -75,7 +75,7 @@ func TestColumnNamed(t *testing.T) {
 	expectedColumnType := IDRFTimestamp
 
 	column, _ := NewColumn(goodColumnName, expectedColumnType)
-	columns := []*ColumnInfo{column}
+	columns := []*Column{column}
 	dataSet, _ := NewDataSet("Data Set", columns, "Col 1")
 
 	goodColumn := dataSet.ColumnNamed(goodColumnName)

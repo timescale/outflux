@@ -17,13 +17,13 @@ func TestNewDataSetConstructor(t *testing.T) {
 
 func TestConstruct(t *testing.T) {
 	genError := fmt.Errorf("generic error")
-	tags := []*idrf.ColumnInfo{&idrf.ColumnInfo{Name: "tag", DataType: idrf.IDRFString}}
-	fields := []*idrf.ColumnInfo{&idrf.ColumnInfo{Name: "field", DataType: idrf.IDRFBoolean}}
+	tags := []*idrf.Column{&idrf.Column{Name: "tag", DataType: idrf.IDRFString}}
+	fields := []*idrf.Column{&idrf.Column{Name: "field", DataType: idrf.IDRFBoolean}}
 	testCases := []struct {
 		desc        string
-		tags        []*idrf.ColumnInfo
+		tags        []*idrf.Column
 		tagsErr     error
-		fields      []*idrf.ColumnInfo
+		fields      []*idrf.Column
 		fieldsErr   error
 		expectedErr bool
 	}{
@@ -76,16 +76,16 @@ func TestConstruct(t *testing.T) {
 }
 
 type mocker struct {
-	tags      []*idrf.ColumnInfo
+	tags      []*idrf.Column
 	tagsErr   error
-	fields    []*idrf.ColumnInfo
+	fields    []*idrf.Column
 	fieldsErr error
 }
 
-func (m *mocker) DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.ColumnInfo, error) {
+func (m *mocker) DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.Column, error) {
 	return m.tags, m.tagsErr
 }
 
-func (m *mocker) DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.ColumnInfo, error) {
+func (m *mocker) DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.Column, error) {
 	return m.fields, m.fieldsErr
 }

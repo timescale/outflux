@@ -14,7 +14,7 @@ const (
 
 // TagExplorer Defines an API for discovering the tags of an InfluxDB measurement
 type TagExplorer interface {
-	DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.ColumnInfo, error)
+	DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.Column, error)
 }
 
 type defaultTagExplorer struct {
@@ -29,7 +29,7 @@ func NewTagExplorer(queryService influxqueries.InfluxQueryService) TagExplorer {
 }
 
 // DiscoverMeasurementTags retrieves the tags for a given measurement and returns an IDRF representation for them.
-func (te *defaultTagExplorer) DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.ColumnInfo, error) {
+func (te *defaultTagExplorer) DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.Column, error) {
 	tags, err := te.fetchMeasurementTags(influxClient, database, measure)
 
 	if err != nil {
@@ -65,8 +65,8 @@ func (te *defaultTagExplorer) fetchMeasurementTags(influxClient influx.Client, d
 	return tagNames, nil
 }
 
-func convertTags(tags []string) ([]*idrf.ColumnInfo, error) {
-	columns := make([]*idrf.ColumnInfo, len(tags))
+func convertTags(tags []string) ([]*idrf.Column, error) {
+	columns := make([]*idrf.Column, len(tags))
 	for i, tag := range tags {
 		idrfColumn, err := idrf.NewColumn(tag, idrf.IDRFString)
 

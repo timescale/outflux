@@ -20,9 +20,9 @@ func TestCreateTable(t *testing.T) {
 	defer dbConn.Close()
 	dataSet := &idrf.DataSet{
 		DataSetName: "name",
-		Columns: []*idrf.ColumnInfo{
-			&idrf.ColumnInfo{Name: "col1", DataType: idrf.IDRFTimestamptz},
-			&idrf.ColumnInfo{Name: "col2", DataType: idrf.IDRFInteger64},
+		Columns: []*idrf.Column{
+			&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamptz},
+			&idrf.Column{Name: "col2", DataType: idrf.IDRFInteger64},
 		},
 		TimeColumn: "col1",
 	}

@@ -5,15 +5,6 @@ import (
 	"testing"
 )
 
-func CheckError2(errorChannel chan error) error {
-	select {
-	case err := <-errorChannel:
-		return err
-	default:
-		return nil
-	}
-}
-
 func TestCheckError(t *testing.T) {
 	testCases := []struct {
 		desc     string

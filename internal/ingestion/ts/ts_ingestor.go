@@ -55,7 +55,7 @@ func (i *TSIngestor) Start(errChan chan error) error {
 	return i.IngestionRoutine.ingest(ingestArgs)
 }
 
-func extractColumnNames(columns []*idrf.ColumnInfo) []string {
+func extractColumnNames(columns []*idrf.Column) []string {
 	columnNames := make([]string, len(columns))
 	for i, column := range columns {
 		columnNames[i] = column.Name

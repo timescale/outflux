@@ -45,7 +45,7 @@ func TestConvertByType(t *testing.T) {
 func TestConvertValues(t *testing.T) {
 	testIn := make([]interface{}, 1)
 	testIn[0] = "1"
-	cols := []*idrf.ColumnInfo{(&idrf.ColumnInfo{DataType: idrf.IDRFString})}
+	cols := []*idrf.Column{(&idrf.Column{DataType: idrf.IDRFString})}
 	tcs := []struct {
 		in        idrf.Row
 		ds        *idrf.DataSet

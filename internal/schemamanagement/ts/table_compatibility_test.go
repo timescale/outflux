@@ -9,26 +9,26 @@ import (
 func TestExistingTableCompatible(t *testing.T) {
 	testCases := []struct {
 		existingColumns []*columnDesc
-		reqColumns      []*idrf.ColumnInfo
+		reqColumns      []*idrf.Column
 		timeCol         string
 		desc            string
 		errorExpected   bool
 	}{
 		{
 			existingColumns: []*columnDesc{},
-			reqColumns:      []*idrf.ColumnInfo{{Name: "a"}},
+			reqColumns:      []*idrf.Column{{Name: "a"}},
 			desc:            "required column not found in existing table",
 			errorExpected:   true,
 		}, {
 			existingColumns: []*columnDesc{{columnName: "a", dataType: "text"}},
-			reqColumns:      []*idrf.ColumnInfo{{Name: "a", DataType: idrf.IDRFBoolean}},
+			reqColumns:      []*idrf.Column{{Name: "a", DataType: idrf.IDRFBoolean}},
 			desc:            "required data type is incompatible with existing column type",
 			errorExpected:   true,
 		}, {
 			existingColumns: []*columnDesc{
 				{columnName: "a", dataType: "text"},
 				{columnName: "b", dataType: "text", isNullable: "NO"}},
-			reqColumns: []*idrf.ColumnInfo{
+			reqColumns: []*idrf.Column{
 				{Name: "a", DataType: idrf.IDRFString},
 				{Name: "b", DataType: idrf.IDRFString}},
 			timeCol:       "a",
@@ -38,7 +38,7 @@ func TestExistingTableCompatible(t *testing.T) {
 			existingColumns: []*columnDesc{
 				{columnName: "a", dataType: "text"},
 				{columnName: "b", dataType: "text", isNullable: "YES"}},
-			reqColumns: []*idrf.ColumnInfo{
+			reqColumns: []*idrf.Column{
 				{Name: "a", DataType: idrf.IDRFString},
 				{Name: "b", DataType: idrf.IDRFString}},
 			timeCol:       "a",

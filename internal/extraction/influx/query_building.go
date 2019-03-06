@@ -16,7 +16,7 @@ const (
 	limitSuffixTemplate            = "\nLIMIT %d"
 )
 
-func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.ColumnInfo) string {
+func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.Column) string {
 	projection := buildProjection(columns)
 	var command string
 	if config.From != "" && config.To != "" {
@@ -37,7 +37,7 @@ func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.Column
 	return fmt.Sprintf("%s %s", command, limit)
 }
 
-func buildProjection(columns []*idrf.ColumnInfo) string {
+func buildProjection(columns []*idrf.Column) string {
 	columnNames := make([]string, len(columns))
 	for i, column := range columns {
 		columnNames[i] = fmt.Sprintf("\"%s\"", column.Name)

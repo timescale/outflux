@@ -1,4 +1,4 @@
-package combinetojson
+package jsoncombiner
 
 import (
 	"testing"
@@ -7,12 +7,12 @@ import (
 )
 
 func TestValidator(t *testing.T) {
-	twoCol := []*idrf.ColumnInfo{
+	twoCol := []*idrf.Column{
 		{Name: "col1", DataType: idrf.IDRFTimestamp},
 		{Name: "col2", DataType: idrf.IDRFBoolean},
 	}
 
-	threeCol := []*idrf.ColumnInfo{
+	threeCol := []*idrf.Column{
 		{Name: "col1", DataType: idrf.IDRFTimestamp},
 		{Name: "col2", DataType: idrf.IDRFBoolean},
 		{Name: "col3", DataType: idrf.IDRFDouble},
@@ -25,9 +25,6 @@ func TestValidator(t *testing.T) {
 		expectErr  bool
 	}{
 		{
-			desc:      "res column is empty",
-			expectErr: true,
-		}, {
 			desc:       "res column named the same as a column not designated for combination",
 			expectErr:  true,
 			res:        threeCol[1].Name,

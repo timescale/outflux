@@ -41,11 +41,11 @@ func TestDiscoverMeasurementFields(t *testing.T) {
 					[]string{"4", "string"},
 				},
 			},
-			expectedTags: []*idrf.ColumnInfo{
-				&idrf.ColumnInfo{Name: "1", DataType: idrf.IDRFBoolean},
-				&idrf.ColumnInfo{Name: "2", DataType: idrf.IDRFDouble},
-				&idrf.ColumnInfo{Name: "3", DataType: idrf.IDRFInteger64},
-				&idrf.ColumnInfo{Name: "4", DataType: idrf.IDRFString},
+			expectedTags: []*idrf.Column{
+				&idrf.Column{Name: "1", DataType: idrf.IDRFBoolean},
+				&idrf.Column{Name: "2", DataType: idrf.IDRFDouble},
+				&idrf.Column{Name: "3", DataType: idrf.IDRFInteger64},
+				&idrf.Column{Name: "4", DataType: idrf.IDRFString},
 			},
 		},
 	}
