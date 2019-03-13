@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/timescale/outflux/internal/cli"
 	ingestionConfig "github.com/timescale/outflux/internal/ingestion/config"
 	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 
-	"github.com/timescale/outflux/internal/pipeline"
 	"github.com/timescale/outflux/internal/testutils"
 )
 
@@ -61,14 +61,14 @@ func TestMigrateSingleValue(t *testing.T) {
 	}
 }
 
-func defaultConfig(db string, measure string) (*pipeline.ConnectionConfig, *pipeline.MigrationConfig) {
-	connConfig := &pipeline.ConnectionConfig{
+func defaultConfig(db string, measure string) (*cli.ConnectionConfig, *cli.MigrationConfig) {
+	connConfig := &cli.ConnectionConfig{
 		InputHost:          testutils.InfluxHost,
 		InputDb:            db,
 		InputMeasures:      []string{measure},
 		OutputDbConnString: fmt.Sprintf(testutils.TsConnStringTemplate, db),
 	}
-	return connConfig, &pipeline.MigrationConfig{
+	return connConfig, &cli.MigrationConfig{
 		OutputSchemaStrategy:                 schemaconfig.CreateIfMissing,
 		ChunkSize:                            1,
 		DataBuffer:                           1,

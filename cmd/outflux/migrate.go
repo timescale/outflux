@@ -7,9 +7,12 @@ import (
 	"log"
 	"time"
 
+	influx "github.com/influxdata/influxdb/client/v2"
+	"github.com/jackc/pgx"
 	"github.com/spf13/cobra"
-	"github.com/timescale/outflux/internal/flagparsers"
-	"github.com/timescale/outflux/internal/pipeline"
+	"github.com/timescale/outflux/internal/cli"
+	"github.com/timescale/outflux/internal/cli/flagparsers"
+	"github.com/timescale/outflux/internal/connections"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -47,27 +50,26 @@ func initMigrateCmd() *cobra.Command {
 	return migrateCmd
 }
 
-func migrate(app *appContext, connArgs *pipeline.ConnectionConfig, args *pipeline.MigrationConfig) []error {
+func migrate(app *appContext, connArgs *cli.ConnectionConfig, args *cli.MigrationConfig) []error {
 	if args.Quiet {
 		log.SetFlags(0)
 		log.SetOutput(ioutil.Discard)
 	}
 
 	startTime := time.Now()
-	log.Printf("Creating %d execution pipelines\n", len(connArgs.InputMeasures))
-	pipes := app.pipeService.Create(connArgs, args)
+
 	pipelineSemaphore := semaphore.NewWeighted(int64(args.MaxParallel))
 	ctx := context.Background()
-	pipeChannels := makePipeChannels(len(pipes))
+	pipeChannels := makePipeChannels(len(connArgs.InputMeasures))
 
 	// schedule all pipelines, as soon a value in the semaphore is available, execution will start
-	for i, pipe := range pipes {
-		go pipeRoutine(ctx, pipelineSemaphore, pipe, pipeChannels[i])
+	for i, measure := range connArgs.InputMeasures {
+		go pipeRoutine(ctx, pipelineSemaphore, app, connArgs, args, measure, pipeChannels[i])
 	}
 
 	log.Println("All pipelines scheduled")
 	hasError := false
-	pipeErrors := make([]error, len(pipes))
+	pipeErrors := make([]error, len(pipeChannels))
 	for i, pipeChannel := range pipeChannels {
 		pipeErrors[i] = <-pipeChannel
 		if pipeErrors[i] != nil {
@@ -86,12 +88,32 @@ func migrate(app *appContext, connArgs *pipeline.ConnectionConfig, args *pipelin
 	return nil
 }
 
-func pipeRoutine(ctx context.Context, semaphore *semaphore.Weighted, pipe pipeline.Pipe,
+func pipeRoutine(
+	ctx context.Context,
+	semaphore *semaphore.Weighted,
+	app *appContext,
+	connArgs *cli.ConnectionConfig,
+	args *cli.MigrationConfig,
+	measure string,
 	pipeChannel chan error) {
 	_ = semaphore.Acquire(ctx, 1)
 
+	infConn, pgConn, err := openConnections(app, connArgs)
+
+	if err != nil {
+		pipeChannel <- fmt.Errorf("could not open connections to input and output database\n%v", err)
+		return
+	}
+	defer infConn.Close()
+	defer pgConn.Close()
+	pipe, err := app.pipeService.Create(infConn, pgConn, measure, connArgs, args)
+	if err != nil {
+		pipeChannel <- fmt.Errorf("could not create execution pipeline for measure '%s'\n%v", measure, err)
+		return
+	}
+
 	log.Printf("%s starting execution\n", pipe.ID())
-	err := pipe.Run()
+	err = pipe.Run()
 	if err != nil {
 		log.Printf("%s: %v\n", pipe.ID(), err)
 		pipeChannel <- err
@@ -117,4 +139,28 @@ func preparePipeErrors(errors []error) error {
 	}
 
 	return fmt.Errorf(errString)
+}
+
+func openConnections(app *appContext, connArgs *cli.ConnectionConfig) (influx.Client, *pgx.Conn, error) {
+	influxConn, err := app.ics.NewConnection(influxConnParams(connArgs))
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not open connection to Influx Server\n%v", err)
+	}
+
+	tsConn, err := app.tscs.NewConnection(connArgs.OutputDbConnString)
+	if err != nil {
+		influxConn.Close()
+		return nil, nil, fmt.Errorf("could not open connection to TimescaleDB Server\n%v", err)
+	}
+
+	return influxConn, tsConn, nil
+}
+
+func influxConnParams(connParams *cli.ConnectionConfig) *connections.InfluxConnectionParams {
+	return &connections.InfluxConnectionParams{
+		Server:   connParams.InputHost,
+		Database: connParams.InputDb,
+		Username: connParams.InputUser,
+		Password: connParams.InputPass,
+	}
 }

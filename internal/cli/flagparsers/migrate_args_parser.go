@@ -5,13 +5,13 @@ import (
 	"math"
 
 	"github.com/spf13/pflag"
+	"github.com/timescale/outflux/internal/cli"
 	ingestionConfig "github.com/timescale/outflux/internal/ingestion/config"
-	"github.com/timescale/outflux/internal/pipeline"
 	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
 
 // FlagsToMigrateConfig extracts the config for running a migration from the flags of the command
-func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*pipeline.ConnectionConfig, *pipeline.MigrationConfig, error) {
+func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*cli.ConnectionConfig, *cli.MigrationConfig, error) {
 	connectionArgs, err := FlagsToConnectionConfig(flags, args)
 	if err != nil {
 		return nil, nil, err
@@ -66,7 +66,7 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*pipeline.Connec
 
 	from, _ := flags.GetString(FromFlag)
 	to, _ := flags.GetString(ToFlag)
-	migrateArgs := &pipeline.MigrationConfig{
+	migrateArgs := &cli.MigrationConfig{
 		OutputSchemaStrategy:                 strategy,
 		From:                                 from,
 		To:                                   to,

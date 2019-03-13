@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/timescale/outflux/internal/flagparsers"
 	"log"
+
+	"github.com/spf13/cobra"
+	"github.com/timescale/outflux/internal/cli/flagparsers"
 )
 
 // RootCmd defines the root outflux command

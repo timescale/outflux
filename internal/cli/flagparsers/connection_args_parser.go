@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/spf13/pflag"
-	"github.com/timescale/outflux/internal/pipeline"
+	"github.com/timescale/outflux/internal/cli"
 )
 
 // FlagsToConnectionConfig extracts flags related to establishing the connection to input and output database
-func FlagsToConnectionConfig(flags *pflag.FlagSet, args []string) (*pipeline.ConnectionConfig, error) {
+func FlagsToConnectionConfig(flags *pflag.FlagSet, args []string) (*cli.ConnectionConfig, error) {
 	if args[0] == "" {
 		return nil, fmt.Errorf("input database name not specified")
 	}
@@ -19,7 +19,7 @@ func FlagsToConnectionConfig(flags *pflag.FlagSet, args []string) (*pipeline.Con
 	outputConnString, _ := flags.GetString(OutputConnFlag)
 	schema, _ := flags.GetString(OutputSchemaFlag)
 
-	return &pipeline.ConnectionConfig{
+	return &cli.ConnectionConfig{
 		InputDb:            args[0],
 		InputMeasures:      args[1:],
 		InputHost:          inputHost,

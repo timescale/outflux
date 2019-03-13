@@ -2,23 +2,26 @@ package main
 
 import (
 	"sync"
+	"time"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/jackc/pgx"
+	"github.com/timescale/outflux/internal/cli"
 	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/pipeline"
 	"github.com/timescale/outflux/internal/schemamanagement"
 )
 
 type mockService struct {
-	pipes         []pipeline.Pipe
+	pipe          pipeline.Pipe
+	pipeErr       error
 	inflConn      influx.Client
 	inflConnErr   error
 	inflSchemMngr schemamanagement.SchemaManager
 }
 
-func (m *mockService) Create(con *pipeline.ConnectionConfig, arg *pipeline.MigrationConfig) []pipeline.Pipe {
-	return m.pipes
+func (m *mockService) Create(influx.Client, *pgx.Conn, string, *cli.ConnectionConfig, *cli.MigrationConfig) (pipeline.Pipe, error) {
+	return m.pipe, m.pipeErr
 }
 
 func (m *mockService) NewConnection(arg *connections.InfluxConnectionParams) (influx.Client, error) {
@@ -30,6 +33,15 @@ func (m *mockService) Influx(c influx.Client, a string) schemamanagement.SchemaM
 }
 
 func (m *mockService) TimeScale(dbConn *pgx.Conn) schemamanagement.SchemaManager { return nil }
+
+type mockTsConnSer struct {
+	tsConn    *pgx.Conn
+	tsConnErr error
+}
+
+func (m *mockTsConnSer) NewConnection(connStr string) (*pgx.Conn, error) {
+	return m.tsConn, m.tsConnErr
+}
 
 type runCounter struct {
 	lock        sync.Mutex
@@ -55,4 +67,17 @@ func (m *mockPipe) Run() error {
 		m.counter.lock.Unlock()
 	}
 	return m.runErr
+}
+
+type mockInfConn struct {
+	closeCalled bool
+}
+
+func (m *mockInfConn) Ping(timeout time.Duration) (time.Duration, string, error)    { return 0, "", nil }
+func (m *mockInfConn) Write(bp influx.BatchPoints) error                            { return nil }
+func (m *mockInfConn) Query(q influx.Query) (*influx.Response, error)               { return nil, nil }
+func (m *mockInfConn) QueryAsChunk(q influx.Query) (*influx.ChunkedResponse, error) { return nil, nil }
+func (m *mockInfConn) Close() error {
+	m.closeCalled = true
+	return nil
 }
