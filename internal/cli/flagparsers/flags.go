@@ -23,6 +23,8 @@ const (
 	MaxParallelFlag             = "max-parallel"
 	RollbackOnExternalErrorFlag = "rollback-on-external-error"
 	BatchSizeFlag               = "batch-size"
+	TagsAsJSONFlag              = "tags-as-json"
+	TagsColumnFlag              = "tags-column"
 
 	DefaultInputServer             = "http://localhost:8086"
 	DefaultInputUser               = ""
@@ -37,4 +39,6 @@ const (
 	DefaultMaxParallel             = 2
 	DefaultRollbackOnExternalError = true
 	DefaultBatchSize               = 8000
+	DefaultTagsAsJSON              = false
+	DefaultTagsColumn              = "tags"
 )

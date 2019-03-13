@@ -46,7 +46,8 @@ func initMigrateCmd() *cobra.Command {
 	migrateCmd.PersistentFlags().Bool(flagparsers.RollbackOnExternalErrorFlag, flagparsers.DefaultRollbackOnExternalError, "If this flag is set, when an error occurs while extracting the data, the insertion will be rollbacked. Otherwise it will try to commit")
 	migrateCmd.PersistentFlags().String(flagparsers.CommitStrategyFlag, flagparsers.DefaultCommitStrategy.String(), "Determines whether to commit on each chunk extracted from Influx, or at the end. Valid options: CommitOnEnd and CommitOnEachBatch")
 	migrateCmd.PersistentFlags().Uint16(flagparsers.BatchSizeFlag, flagparsers.DefaultBatchSize, "The size of the batch inserted in to the output database")
-
+	migrateCmd.PersistentFlags().Bool(flagparsers.TagsAsJSONFlag, flagparsers.DefaultTagsAsJSON, "If this flag is set to true, then the Tags of the influx measures being exported will be combined into a single JSONb column in Timescale")
+	migrateCmd.PersistentFlags().String(flagparsers.TagsColumnFlag, flagparsers.DefaultTagsColumn, "When "+flagparsers.TagsAsJSONFlag+" is set, then this column specifies the name of the JSON column")
 	return migrateCmd
 }
 

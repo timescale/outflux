@@ -21,17 +21,22 @@ type PipeService interface {
 }
 
 type pipeService struct {
-	ingestorService  ingestion.IngestorService
-	extractorService extraction.ExtractorService
+	ingestorService    ingestion.IngestorService
+	extractorService   extraction.ExtractorService
+	transformerService TransformerService
 	extractionConfCreator
 	ingestionConfCreator
 }
 
 // NewPipeService creates a new instance of the PipeService
-func NewPipeService(ingestorService ingestion.IngestorService, extractorService extraction.ExtractorService) PipeService {
+func NewPipeService(
+	ingestorService ingestion.IngestorService,
+	extractorService extraction.ExtractorService,
+	transformerService TransformerService) PipeService {
 	return &pipeService{
 		ingestorService:       ingestorService,
 		extractorService:      extractorService,
+		transformerService:    transformerService,
 		extractionConfCreator: &defaultExtractionConfCreator{},
 		ingestionConfCreator:  &defaultIngestionConfCreator{},
 	}
@@ -46,5 +51,10 @@ func (s *pipeService) Create(infConn influx.Client, tsConn *pgx.Conn, measure st
 		return nil, fmt.Errorf("%s: could not create extractor and ingestor:\n%v", pipeID, err)
 	}
 
-	return pipeline.NewPipe(pipeID, ingestor, extractor, conf.SchemaOnly), nil
+	transformers, err := s.createTransformers(pipeID, infConn, measure, connConf, conf)
+	if err != nil {
+		return nil, fmt.Errorf("%s: could not create transformers:\n%v", pipeID, err)
+	}
+
+	return pipeline.NewPipe(pipeID, ingestor, extractor, transformers, conf.SchemaOnly), nil
 }

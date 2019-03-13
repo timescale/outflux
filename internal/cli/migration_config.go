@@ -19,4 +19,6 @@ type MigrationConfig struct {
 	RollbackAllMeasureExtractionsOnError bool
 	CommitStrategy                       ingestionConf.CommitStrategy
 	SchemaOnly                           bool
+	TagsAsJSON                           bool
+	TagsCol                              string
 }
