@@ -21,6 +21,12 @@ func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*cli.Conn
 		return nil, nil, err
 	}
 
+	tagsAsJSON, _ := flags.GetBool(TagsAsJSONFlag)
+	tagsColumn, _ := flags.GetString(TagsColumnFlag)
+	if tagsAsJSON && tagsColumn == "" {
+		return nil, nil, fmt.Errorf("When the '%s' flag is set, the '%s' must also have a value", TagsAsJSONFlag, TagsColumnFlag)
+	}
+
 	quiet, err := flags.GetBool(QuietFlag)
 	if err != nil {
 		return nil, nil, fmt.Errorf("value for the '%s' flag must be a true or false", QuietFlag)
@@ -30,5 +36,7 @@ func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*cli.Conn
 		Quiet:                quiet,
 		SchemaOnly:           true,
 		ChunkSize:            1,
+		TagsAsJSON:           tagsAsJSON,
+		TagsCol:              tagsColumn,
 	}, nil
 }

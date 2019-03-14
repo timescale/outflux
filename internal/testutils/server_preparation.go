@@ -33,25 +33,27 @@ func newInfluxClient() (influx.Client, error) {
 func CreateInfluxDB(t *testing.T, db string) {
 	queryService := influxqueries.NewInfluxQueryService()
 	newClient, err := newInfluxClient()
-	panicOnErr(t, err)
+	failOnErr(t, err)
 	_, err = queryService.ExecuteQuery(newClient, db, "CREATE DATABASE "+db)
-	panicOnErr(t, err)
+	failOnErr(t, err)
+	newClient.Close()
 }
 
 // DeleteInfluxDb deletes a influx database on the default influx server. Used for integration tests
 func DeleteInfluxDb(t *testing.T, db string) {
 	queryService := influxqueries.NewInfluxQueryService()
 	client, err := newInfluxClient()
-	panicOnErr(t, err)
+	failOnErr(t, err)
 	_, err = queryService.ExecuteQuery(client, db, "DROP DATABASE "+db)
-	panicOnErr(t, err)
+	failOnErr(t, err)
+	client.Close()
 }
 
 // CreateInfluxMeasure creates a measure with the specified name. For each point the tags and field values are given
 // as maps
 func CreateInfluxMeasure(t *testing.T, db, measure string, tags []*map[string]string, values []*map[string]interface{}) {
 	client, err := newInfluxClient()
-	panicOnErr(t, err)
+	failOnErr(t, err)
 
 	bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{Database: db})
 
@@ -66,7 +68,7 @@ func CreateInfluxMeasure(t *testing.T, db, measure string, tags []*map[string]st
 	}
 
 	err = client.Write(bp)
-	panicOnErr(t, err)
+	failOnErr(t, err)
 	client.Close()
 }
 
@@ -75,7 +77,7 @@ func CreateTimescaleDb(t *testing.T, db string) {
 	dbConn := OpenTSConn(defaultPgDb)
 	defer dbConn.Close()
 	_, err := dbConn.Exec("CREATE DATABASE " + db)
-	panicOnErr(t, err)
+	failOnErr(t, err)
 }
 
 // OpenTSConn opens a connection to a TimescaleDB
@@ -90,12 +92,12 @@ func OpenTSConn(db string) *pgx.Conn {
 func DeleteTimescaleDb(t *testing.T, db string) {
 	dbConn := OpenTSConn(defaultPgDb)
 	defer dbConn.Close()
-	_, err := dbConn.Exec("DROP DATABASE " + db)
-	panicOnErr(t, err)
+	_, err := dbConn.Exec("DROP DATABASE IF EXISTS " + db)
+	failOnErr(t, err)
 }
 
-func panicOnErr(t *testing.T, err error) {
+func failOnErr(t *testing.T, err error) {
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 }

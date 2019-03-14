@@ -13,6 +13,7 @@ import (
 
 func TestCreateTable(t *testing.T) {
 	db := "test"
+	testutils.DeleteTimescaleDb(t, db)
 	testutils.CreateTimescaleDb(t, db)
 	defer testutils.DeleteTimescaleDb(t, db)
 	creator := &defaultTableCreator{}

@@ -3,6 +3,8 @@ package pipeline
 import (
 	"log"
 
+	"github.com/timescale/outflux/internal/transformation"
+
 	"github.com/timescale/outflux/internal/extraction"
 	"github.com/timescale/outflux/internal/ingestion"
 )
@@ -14,17 +16,18 @@ type Pipe interface {
 }
 
 // NewPipe creates an implementation of the Pipe interface
-func NewPipe(id string, ing ingestion.Ingestor, ext extraction.Extractor, prepareOnly bool) Pipe {
+func NewPipe(id string, ing ingestion.Ingestor, ext extraction.Extractor, trans []transformation.Transformer, prepareOnly bool) Pipe {
 	return &defPipe{
-		id, ing, ext, prepareOnly,
+		id, ing, ext, trans, prepareOnly,
 	}
 }
 
 type defPipe struct {
-	id          string
-	ingestor    ingestion.Ingestor
-	extractor   extraction.Extractor
-	prepareOnly bool
+	id           string
+	ingestor     ingestion.Ingestor
+	extractor    extraction.Extractor
+	transformers []transformation.Transformer
+	prepareOnly  bool
 }
 
 func (p *defPipe) ID() string {
@@ -33,7 +36,7 @@ func (p *defPipe) ID() string {
 
 func (p *defPipe) Run() error {
 	// prepare elements
-	err := p.prepareElements(p.extractor, p.ingestor)
+	err := p.prepareElements(p.extractor, p.ingestor, p.transformers)
 	if err != nil {
 		return err
 	}
@@ -44,5 +47,5 @@ func (p *defPipe) Run() error {
 	}
 
 	// run them
-	return p.run(p.extractor, p.ingestor)
+	return p.run(p.extractor, p.ingestor, p.transformers)
 }

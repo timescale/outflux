@@ -6,6 +6,7 @@ import (
 	"github.com/timescale/outflux/internal/extraction"
 	"github.com/timescale/outflux/internal/ingestion"
 	"github.com/timescale/outflux/internal/schemamanagement"
+	"github.com/timescale/outflux/internal/schemamanagement/influx/discovery"
 	"github.com/timescale/outflux/internal/schemamanagement/influx/influxqueries"
 )
 
@@ -16,6 +17,7 @@ type appContext struct {
 	influxQueryService   influxqueries.InfluxQueryService
 	extractorService     extraction.ExtractorService
 	schemaManagerService schemamanagement.SchemaManagerService
+	transformerService   cli.TransformerService
 }
 
 func initAppContext() *appContext {
@@ -25,7 +27,9 @@ func initAppContext() *appContext {
 	influxQueryService := influxqueries.NewInfluxQueryService()
 	schemaManagerService := schemamanagement.NewSchemaManagerService(influxQueryService)
 	extractorService := extraction.NewExtractorService(schemaManagerService)
-	pipeService := cli.NewPipeService(ingestorService, extractorService)
+	influxTagExplorer := discovery.NewTagExplorer(influxQueryService)
+	transformerService := cli.NewTransformerService(influxTagExplorer)
+	pipeService := cli.NewPipeService(ingestorService, extractorService, transformerService)
 	return &appContext{
 		ics:                  ics,
 		tscs:                 tscs,
@@ -33,5 +37,6 @@ func initAppContext() *appContext {
 		influxQueryService:   influxQueryService,
 		extractorService:     extractorService,
 		schemaManagerService: schemaManagerService,
+		transformerService:   transformerService,
 	}
 }

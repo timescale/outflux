@@ -66,6 +66,11 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*cli.ConnectionC
 
 	from, _ := flags.GetString(FromFlag)
 	to, _ := flags.GetString(ToFlag)
+	tagsAsJSON, _ := flags.GetBool(TagsAsJSONFlag)
+	tagsColumn, _ := flags.GetString(TagsColumnFlag)
+	if tagsAsJSON && tagsColumn == "" {
+		return nil, nil, fmt.Errorf("When the '%s' flag is set, the '%s' must also have a value", TagsAsJSONFlag, TagsColumnFlag)
+	}
 	migrateArgs := &cli.MigrationConfig{
 		OutputSchemaStrategy:                 strategy,
 		From:                                 from,
@@ -78,6 +83,8 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*cli.ConnectionC
 		Quiet:                                quiet,
 		RollbackAllMeasureExtractionsOnError: rollBack,
 		CommitStrategy:                       commitStrategy,
+		TagsAsJSON:                           tagsAsJSON,
+		TagsCol:                              tagsColumn,
 	}
 
 	return connectionArgs, migrateArgs, nil
