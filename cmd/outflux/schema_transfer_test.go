@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -75,7 +76,7 @@ func TestSchemaTransferErrorOnOpenConn(t *testing.T) {
 func TestTransferSchemaErrorOnRun(t *testing.T) {
 	mockClient := &tdmc{}
 	mockSchemaMngr := &tdmsm{m: []string{"a"}}
-	pipe := &mockPipe{runErr: fmt.Errorf("error"), counter: &runCounter{}}
+	pipe := &mockPipe{runErr: fmt.Errorf("error"), counter: &runCounter{lock: &sync.Mutex{}}}
 	mockAll := &mockService{
 		inflConn:      mockClient,
 		inflSchemMngr: mockSchemaMngr,
@@ -113,7 +114,7 @@ func TestErrorOnPipeCreate(t *testing.T) {
 	}
 }
 func TestTransferSchema(t *testing.T) {
-	pipe := &mockPipe{counter: &runCounter{}}
+	pipe := &mockPipe{counter: &runCounter{lock: &sync.Mutex{}}}
 	mockAll := &mockService{
 		pipe:     pipe,
 		inflConn: &mockInfConn{},
