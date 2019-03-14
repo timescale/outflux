@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-	"time"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/jackc/pgx"
 
 	"github.com/timescale/outflux/internal/cli"
+	"github.com/timescale/outflux/internal/connections"
 )
 
 func TestPreparePipeErrors(t *testing.T) {
@@ -103,7 +103,7 @@ func TestMigratePipesWaitForSemaphore(t *testing.T) {
 		pipeService: &mockService{
 			pipe: goodPipe1,
 		},
-		ics:  &mockService{inflConn: &lockedConnMock{lock: &sync.Mutex{}}},
+		ics:  &multiConnMock{},
 		tscs: &mockTsConnSer{tsConn: &pgx.Conn{}},
 	}
 	conn := &cli.ConnectionConfig{InputMeasures: []string{"a", "b", "c"}}
@@ -116,29 +116,8 @@ func TestMigratePipesWaitForSemaphore(t *testing.T) {
 	if counter.maxRunning > int32(mig.MaxParallel) {
 		t.Errorf("number of concurrent pipelines (%d) was too damn high (allowed %d)", counter.maxRunning, mig.MaxParallel)
 	}
-
-	if !app.ics.(*mockService).inflConn.(*lockedConnMock).closeCalled {
-		t.Errorf("close not called on influx client")
-	}
 }
 
-type lockedConnMock struct {
-	lock        *sync.Mutex
-	closeCalled bool
-}
-
-func (m *lockedConnMock) Ping(timeout time.Duration) (time.Duration, string, error) { return 0, "", nil }
-func (m *lockedConnMock) Write(bp influx.BatchPoints) error                         { return nil }
-func (m *lockedConnMock) Query(q influx.Query) (*influx.Response, error)            { return nil, nil }
-func (m *lockedConnMock) QueryAsChunk(q influx.Query) (*influx.ChunkedResponse, error) {
-	return nil, nil
-}
-func (m *lockedConnMock) Close() error {
-	m.lock.Lock()
-	m.closeCalled = true
-	m.lock.Unlock()
-	return nil
-}
 func TestOpenConnections(t *testing.T) {
 	// error on new influx con
 	app := &appContext{
@@ -180,4 +159,11 @@ func TestOpenConnections(t *testing.T) {
 	} else if mockIcs.inflConn.(*mockInfConn).closeCalled {
 		t.Error("close method was called on influx connection")
 	}
+}
+
+type multiConnMock struct {
+}
+
+func (m *multiConnMock) NewConnection(p *connections.InfluxConnectionParams) (influx.Client, error) {
+	return &mockInfConn{}, nil
 }
