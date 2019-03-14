@@ -31,16 +31,17 @@ func TestPreparePipeErrors(t *testing.T) {
 		}
 	}
 }
-func TestMigrateNoPipes(t *testing.T) {
+func TestMigrateErrorOnDiscoverMeasures(t *testing.T) {
 	app := &appContext{
 		pipeService: &mockService{},
+		ics:         &mockService{inflConnErr: fmt.Errorf("error")},
 	}
 
 	conn := &cli.ConnectionConfig{}
 	mig := &cli.MigrationConfig{Quiet: true}
 	err := migrate(app, conn, mig)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	if err == nil {
+		t.Error("expected error, none received")
 	}
 }
 
@@ -89,8 +90,6 @@ func TestMigratePipeReturnsError(t *testing.T) {
 	err := migrate(app, conn, mig)
 	if err == nil {
 		t.Errorf("expected error, none received")
-	} else if err[0].Error() != errorReturningPipe.runErr.Error() {
-		t.Errorf("expected err %v, got %v", errorReturningPipe.runErr, err)
 	}
 }
 
@@ -101,8 +100,10 @@ func TestMigratePipesWaitForSemaphore(t *testing.T) {
 		pipeService: &mockService{
 			pipe: goodPipe1,
 		},
+		ics:  &mockService{inflConn: &mockInfConn{}},
+		tscs: &mockTsConnSer{tsConn: &pgx.Conn{}},
 	}
-	conn := &cli.ConnectionConfig{}
+	conn := &cli.ConnectionConfig{InputMeasures: []string{"a", "b"}}
 	mig := &cli.MigrationConfig{MaxParallel: 2}
 	err := migrate(app, conn, mig)
 	if err != nil {
@@ -111,6 +112,10 @@ func TestMigratePipesWaitForSemaphore(t *testing.T) {
 
 	if counter.maxRunning > int32(mig.MaxParallel) {
 		t.Errorf("number of concurrent pipelines (%d) was too damn high (allowed %d)", counter.maxRunning, mig.MaxParallel)
+	}
+
+	if !app.ics.(*mockService).inflConn.(*mockInfConn).closeCalled {
+		t.Errorf("close not called on influx client")
 	}
 }
 

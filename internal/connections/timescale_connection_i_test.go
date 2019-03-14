@@ -11,8 +11,11 @@ import (
 
 func TestNewConnection(t *testing.T) {
 	db := "test_new_conn"
-	testutils.CreateTimescaleDb(t, db)
-	defer testutils.DeleteTimescaleDb(t, db)
+	if err := testutils.CreateTimescaleDb(db); err != nil {
+		t.Fatalf("could not prepare db: %v", err)
+	}
+
+	defer testutils.DeleteTimescaleDb(db)
 
 	goodEnv := map[string]string{
 		"PGPORT":     "5433",
@@ -48,10 +51,10 @@ func TestNewConnection(t *testing.T) {
 		}
 		res, err := connService.NewConnection(tc.conn)
 		if err != nil && !tc.expectErr {
-			t.Errorf("%s\nunexpected error: %v", tc.desc, err)
+			t.Fatalf("%s\nunexpected error: %v", tc.desc, err)
 		} else if err == nil && tc.expectErr {
 			res.Close()
-			t.Errorf("%s\nexpected error, none received", tc.desc)
+			t.Fatalf("%s\nexpected error, none received", tc.desc)
 		}
 
 		if tc.expectErr {
@@ -60,17 +63,16 @@ func TestNewConnection(t *testing.T) {
 
 		rows, err := res.Query("SELECT 1")
 		if err != nil {
-			t.Error("could execute query with established connection")
-			continue
+			t.Fatalf("could execute query with established connection")
 		}
 
 		if !rows.Next() {
-			t.Error("no result returned for SELECT 1")
+			t.Fatalf("no result returned for SELECT 1")
 		} else {
 			var dest int
 			rows.Scan(&dest)
 			if dest != 1 {
-				t.Errorf("expected 1, got %d", dest)
+				t.Fatalf("expected 1, got %d", dest)
 			}
 		}
 

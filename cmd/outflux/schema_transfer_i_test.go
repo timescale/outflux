@@ -20,9 +20,15 @@ func TestSchemaTransfer(t *testing.T) {
 	tags := make(map[string]string)
 	fieldValues := make(map[string]interface{})
 	fieldValues[field] = value
-	testutils.PrepareServersForITest(t, db)
-	testutils.CreateInfluxMeasure(t, db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
-	defer testutils.ClearServersAfterITest(t, db)
+
+	if err := testutils.PrepareServersForITest(db); err != nil {
+		t.Fatalf("could not prepare servers: %v", err)
+	}
+	err := testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
+	if err != nil {
+		t.Fatalf("could not create measure: %v", err)
+	}
+	defer testutils.ClearServersAfterITest(db)
 
 	connConf := &cli.ConnectionConfig{
 		InputHost:          testutils.InfluxHost,
@@ -36,27 +42,31 @@ func TestSchemaTransfer(t *testing.T) {
 		SchemaOnly:           true,
 	}
 	appContext := initAppContext()
-	err := transferSchema(appContext, connConf, config)
+	err = transferSchema(appContext, connConf, config)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	dbConn := testutils.OpenTSConn(db)
+	dbConn, err := testutils.OpenTSConn(db)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
 	defer dbConn.Close()
 	rows, err := dbConn.Query("SELECT count(*) FROM " + measure)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	defer rows.Close()
 	var count int
 	if !rows.Next() {
-		t.Error("couldn't check state of TS DB")
+		t.Fatal("couldn't check state of TS DB")
 	}
 
 	err = rows.Scan(&count)
 	if err != nil {
-		t.Error("couldn't check state of TS DB")
+		t.Fatal("couldn't check state of TS DB")
 	}
 
 	if count != 0 {
@@ -73,9 +83,16 @@ func TestOutputConnOverridesEnvVars(t *testing.T) {
 	tags := make(map[string]string)
 	fieldValues := make(map[string]interface{})
 	fieldValues[field] = value
-	testutils.PrepareServersForITest(t, db)
-	testutils.CreateInfluxMeasure(t, db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
-	defer testutils.ClearServersAfterITest(t, db)
+	if err := testutils.PrepareServersForITest(db); err != nil {
+		t.Fatalf("could not prepare servers: %v", err)
+	}
+
+	err := testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
+	if err != nil {
+		t.Fatalf("could not create influx measure: %v", err)
+	}
+
+	defer testutils.ClearServersAfterITest(db)
 
 	// Three PG environment variables determening database and password
 	os.Setenv("PGDATABASE", "wrong_db")
@@ -95,9 +112,9 @@ func TestOutputConnOverridesEnvVars(t *testing.T) {
 	appContext := initAppContext()
 
 	// connection should fail, wrong db
-	err := transferSchema(appContext, connConf, config)
+	err = transferSchema(appContext, connConf, config)
 	if err == nil {
-		t.Error("expected error, none received")
+		t.Fatal("expected error, none received")
 	}
 
 	// Conn String that will override database and user

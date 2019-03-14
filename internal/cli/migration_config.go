@@ -21,4 +21,6 @@ type MigrationConfig struct {
 	SchemaOnly                           bool
 	TagsAsJSON                           bool
 	TagsCol                              string
+	FieldsAsJSON                         bool
+	FieldsCol                            string
 }

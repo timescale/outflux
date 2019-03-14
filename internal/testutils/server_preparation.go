@@ -2,7 +2,7 @@ package testutils
 
 import (
 	"fmt"
-	"testing"
+	"log"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/jackc/pgx"
@@ -10,15 +10,23 @@ import (
 )
 
 // PrepareServersForITest Creates a database with the same name on the default influx server and default timescale server
-func PrepareServersForITest(t *testing.T, db string) {
-	CreateInfluxDB(t, db)
-	CreateTimescaleDb(t, db)
+func PrepareServersForITest(db string) error {
+	if err := CreateInfluxDB(db); err != nil {
+		return err
+	}
+
+	return CreateTimescaleDb(db)
 }
 
 // ClearServersAfterITest Deletes a database on both the default influx and timescale servers
-func ClearServersAfterITest(t *testing.T, db string) {
-	DeleteInfluxDb(t, db)
-	DeleteTimescaleDb(t, db)
+func ClearServersAfterITest(db string) {
+	if err := DeleteInfluxDb(db); err != nil {
+		log.Printf("could not delete influx db: %v", err)
+	}
+
+	if err := DeleteTimescaleDb(db); err != nil {
+		log.Printf("could not delete influx db: %v", err)
+	}
 }
 
 func newInfluxClient() (influx.Client, error) {
@@ -30,30 +38,38 @@ func newInfluxClient() (influx.Client, error) {
 }
 
 // CreateInfluxDB creates a new influx database to the default influx server. Used for integration tests
-func CreateInfluxDB(t *testing.T, db string) {
+func CreateInfluxDB(db string) error {
 	queryService := influxqueries.NewInfluxQueryService()
 	newClient, err := newInfluxClient()
-	failOnErr(t, err)
+	if err != nil {
+		return err
+	}
 	_, err = queryService.ExecuteQuery(newClient, db, "CREATE DATABASE "+db)
-	failOnErr(t, err)
 	newClient.Close()
+	return err
 }
 
 // DeleteInfluxDb deletes a influx database on the default influx server. Used for integration tests
-func DeleteInfluxDb(t *testing.T, db string) {
+func DeleteInfluxDb(db string) error {
 	queryService := influxqueries.NewInfluxQueryService()
 	client, err := newInfluxClient()
-	failOnErr(t, err)
+	if err != nil {
+		return err
+	}
+
 	_, err = queryService.ExecuteQuery(client, db, "DROP DATABASE "+db)
-	failOnErr(t, err)
 	client.Close()
+	return err
+
 }
 
 // CreateInfluxMeasure creates a measure with the specified name. For each point the tags and field values are given
 // as maps
-func CreateInfluxMeasure(t *testing.T, db, measure string, tags []*map[string]string, values []*map[string]interface{}) {
+func CreateInfluxMeasure(db, measure string, tags []*map[string]string, values []*map[string]interface{}) error {
 	client, err := newInfluxClient()
-	failOnErr(t, err)
+	if err != nil {
+		return err
+	}
 
 	bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{Database: db})
 
@@ -64,40 +80,39 @@ func CreateInfluxMeasure(t *testing.T, db, measure string, tags []*map[string]st
 			*values[i],
 		)
 		bp.AddPoint(point)
-
 	}
 
-	err = client.Write(bp)
-	failOnErr(t, err)
 	client.Close()
+	return client.Write(bp)
 }
 
 // CreateTimescaleDb creates a new databas on the default server and then creates the extension on it
-func CreateTimescaleDb(t *testing.T, db string) {
-	dbConn := OpenTSConn(defaultPgDb)
-	defer dbConn.Close()
-	_, err := dbConn.Exec("CREATE DATABASE " + db)
-	failOnErr(t, err)
+func CreateTimescaleDb(db string) error {
+	dbConn, err := OpenTSConn(defaultPgDb)
+	if err != nil {
+		return err
+	}
+	_, err = dbConn.Exec("CREATE DATABASE " + db)
+	dbConn.Close()
+	return err
 }
 
 // OpenTSConn opens a connection to a TimescaleDB
-func OpenTSConn(db string) *pgx.Conn {
+func OpenTSConn(db string) (*pgx.Conn, error) {
 	connString := fmt.Sprintf(TsConnStringTemplate, db)
 	connConfig, _ := pgx.ParseConnectionString(connString)
-	c, _ := pgx.Connect(connConfig)
-	return c
+	log.Printf("opening ts conn to '%s' with: %s", db, connString)
+	return pgx.Connect(connConfig)
 }
 
 // DeleteTimescaleDb drops a databass on the default server
-func DeleteTimescaleDb(t *testing.T, db string) {
-	dbConn := OpenTSConn(defaultPgDb)
-	defer dbConn.Close()
-	_, err := dbConn.Exec("DROP DATABASE IF EXISTS " + db)
-	failOnErr(t, err)
-}
-
-func failOnErr(t *testing.T, err error) {
+func DeleteTimescaleDb(db string) error {
+	dbConn, err := OpenTSConn(defaultPgDb)
 	if err != nil {
-		t.Fatal(err)
+		return err
 	}
+
+	_, err = dbConn.Exec("DROP DATABASE IF EXISTS " + db)
+	dbConn.Close()
+	return err
 }

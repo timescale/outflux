@@ -10,10 +10,16 @@ import (
 )
 
 func TestIsTimePartitionedBy(t *testing.T) {
-	db := "test"
-	testutils.DeleteTimescaleDb(t, db)
-	testutils.CreateTimescaleDb(t, db)
-	defer testutils.DeleteTimescaleDb(t, db)
+	db := "test_time_partitioned_by"
+	if err := testutils.DeleteTimescaleDb(db); err != nil {
+		t.Fatalf("could not prepare db: %v", err)
+	}
+
+	if err := testutils.CreateTimescaleDb(db); err != nil {
+		t.Fatalf("could not prepare db: %v", err)
+	}
+
+	defer testutils.DeleteTimescaleDb(db)
 
 	checker := defaultHypertableDimensionExplorer{}
 
@@ -24,7 +30,10 @@ func TestIsTimePartitionedBy(t *testing.T) {
 	okTable := "good_hypertable"
 	okCol := "ok_column"
 
-	dbConn := testutils.OpenTSConn(db)
+	dbConn, err := testutils.OpenTSConn(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer dbConn.Close()
 
 	createOkTableQuery := fmt.Sprintf("CREATE TABLE %s (%s TIMESTAMPTZ NOT NULL)", okTable, okCol)
@@ -56,10 +65,10 @@ func TestIsTimePartitionedBy(t *testing.T) {
 	for _, tc := range tcs {
 		res, err := checker.isTimePartitionedBy(dbConn, "", tc.table, tc.timeCol)
 		if err != nil {
-			t.Errorf("unexpected error: %v", err)
+			t.Fatalf("unexpected error: %v", err)
 		}
 		if res != tc.expectRes {
-			t.Errorf("expected %v, got %v", tc.expectRes, res)
+			t.Fatalf("expected %v, got %v", tc.expectRes, res)
 		}
 	}
 }

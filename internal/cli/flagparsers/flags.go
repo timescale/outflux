@@ -25,6 +25,8 @@ const (
 	BatchSizeFlag               = "batch-size"
 	TagsAsJSONFlag              = "tags-as-json"
 	TagsColumnFlag              = "tags-column"
+	FieldsAsJSONFlag            = "fields-as-json"
+	FieldsColumnFlag            = "fields"
 
 	DefaultInputServer             = "http://localhost:8086"
 	DefaultInputUser               = ""
@@ -41,4 +43,6 @@ const (
 	DefaultBatchSize               = 8000
 	DefaultTagsAsJSON              = false
 	DefaultTagsColumn              = "tags"
+	DefaultFieldsAsJSON            = false
+	DefaultFieldsColumn            = "fields"
 )

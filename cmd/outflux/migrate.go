@@ -28,9 +28,8 @@ func initMigrateCmd() *cobra.Command {
 				return
 			}
 
-			errors := migrate(app, connArgs, migrateArgs)
-			if errors != nil {
-				err = preparePipeErrors(errors)
+			err = migrate(app, connArgs, migrateArgs)
+			if err != nil {
 				log.Fatal(err)
 			}
 		},
@@ -47,18 +46,28 @@ func initMigrateCmd() *cobra.Command {
 	migrateCmd.PersistentFlags().String(flagparsers.CommitStrategyFlag, flagparsers.DefaultCommitStrategy.String(), "Determines whether to commit on each chunk extracted from Influx, or at the end. Valid options: CommitOnEnd and CommitOnEachBatch")
 	migrateCmd.PersistentFlags().Uint16(flagparsers.BatchSizeFlag, flagparsers.DefaultBatchSize, "The size of the batch inserted in to the output database")
 	migrateCmd.PersistentFlags().Bool(flagparsers.TagsAsJSONFlag, flagparsers.DefaultTagsAsJSON, "If this flag is set to true, then the Tags of the influx measures being exported will be combined into a single JSONb column in Timescale")
-	migrateCmd.PersistentFlags().String(flagparsers.TagsColumnFlag, flagparsers.DefaultTagsColumn, "When "+flagparsers.TagsAsJSONFlag+" is set, then this column specifies the name of the JSON column")
+	migrateCmd.PersistentFlags().String(flagparsers.TagsColumnFlag, flagparsers.DefaultTagsColumn, "When "+flagparsers.TagsAsJSONFlag+" is set, this column specifies the name of the JSON column for the tags")
+	migrateCmd.PersistentFlags().Bool(flagparsers.FieldsAsJSONFlag, flagparsers.DefaultFieldsAsJSON, "If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale")
+	migrateCmd.PersistentFlags().String(flagparsers.FieldsColumnFlag, flagparsers.DefaultFieldsColumn, "When "+flagparsers.FieldsAsJSONFlag+" is set, this column specifies the name of the JSON column for the fields")
+
 	return migrateCmd
 }
 
-func migrate(app *appContext, connArgs *cli.ConnectionConfig, args *cli.MigrationConfig) []error {
+func migrate(app *appContext, connArgs *cli.ConnectionConfig, args *cli.MigrationConfig) error {
 	if args.Quiet {
 		log.SetFlags(0)
 		log.SetOutput(ioutil.Discard)
 	}
 
-	startTime := time.Now()
+	var err error
+	if len(connArgs.InputMeasures) == 0 {
+		connArgs.InputMeasures, err = discoverMeasures(app, connArgs)
+		if err != nil {
+			return fmt.Errorf("could not discover the available measures for the input db '%s'", connArgs.InputDb)
+		}
+	}
 
+	startTime := time.Now()
 	pipelineSemaphore := semaphore.NewWeighted(int64(args.MaxParallel))
 	ctx := context.Background()
 	pipeChannels := makePipeChannels(len(connArgs.InputMeasures))
@@ -83,7 +92,7 @@ func migrate(app *appContext, connArgs *cli.ConnectionConfig, args *cli.Migratio
 	executionTime := time.Since(startTime).Seconds()
 	log.Printf("Migration execution time: %.3f seconds\n", executionTime)
 	if hasError {
-		return pipeErrors
+		return preparePipeErrors(pipeErrors)
 	}
 
 	return nil
@@ -136,7 +145,9 @@ func makePipeChannels(numChannels int) []chan error {
 func preparePipeErrors(errors []error) error {
 	errString := "Migration finished with errors:\n"
 	for _, err := range errors {
-		errString += err.Error() + "\n"
+		if err != nil {
+			errString += err.Error() + "\n"
+		}
 	}
 
 	return fmt.Errorf(errString)
