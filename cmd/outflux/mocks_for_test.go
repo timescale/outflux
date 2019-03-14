@@ -44,7 +44,7 @@ func (m *mockTsConnSer) NewConnection(connStr string) (*pgx.Conn, error) {
 }
 
 type runCounter struct {
-	lock        sync.Mutex
+	lock        *sync.Mutex
 	maxRunning  int32
 	currRunning int32
 }

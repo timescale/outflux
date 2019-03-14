@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
+	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/jackc/pgx"
 
 	"github.com/timescale/outflux/internal/cli"
@@ -94,16 +96,17 @@ func TestMigratePipeReturnsError(t *testing.T) {
 }
 
 func TestMigratePipesWaitForSemaphore(t *testing.T) {
-	counter := &runCounter{lock: sync.Mutex{}}
+	counter := &runCounter{lock: &sync.Mutex{}}
 	goodPipe1 := &mockPipe{counter: counter}
+
 	app := &appContext{
 		pipeService: &mockService{
 			pipe: goodPipe1,
 		},
-		ics:  &mockService{inflConn: &mockInfConn{}},
+		ics:  &mockService{inflConn: &lockedConnMock{lock: &sync.Mutex{}}},
 		tscs: &mockTsConnSer{tsConn: &pgx.Conn{}},
 	}
-	conn := &cli.ConnectionConfig{InputMeasures: []string{"a", "b"}}
+	conn := &cli.ConnectionConfig{InputMeasures: []string{"a", "b", "c"}}
 	mig := &cli.MigrationConfig{MaxParallel: 2}
 	err := migrate(app, conn, mig)
 	if err != nil {
@@ -114,11 +117,28 @@ func TestMigratePipesWaitForSemaphore(t *testing.T) {
 		t.Errorf("number of concurrent pipelines (%d) was too damn high (allowed %d)", counter.maxRunning, mig.MaxParallel)
 	}
 
-	if !app.ics.(*mockService).inflConn.(*mockInfConn).closeCalled {
+	if !app.ics.(*mockService).inflConn.(*lockedConnMock).closeCalled {
 		t.Errorf("close not called on influx client")
 	}
 }
 
+type lockedConnMock struct {
+	lock        *sync.Mutex
+	closeCalled bool
+}
+
+func (m *lockedConnMock) Ping(timeout time.Duration) (time.Duration, string, error) { return 0, "", nil }
+func (m *lockedConnMock) Write(bp influx.BatchPoints) error                         { return nil }
+func (m *lockedConnMock) Query(q influx.Query) (*influx.Response, error)            { return nil, nil }
+func (m *lockedConnMock) QueryAsChunk(q influx.Query) (*influx.ChunkedResponse, error) {
+	return nil, nil
+}
+func (m *lockedConnMock) Close() error {
+	m.lock.Lock()
+	m.closeCalled = true
+	m.lock.Unlock()
+	return nil
+}
 func TestOpenConnections(t *testing.T) {
 	// error on new influx con
 	app := &appContext{
