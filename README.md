@@ -54,6 +54,10 @@ Available flags for schema-transfer are:
 | output-conn      | string  | sslmode=disable       | Connection string to use to connect to the output database|
 | output-schema    | string  |                       | The schema of the output database that the data will be inserted into |
 | schema-strategy  | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
+| tags-as-json     | bool    | false                 | If this flag is set to true, then the Tags of the influx measures being exported will be combined into a single JSONb column in Timescale |
+| tags-column      | string  | tags                  | When `tags-as-json` is set, this column specifies the name of the JSON column for the tags |
+| fields-as-json   | bool    | false                 | If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale |
+| fields-column    | string  | fields                | When `fields-as-json` is set, this column specifies the name of the JSON column for the fields |
 | quiet            | bool    | false                 | If specified will suppress any log to STDOUT |
 
 ### Migrate
@@ -87,6 +91,10 @@ Available flags are:
 | data-buffer                | uint16  | 15000                 | Size of the buffer holding exported data ready to be inserted in the output database |
 | max-parallel               | uint8   | 2                     | Number of parallel measure extractions. One InfluxDB measure is exported using 1 worker |
 | rollback-on-external-error | bool    | true                  | If set, when an error occurs while extracting the data, the insertion will be rollbacked. Otherwise it will try to commit |
+| tags-as-json     | bool    | false                 | If this flag is set to true, then the Tags of the influx measures being exported will be combined into a single JSONb column in Timescale |
+| tags-column      | string  | tags                  | When `tags-as-json` is set, this column specifies the name of the JSON column for the tags |
+| fields-as-json   | bool    | false                 | If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale |
+| fields-column    | string  | fields                | When `fields-as-json` is set, this column specifies the name of the JSON column for the fields |
 | quiet                      | bool    | false                 | If specified will suppress any log to STDOUT |
 
 ### Examples

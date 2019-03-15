@@ -28,7 +28,8 @@ func initAppContext() *appContext {
 	schemaManagerService := schemamanagement.NewSchemaManagerService(influxQueryService)
 	extractorService := extraction.NewExtractorService(schemaManagerService)
 	influxTagExplorer := discovery.NewTagExplorer(influxQueryService)
-	transformerService := cli.NewTransformerService(influxTagExplorer)
+	influxFieldExplorer := discovery.NewFieldExplorer(influxQueryService)
+	transformerService := cli.NewTransformerService(influxTagExplorer, influxFieldExplorer)
 	pipeService := cli.NewPipeService(ingestorService, extractorService, transformerService)
 	return &appContext{
 		ics:                  ics,

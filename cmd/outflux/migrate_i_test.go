@@ -17,33 +17,40 @@ import (
 func TestMigrateSingleValue(t *testing.T) {
 	// prepare influx db
 	start := time.Now().UTC()
-	db := "test"
+	db := "test_single_value"
 	measure := "test"
 	field := "field1"
 	value := 1
 	tags := make(map[string]string)
 	fieldValues := make(map[string]interface{})
 	fieldValues[field] = value
-	testutils.PrepareServersForITest(t, db)
-	testutils.CreateInfluxMeasure(t, db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
-	defer testutils.ClearServersAfterITest(t, db)
+	if err := testutils.PrepareServersForITest(db); err != nil {
+		t.Fatalf("could not prepare servers: %v", err)
+	}
+	err := testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
+	if err != nil {
+		t.Fatalf("could not prepare influx measurement: %v", err)
+	}
+
+	defer testutils.ClearServersAfterITest(db)
 
 	// run
 	connConf, config := defaultConfig(db, measure)
 	appContext := initAppContext()
-	errs := migrate(appContext, connConf, config)
-	if errs != nil {
-		t.Error(errs[0])
-		return
+	err = migrate(appContext, connConf, config)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// check
-	dbConn := testutils.OpenTSConn(db)
+	dbConn, err := testutils.OpenTSConn(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer dbConn.Close()
 	rows, err := dbConn.Query("SELECT * FROM " + measure)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	defer rows.Close()
 
@@ -51,13 +58,11 @@ func TestMigrateSingleValue(t *testing.T) {
 	var field1 int
 	if !rows.Next() {
 		t.Fatal("couldn't check state of TS DB")
-		return
 	}
 
 	err = rows.Scan(&time, &field1)
 	if err != nil {
 		t.Fatal("couldn't check state of TS DB")
-		return
 	}
 
 	if time.Before(start) || field1 != value {
@@ -87,7 +92,7 @@ func defaultConfig(db string, measure string) (*cli.ConnectionConfig, *cli.Migra
 func TestMigrateTagsAsJson(t *testing.T) {
 	//prepare influx db
 	start := time.Now().UTC()
-	db := "test"
+	db := "test_tags_json"
 	measure := "test"
 	tag := "tag1"
 	field := "field1"
@@ -95,29 +100,40 @@ func TestMigrateTagsAsJson(t *testing.T) {
 	tagValue := "1"
 	tags := map[string]string{tag: tagValue}
 	fieldValues := map[string]interface{}{field: value}
-	testutils.PrepareServersForITest(t, db)
-	testutils.CreateInfluxMeasure(t, db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
-	defer testutils.ClearServersAfterITest(t, db)
+	if err := testutils.DeleteTimescaleDb(db); err != nil {
+		t.Fatalf("could not delete if exists ts db: %v", err)
+	}
+
+	if err := testutils.PrepareServersForITest(db); err != nil {
+		t.Fatalf("could not prepare servers: %v", err)
+	}
+	defer testutils.ClearServersAfterITest(db)
+
+	err := testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// run
 	connConf, config := defaultConfig(db, measure)
 	config.TagsAsJSON = true
 	config.TagsCol = "tags"
 	appContext := initAppContext()
-	errs := migrate(appContext, connConf, config)
-	if errs != nil {
-		t.Error(errs[0])
-		return
+	err = migrate(appContext, connConf, config)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// check
-	dbConn := testutils.OpenTSConn(db)
+	dbConn, err := testutils.OpenTSConn(db)
+	if err != nil {
+		t.Fatalf("could not open db conn: %v", err)
+	}
 	defer dbConn.Close()
 
-	rows, err := dbConn.Query("SELECT time, tags, field1 FROM " + measure)
+	rows, err := dbConn.Query("SELECT * FROM " + measure)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
 	defer rows.Close()
@@ -126,16 +142,73 @@ func TestMigrateTagsAsJson(t *testing.T) {
 	var tagsCol string
 	if !rows.Next() {
 		t.Fatal("couldn't check state of TS DB")
-		return
 	}
 
 	err = rows.Scan(&time, &tagsCol, &field1)
 	if err != nil {
 		t.Fatal("couldn't check state of TS DB")
-		return
 	}
 
 	if time.Before(start) || field1 != value || tagsCol != "{\"tag1\": \"1\"}" {
-		t.Errorf("expected time > %v and field1=%d\ngot: time %s, field1=%d", start, value, time, field1)
+		t.Errorf("expected time > %v and field1=%d and tags={\"tag1\": \"1\"}\ngot: time %s, field1=%d, tags=%s", start, value, time, field1, tagsCol)
+	}
+}
+
+func TestMigrateFieldsAsJson(t *testing.T) {
+	//prepare influx db
+	start := time.Now().UTC()
+	db := "test_fields_json"
+	measure := "test"
+	field := "field1"
+	value := 1
+	tags := map[string]string{}
+	fieldValues := map[string]interface{}{field: value}
+	if err := testutils.PrepareServersForITest(db); err != nil {
+		t.Fatalf("could not prepare servers: %v", err)
+	}
+
+	err := testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
+	if err != nil {
+		t.Fatalf("could not prepare servers: %v", err)
+	}
+
+	defer testutils.ClearServersAfterITest(db)
+
+	// run
+	connConf, config := defaultConfig(db, measure)
+	config.FieldsAsJSON = true
+	config.FieldsCol = "fields"
+	appContext := initAppContext()
+	errs := migrate(appContext, connConf, config)
+	if errs != nil {
+		t.Fatal(errs)
+	}
+
+	// check
+	dbConn, err := testutils.OpenTSConn(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dbConn.Close()
+
+	rows, err := dbConn.Query("SELECT * FROM " + measure)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer rows.Close()
+	var time time.Time
+	var fieldsCol string
+	if !rows.Next() {
+		t.Fatal("couldn't check state of TS DB")
+	}
+
+	err = rows.Scan(&time, &fieldsCol)
+	if err != nil {
+		t.Fatal("couldn't check state of TS DB")
+	}
+
+	if time.Before(start) || fieldsCol != "{\"field1\": 1}" {
+		t.Errorf("expected time > %v and fields={\"field1\": 1}\ngot: time %s, field1=%s", start, time, fieldsCol)
 	}
 }

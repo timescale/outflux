@@ -5,9 +5,11 @@ import (
 	"sync"
 	"testing"
 
+	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/jackc/pgx"
 
 	"github.com/timescale/outflux/internal/cli"
+	"github.com/timescale/outflux/internal/connections"
 )
 
 func TestPreparePipeErrors(t *testing.T) {
@@ -31,16 +33,17 @@ func TestPreparePipeErrors(t *testing.T) {
 		}
 	}
 }
-func TestMigrateNoPipes(t *testing.T) {
+func TestMigrateErrorOnDiscoverMeasures(t *testing.T) {
 	app := &appContext{
 		pipeService: &mockService{},
+		ics:         &mockService{inflConnErr: fmt.Errorf("error")},
 	}
 
 	conn := &cli.ConnectionConfig{}
 	mig := &cli.MigrationConfig{Quiet: true}
 	err := migrate(app, conn, mig)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	if err == nil {
+		t.Error("expected error, none received")
 	}
 }
 
@@ -89,20 +92,21 @@ func TestMigratePipeReturnsError(t *testing.T) {
 	err := migrate(app, conn, mig)
 	if err == nil {
 		t.Errorf("expected error, none received")
-	} else if err[0].Error() != errorReturningPipe.runErr.Error() {
-		t.Errorf("expected err %v, got %v", errorReturningPipe.runErr, err)
 	}
 }
 
 func TestMigratePipesWaitForSemaphore(t *testing.T) {
-	counter := &runCounter{lock: sync.Mutex{}}
+	counter := &runCounter{lock: &sync.Mutex{}}
 	goodPipe1 := &mockPipe{counter: counter}
+
 	app := &appContext{
 		pipeService: &mockService{
 			pipe: goodPipe1,
 		},
+		ics:  &multiConnMock{},
+		tscs: &mockTsConnSer{tsConn: &pgx.Conn{}},
 	}
-	conn := &cli.ConnectionConfig{}
+	conn := &cli.ConnectionConfig{InputMeasures: []string{"a", "b", "c"}}
 	mig := &cli.MigrationConfig{MaxParallel: 2}
 	err := migrate(app, conn, mig)
 	if err != nil {
@@ -155,4 +159,11 @@ func TestOpenConnections(t *testing.T) {
 	} else if mockIcs.inflConn.(*mockInfConn).closeCalled {
 		t.Error("close method was called on influx connection")
 	}
+}
+
+type multiConnMock struct {
+}
+
+func (m *multiConnMock) NewConnection(p *connections.InfluxConnectionParams) (influx.Client, error) {
+	return &mockInfConn{}, nil
 }

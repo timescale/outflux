@@ -12,12 +12,19 @@ import (
 )
 
 func TestCreateTable(t *testing.T) {
-	db := "test"
-	testutils.DeleteTimescaleDb(t, db)
-	testutils.CreateTimescaleDb(t, db)
-	defer testutils.DeleteTimescaleDb(t, db)
+	db := "test_create_table"
+	if err := testutils.DeleteTimescaleDb(db); err != nil {
+		t.Fatalf("could not prepare db: %v", err)
+	}
+	if err := testutils.CreateTimescaleDb(db); err != nil {
+		t.Fatalf("could not prepare db: %v", err)
+	}
+	defer testutils.DeleteTimescaleDb(db)
 	creator := &defaultTableCreator{}
-	dbConn := testutils.OpenTSConn(db)
+	dbConn, err := testutils.OpenTSConn(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer dbConn.Close()
 	dataSet := &idrf.DataSet{
 		DataSetName: "name",
@@ -27,9 +34,9 @@ func TestCreateTable(t *testing.T) {
 		},
 		TimeColumn: "col1",
 	}
-	err := creator.CreateTable(dbConn, dataSet)
+	err = creator.CreateTable(dbConn, dataSet)
 	if err != nil {
-		t.Errorf("expected no error, got: %v", err)
+		t.Fatalf("expected no error, got: %v", err)
 	}
 
 	tableColumns := fmt.Sprintf(`SELECT column_name, data_type
@@ -46,16 +53,16 @@ func TestCreateTable(t *testing.T) {
 		colInfo := dataSet.Columns[currCol]
 		err = rows.Scan(&name, &dataType)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		if colInfo.Name != name || colInfo.DataType != pgTypeToIdrf(dataType) {
-			t.Errorf("Expected column name: %s and type %v\ngot: %s and %s", colInfo.Name, colInfo.DataType, name, dataType)
+			t.Fatalf("Expected column name: %s and type %v\ngot: %s and %s", colInfo.Name, colInfo.DataType, name, dataType)
 		}
 		currCol++
 	}
 	if currCol == 0 {
-		t.Error("table wasn't created")
+		t.Fatal("table wasn't created")
 	}
 
 	// Creating the table again should fail
