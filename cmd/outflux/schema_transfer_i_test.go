@@ -50,7 +50,6 @@ func TestSchemaTransfer(t *testing.T) {
 	dbConn, err := testutils.OpenTSConn(db)
 	if err != nil {
 		t.Fatal(err)
-		return
 	}
 	defer dbConn.Close()
 	rows, err := dbConn.Query("SELECT count(*) FROM " + measure)

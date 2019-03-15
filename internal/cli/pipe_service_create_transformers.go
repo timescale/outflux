@@ -20,7 +20,7 @@ func (p *pipeService) createTransformers(pipeId string, infConn influx.Client, m
 		if err != nil {
 			return nil, err
 		}
-		// if measurement has not tags, a nil transformer is returned
+		// if measurement has no tags, a nil transformer is returned
 		if tagsTransformer != nil {
 			transformers = append(transformers, tagsTransformer)
 		}

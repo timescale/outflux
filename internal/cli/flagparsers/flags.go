@@ -26,7 +26,7 @@ const (
 	TagsAsJSONFlag              = "tags-as-json"
 	TagsColumnFlag              = "tags-column"
 	FieldsAsJSONFlag            = "fields-as-json"
-	FieldsColumnFlag            = "fields"
+	FieldsColumnFlag            = "fields-column"
 
 	DefaultInputServer             = "http://localhost:8086"
 	DefaultInputUser               = ""

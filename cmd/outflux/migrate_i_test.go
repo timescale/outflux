@@ -122,14 +122,12 @@ func TestMigrateTagsAsJson(t *testing.T) {
 	err = migrate(appContext, connConf, config)
 	if err != nil {
 		t.Fatal(err)
-		return
 	}
 
 	// check
 	dbConn, err := testutils.OpenTSConn(db)
 	if err != nil {
 		t.Fatalf("could not open db conn: %v", err)
-		return
 	}
 	defer dbConn.Close()
 
