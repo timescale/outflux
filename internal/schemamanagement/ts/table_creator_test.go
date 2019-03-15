@@ -16,6 +16,7 @@ func TestDataSetToSQLTableDef(t *testing.T) {
 	ds1, _ := idrf.NewDataSet("ds1", singleCol, singleCol[0].Name)
 	ds2, _ := idrf.NewDataSet("ds2", twoCols, twoCols[0].Name)
 	ds3, _ := idrf.NewDataSet("ds 3", threeCols, threeCols[0].Name)
+	ds4, _ := idrf.NewDataSet("schema.ds4", singleCol, singleCol[0].Name)
 	tcs := []struct {
 		ds       *idrf.DataSet
 		expected string
@@ -23,6 +24,7 @@ func TestDataSetToSQLTableDef(t *testing.T) {
 		{ds: ds1, expected: "CREATE TABLE \"ds1\"(\"col1\" TIMESTAMP)"},
 		{ds: ds2, expected: "CREATE TABLE \"ds2\"(\"col1\" TIMESTAMP, \"col2\" FLOAT)"},
 		{ds: ds3, expected: "CREATE TABLE \"ds 3\"(\"col1\" TIMESTAMPTZ, \"col2\" TEXT, \"col 3\" BIGINT)"},
+		{ds: ds4, expected: "CREATE TABLE \"schema\".\"ds4\"(\"col1\" TIMESTAMP)"},
 	}
 	for _, tc := range tcs {
 		query := dataSetToSQLTableDef(tc.ds)

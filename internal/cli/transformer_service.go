@@ -9,12 +9,14 @@ import (
 	"github.com/timescale/outflux/internal/schemamanagement/influx/discovery"
 	"github.com/timescale/outflux/internal/transformation"
 	jsonCombiner "github.com/timescale/outflux/internal/transformation/jsoncombiner"
+	"github.com/timescale/outflux/internal/transformation/schemarenamer"
 )
 
 // TransformerService creates different transformers
 type TransformerService interface {
 	TagsAsJSON(infConn influx.Client, id, db, measure string, resultCol string) (transformation.Transformer, error)
 	FieldsAsJSON(infConn influx.Client, id, db, measure string, resultCol string) (transformation.Transformer, error)
+	RenameOutputSchema(id, outputSchema string) transformation.Transformer
 }
 
 // NewTransformerService creates a new implementation of the TransformerService interface
@@ -57,6 +59,10 @@ func (t *transformerService) FieldsAsJSON(infConn influx.Client, id, db, measure
 	}
 
 	return jsonCombiner.NewTransformer(id, fields, resultCol)
+}
+
+func (t *transformerService) RenameOutputSchema(id, outputSchema string) transformation.Transformer {
+	return schemarenamer.NewTransformer(id, outputSchema)
 }
 
 type fetchColumnsFn func() ([]*idrf.Column, error)

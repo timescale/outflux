@@ -11,10 +11,12 @@ import (
 )
 
 const (
-	createTableQueryTemplate      = "CREATE TABLE \"%s\"(%s)"
-	columnDefTemplate             = "\"%s\" %s"
-	createHypertableQueryTemplate = "SELECT create_hypertable('%s', '%s');"
-	createTimescaleExtensionQuery = "CREATE EXTENSION IF NOT EXISTS timescaledb"
+	createTableQueryTemplate                = "CREATE TABLE \"%s\"(%s)"
+	createTableWithSchemaQueryTemplate      = "CREATE TABLE \"%s\".\"%s\"(%s)"
+	columnDefTemplate                       = "\"%s\" %s"
+	createHypertableQueryTemplate           = "SELECT create_hypertable('\"%s\"', '%s');"
+	createHypertableWithSchemaQueryTemplate = "SELECT create_hypertable('\"%s\".\"%s\"', '%s');"
+	createTimescaleExtensionQuery           = "CREATE EXTENSION IF NOT EXISTS timescaledb"
 )
 
 type tableCreator interface {
@@ -44,7 +46,14 @@ func (d *defaultTableCreator) CreateTable(dbConn *pgx.Conn, info *idrf.DataSet) 
 		return err
 	}
 
-	hypertableQuery := fmt.Sprintf(createHypertableQueryTemplate, info.DataSetName, info.TimeColumn)
+	schema, table := info.SchemaAndTable()
+	var hypertableQuery string
+	if schema != "" {
+		hypertableQuery = fmt.Sprintf(createHypertableWithSchemaQueryTemplate, schema, table, info.TimeColumn)
+	} else {
+		hypertableQuery = fmt.Sprintf(createHypertableQueryTemplate, info.DataSetName, info.TimeColumn)
+	}
+
 	log.Printf("Creating hypertable with: %s", hypertableQuery)
 	_, err = dbConn.Exec(hypertableQuery)
 	if err != nil {
@@ -76,5 +85,9 @@ func dataSetToSQLTableDef(dataSet *idrf.DataSet) string {
 
 	columnsString := strings.Join(columnDefinitions, ", ")
 
-	return fmt.Sprintf(createTableQueryTemplate, dataSet.DataSetName, columnsString)
+	schema, table := dataSet.SchemaAndTable()
+	if schema != "" {
+		return fmt.Sprintf(createTableWithSchemaQueryTemplate, schema, table, columnsString)
+	}
+	return fmt.Sprintf(createTableQueryTemplate, table, columnsString)
 }
