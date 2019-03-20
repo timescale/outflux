@@ -86,13 +86,24 @@ func CreateInfluxMeasure(db, measure string, tags []*map[string]string, values [
 	return client.Write(bp)
 }
 
-// CreateTimescaleDb creates a new databas on the default server and then creates the extension on it
+// CreateTimescaleDb creates a new database on the default server and then creates the extension on it
 func CreateTimescaleDb(db string) error {
 	dbConn, err := OpenTSConn(defaultPgDb)
 	if err != nil {
 		return err
 	}
 	_, err = dbConn.Exec("CREATE DATABASE " + db)
+	dbConn.Close()
+	return err
+}
+
+// CreateTimescaleSchema creates a new schema in the specified db
+func CreateTimescaleSchema(db, schema string) error {
+	dbConn, err := OpenTSConn(db)
+	if err != nil {
+		return err
+	}
+	_, err = dbConn.Exec("CREATE SCHEMA " + schema)
 	dbConn.Close()
 	return err
 }

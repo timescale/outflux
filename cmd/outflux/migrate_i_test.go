@@ -212,3 +212,72 @@ func TestMigrateFieldsAsJson(t *testing.T) {
 		t.Errorf("expected time > %v and fields={\"field1\": 1}\ngot: time %s, field1=%s", start, time, fieldsCol)
 	}
 }
+
+func TestMigrateRenameOutputSchema(t *testing.T) {
+	//prepare influx db
+	start := time.Now().UTC()
+	db := "test_rename_schema"
+	targetSchema := "some_schema"
+	measure := "test"
+	tag := "tag1"
+	field := "field1"
+	value := 1
+	tagValue := "1"
+	tags := map[string]string{tag: tagValue}
+	fieldValues := map[string]interface{}{field: value}
+	if err := testutils.DeleteTimescaleDb(db); err != nil {
+		t.Fatalf("could not delete if exists ts db: %v", err)
+	}
+	if err := testutils.PrepareServersForITest(db); err != nil {
+		t.Fatalf("could not prepare servers: %v", err)
+	}
+	if err := testutils.CreateTimescaleSchema(db, targetSchema); err != nil {
+		t.Fatalf("could not create target schema: %v", err)
+	}
+	defer testutils.ClearServersAfterITest(db)
+
+	err := testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// run
+	connConf, config := defaultConfig(db, measure)
+	connConf.OutputSchema = targetSchema
+	config.TagsAsJSON = true
+	config.TagsCol = "tags"
+	appContext := initAppContext()
+	err = migrate(appContext, connConf, config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check
+	dbConn, err := testutils.OpenTSConn(db)
+	if err != nil {
+		t.Fatalf("could not open db conn: %v", err)
+	}
+	defer dbConn.Close()
+
+	rows, err := dbConn.Query(fmt.Sprintf("SELECT * FROM %s.%s", targetSchema, measure))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer rows.Close()
+	var time time.Time
+	var field1 int
+	var tagsCol string
+	if !rows.Next() {
+		t.Fatal("couldn't check state of TS DB")
+	}
+
+	err = rows.Scan(&time, &tagsCol, &field1)
+	if err != nil {
+		t.Fatal("couldn't check state of TS DB")
+	}
+
+	if time.Before(start) || field1 != value || tagsCol != "{\"tag1\": \"1\"}" {
+		t.Errorf("expected time > %v and field1=%d and tags={\"tag1\": \"1\"}\ngot: time %s, field1=%d, tags=%s", start, value, time, field1, tagsCol)
+	}
+}

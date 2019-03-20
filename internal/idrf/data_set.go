@@ -78,3 +78,11 @@ func NewDataSet(dataSetName string, columns []*Column, timeColumn string) (*Data
 
 	return &DataSet{dataSetName, columns, timeColumn}, nil
 }
+
+// GenerateDataSetIdentifier combines a schema name and table name in a single data set identifier
+func GenerateDataSetIdentifier(schema, table string) string {
+	if schema != "" {
+		return schema + "." + table
+	}
+	return table
+}
