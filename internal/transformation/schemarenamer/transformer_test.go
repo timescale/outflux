@@ -78,11 +78,11 @@ func TestStart(t *testing.T) {
 	}
 	outBundle, err := trans.Prepare(inBundle)
 	if err != nil {
-		t.Fatalf("unpexpected error on prepare: %v", err)
+		t.Fatalf("unexpected error on prepare: %v", err)
 	}
 	err = trans.Start(make(chan error))
 	if err != nil {
-		t.Fatalf("unepxpected error on Start: %v", err)
+		t.Fatalf("unexpected error on Start: %v", err)
 	}
 
 	// will close output bundle channel
