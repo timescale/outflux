@@ -46,7 +46,7 @@ func ValidateMeasureExtractionConfig(config *MeasureExtraction) error {
 	return nil
 }
 
-// ExtractionConfig combines everthing needed to create and start an Extractor
+// ExtractionConfig combines everything needed to create and start an Extractor
 type ExtractionConfig struct {
 	ExtractorID       string
 	MeasureExtraction *MeasureExtraction

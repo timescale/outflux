@@ -2,7 +2,7 @@ package transformation
 
 import "github.com/timescale/outflux/internal/idrf"
 
-// Transformer takes a data channel of idrf.Rows and transformes them to different rows
+// Transformer takes a data channel of idrf.Rows and transforms them to different rows
 type Transformer interface {
 	// ID returns a string that identifies the transformer instance (all pipeline elements have it)
 	ID() string

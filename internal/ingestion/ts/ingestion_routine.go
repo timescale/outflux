@@ -21,7 +21,7 @@ type ingestDataArgs struct {
 	dataChannel chan idrf.Row
 	// on each ${batchSize} rows inserted the ingestor checks if there is an error in some of the other goroutines
 	batchSize uint16
-	// if an error occured in another goroutine should a rollback be done
+	// if an error occurred in another goroutine should a rollback be done
 	rollbackOnExternalError bool
 	// the database connection
 	dbConn *pgx.Conn
@@ -102,12 +102,6 @@ func (routine *defaultRoutine) ingest(args *ingestDataArgs) error {
 		}
 	}
 
-	if args.rollbackOnExternalError && utils.CheckError(args.errChan) != nil {
-		log.Printf("%s: Error received from outside of ingestor. Rollbacking\n", args.ingestorID)
-		_ = tx.Rollback()
-		return nil
-	}
-
 	if batchInserts > 0 {
 		batch = batch[:batchInserts]
 		if err = copyToDb(args, tableIdentifier, tx, batch); err != nil {
@@ -120,7 +114,7 @@ func (routine *defaultRoutine) ingest(args *ingestDataArgs) error {
 		return err
 	}
 
-	log.Printf("Ingestor '%s' complete. Inserted %d rows.\n", args.ingestorID, numInserts)
+	log.Printf("%s: Complete. Inserted %d rows.\n", args.ingestorID, numInserts)
 	return nil
 }
 

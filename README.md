@@ -143,7 +143,7 @@ $ ./outflux migrate benchmark cpu mem \
 
 ### TimescaleDB connection params
 
-The connection parameters to the TimescaleDB instance can be passed to Outflux in several ways. One is through the Postgres Environment Variables. Supported envrionment variables are: `PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, PGSSLMODE, PGSSLCERT, PGSSLKEY, PGSSLROOTCERT, PGAPPNAME, PGCONNECT_TIMEOUT`. If they are not specified defaults used are: host=localhost, dbname=postgres, pguser=$USER, and sslmode=disable.
+The connection parameters to the TimescaleDB instance can be passed to Outflux in several ways. One is through the Postgres Environment Variables. Supported environment variables are: `PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, PGSSLMODE, PGSSLCERT, PGSSLKEY, PGSSLROOTCERT, PGAPPNAME, PGCONNECT_TIMEOUT`. If they are not specified defaults used are: host=localhost, dbname=postgres, pguser=$USER, and sslmode=disable.
 
 The values of the enviroment variables can be **OVERRIDEN** by specifying the '--output-con' flag when executing Outflux. 
 

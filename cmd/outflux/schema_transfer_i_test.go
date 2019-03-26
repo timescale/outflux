@@ -93,7 +93,7 @@ func TestOutputConnOverridesEnvVars(t *testing.T) {
 
 	defer testutils.ClearServersAfterITest(db)
 
-	// Three PG environment variables determening database and password
+	// Three PG environment variables determining database and password
 	os.Setenv("PGDATABASE", "wrong_db")
 	os.Setenv("PGPORT", "5433")
 	os.Setenv("PGPASSWORD", "postgres")

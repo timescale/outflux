@@ -51,7 +51,7 @@ func (dp *defaultDataProducer) Fetch(args *producerArgs) error {
 
 	totalRows := 0
 	for {
-		// Before requesting the next chunk, check if an error occured in some other goroutine
+		// Before requesting the next chunk, check if an error occurred in some other goroutine
 		if err = checkError(args.errChannel); err != nil {
 			return nil
 		}

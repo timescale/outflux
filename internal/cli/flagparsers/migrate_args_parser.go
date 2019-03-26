@@ -17,13 +17,13 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*cli.ConnectionC
 		return nil, nil, err
 	}
 
-	strategyAsStr, err := flags.GetString(SchemaStrategyFlag)
+	strategyAsStr, _ := flags.GetString(SchemaStrategyFlag)
 	var strategy schemaconfig.SchemaStrategy
 	if strategy, err = schemaconfig.ParseStrategyString(strategyAsStr); err != nil {
 		return nil, nil, err
 	}
 
-	commitStrategyAsStr, err := flags.GetString(CommitStrategyFlag)
+	commitStrategyAsStr, _ := flags.GetString(CommitStrategyFlag)
 	var commitStrategy ingestionConfig.CommitStrategy
 	if commitStrategy, err = ingestionConfig.ParseStrategyString(commitStrategyAsStr); err != nil {
 		return nil, nil, err

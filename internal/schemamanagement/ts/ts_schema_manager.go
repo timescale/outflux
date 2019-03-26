@@ -66,7 +66,7 @@ func (sm *TSSchemaManager) validateOnly(dataSet *idrf.DataSet, tableExists bool)
 		return fmt.Errorf("validate only strategy selected, but '%s' doesn't exist", dataSet.DataSetName)
 	}
 
-	log.Printf("Table %s exists. Proceding only with validation", dataSet.DataSetName)
+	log.Printf("Table %s exists. Proceeding only with validation", dataSet.DataSetName)
 	if err := sm.validateColumns(dataSet); err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (sm *TSSchemaManager) validateColumns(dataSet *idrf.DataSet) error {
 	schema, table := dataSet.SchemaAndTable()
 	existingTableColumns, err := sm.explorer.fetchTableColumns(sm.dbConn, schema, table)
 	if err != nil {
-		return fmt.Errorf("could not retreive column information for table %s", dataSet.DataSetName)
+		return fmt.Errorf("could not retriеve column information for table %s", dataSet.DataSetName)
 	}
 
 	err = isExistingTableCompatible(existingTableColumns, dataSet.Columns, dataSet.TimeColumn)

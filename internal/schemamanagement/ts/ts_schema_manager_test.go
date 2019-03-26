@@ -38,7 +38,7 @@ func TestPrepareDataSetFails(t *testing.T) {
 		explorer schemaExplorer
 		creator  tableCreator
 		desc     string
-		strat    schemaconfig.SchemaStrategy
+		strategy schemaconfig.SchemaStrategy
 		dropper  tableDropper
 	}{
 		{
@@ -49,14 +49,14 @@ func TestPrepareDataSetFails(t *testing.T) {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.DropAndCreate},
 			explorer: onTableExists(false),
 			creator:  errorOnCreateTable(),
-			strat:    schemaconfig.DropAndCreate,
+			strategy: schemaconfig.DropAndCreate,
 			desc:     "drop strategy, table doesn't exist, error on create",
 		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.DropAndCreate},
 			explorer: onTableExists(true),
 			creator:  okOnTableCreate(),
 			dropper:  errorOnDrop(),
-			strat:    schemaconfig.DropAndCreate,
+			strategy: schemaconfig.DropAndCreate,
 			desc:     "drop strategy, table exists, error on drop",
 		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.CreateIfMissing},

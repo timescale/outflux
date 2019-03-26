@@ -21,14 +21,14 @@ func TestDiscoverDataSets(t *testing.T) {
 	sm := &SchemaManager{
 		measureExplorer: mock,
 	}
-	res, err := sm.DiscoverDataSets()
+	_, err := sm.DiscoverDataSets()
 	if err == nil {
 		t.Errorf("expected error, none received")
 	}
 
 	mock.measureErr = nil
 	mock.measures = []string{"a"}
-	res, err = sm.DiscoverDataSets()
+	res, err := sm.DiscoverDataSets()
 	if err != nil {
 		t.Errorf("unexpected err: %v", err)
 	}

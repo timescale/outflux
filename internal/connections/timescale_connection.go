@@ -19,7 +19,7 @@ func NewTSConnectionService() TSConnectionService {
 }
 
 func (s *defaultTSConnectionService) NewConnection(connectionString string) (*pgx.Conn, error) {
-	log.Printf("Overriding PG envrionment variables for connection with: %s", connectionString)
+	log.Printf("Overriding PG environment variables for connection with: %s", connectionString)
 	envConnConfig, err := pgx.ParseEnvLibpq()
 	if err != nil {
 		return nil, err

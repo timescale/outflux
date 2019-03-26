@@ -11,7 +11,7 @@ import (
 	"github.com/timescale/outflux/internal/schemamanagement"
 )
 
-// Extractor is an implementaiton of the extraction.Extractor interface for
+// Extractor is an implementation of the extraction.Extractor interface for
 // pulling data out of InfluxDB
 type Extractor struct {
 	Config            *config.ExtractionConfig
@@ -20,12 +20,12 @@ type Extractor struct {
 	DataProducer      DataProducer
 }
 
-// ID of the extractor, usefull for logging and error reporting
+// ID of the extractor, useful for logging and error reporting
 func (e *Extractor) ID() string {
 	return e.Config.ExtractorID
 }
 
-// Prepare discoveres the data set schema for the measure in the config
+// Prepare discovers the data set schema for the measure in the config
 func (e *Extractor) Prepare() (*idrf.Bundle, error) {
 	measureName := e.Config.MeasureExtraction.Measure
 	log.Printf("Discovering influx schema for measurement: %s", measureName)
