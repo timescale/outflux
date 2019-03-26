@@ -1,4 +1,6 @@
 # Outflux - Migrate InfluxDB to TimescaleDB
+[![Go Report Card](https://goreportcard.com/badge/github.com/timescale/outflux)](https://goreportcard.com/report/github.com/timescale/outflux)
+
 
 This repo contains code for exporting complete InfluxDB databases or selected measurements to TimescaleDB.
 
