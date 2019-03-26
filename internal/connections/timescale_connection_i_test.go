@@ -38,9 +38,9 @@ func TestNewConnection(t *testing.T) {
 		expectErr bool
 	}{
 		{desc: "nothing is set, env is empty", expectErr: true},
-		{desc: "enviroment is set, no overrides", env: goodEnv},
-		{desc: "enviroment is set, overrides make is bad", env: goodEnv, conn: "dbname=wrong_db", expectErr: true},
-		{desc: "enviroment is set badly, overrides make it good", env: badEnv, conn: "dbname=" + db},
+		{desc: "environment is set, no overrides", env: goodEnv},
+		{desc: "environment is set, overrides make is bad", env: goodEnv, conn: "dbname=wrong_db", expectErr: true},
+		{desc: "environment is set badly, overrides make it good", env: badEnv, conn: "dbname=" + db},
 	}
 
 	for _, tc := range testCases {

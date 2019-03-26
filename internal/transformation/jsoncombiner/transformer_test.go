@@ -9,9 +9,9 @@ import (
 )
 
 func TestCacheItems(t *testing.T) {
-	cols := []*idrf.Column{&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamp},
-		&idrf.Column{Name: "col2", DataType: idrf.IDRFBoolean},
-		&idrf.Column{Name: "col3", DataType: idrf.IDRFBoolean},
+	cols := []*idrf.Column{{Name: "col1", DataType: idrf.IDRFTimestamp},
+		{Name: "col2", DataType: idrf.IDRFBoolean},
+		{Name: "col3", DataType: idrf.IDRFBoolean},
 	}
 	columnsToCombine := map[string]bool{"col2": true, "col3": true}
 	inputDs, _ := idrf.NewDataSet("ds", cols, cols[0].Name)
@@ -38,12 +38,12 @@ func TestCacheItems(t *testing.T) {
 }
 func TestPrepare(t *testing.T) {
 	colsBefore := []*idrf.Column{
-		&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamp},
-		&idrf.Column{Name: "col2", DataType: idrf.IDRFBoolean},
-		&idrf.Column{Name: "col3", DataType: idrf.IDRFInteger32},
+		{Name: "col1", DataType: idrf.IDRFTimestamp},
+		{Name: "col2", DataType: idrf.IDRFBoolean},
+		{Name: "col3", DataType: idrf.IDRFInteger32},
 	}
 	originDs, _ := idrf.NewDataSet("ds", colsBefore, colsBefore[0].Name)
-	cols := []*idrf.Column{colsBefore[0], &idrf.Column{Name: "col2", DataType: idrf.IDRFJson}}
+	cols := []*idrf.Column{colsBefore[0], {Name: "col2", DataType: idrf.IDRFJson}}
 	testCases := []struct {
 		desc      string
 		ds        *idrf.DataSet
@@ -178,7 +178,7 @@ func TestTransformerStart(t *testing.T) {
 	if err := trans.Start(errChan); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	for _ = range outData {
+	for range outData {
 		t.Errorf("no output should have been produced")
 	}
 
@@ -187,11 +187,11 @@ func TestTransformerStart(t *testing.T) {
 	inData = make(chan idrf.Row, 1)
 	errChan = make(chan error)
 	inCols := []*idrf.Column{
-		&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamp},
-		&idrf.Column{Name: "col2", DataType: idrf.IDRFBoolean},
+		{Name: "col1", DataType: idrf.IDRFTimestamp},
+		{Name: "col2", DataType: idrf.IDRFBoolean},
 	}
 	outCols := []*idrf.Column{
-		inCols[0], &idrf.Column{Name: "col2", DataType: idrf.IDRFJson},
+		inCols[0], {Name: "col2", DataType: idrf.IDRFJson},
 	}
 	inDataDef, _ := idrf.NewDataSet("ds", inCols, inCols[0].Name)
 	outDataDef, _ := idrf.NewDataSet("ds", outCols, outCols[0].Name)
@@ -232,8 +232,8 @@ func TestRowTransform(t *testing.T) {
 
 	// good conversion
 	cols := []*idrf.Column{
-		&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamp},
-		&idrf.Column{Name: "res", DataType: idrf.IDRFJson},
+		{Name: "col1", DataType: idrf.IDRFTimestamp},
+		{Name: "res", DataType: idrf.IDRFJson},
 	}
 
 	outDs, _ := idrf.NewDataSet("ds", cols, "col1")

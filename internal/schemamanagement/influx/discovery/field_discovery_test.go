@@ -28,24 +28,24 @@ func TestDiscoverMeasurementFields(t *testing.T) {
 			expectedError: true,
 			showQueryResult: &influxqueries.InfluxShowResult{
 				Values: [][]string{
-					[]string{"1", "2", "3"},
+					{"1", "2", "3"},
 				},
 			},
 		}, {
 			expectedError: false,
 			showQueryResult: &influxqueries.InfluxShowResult{ // proper result
 				Values: [][]string{
-					[]string{"1", "boolean"},
-					[]string{"2", "float"},
-					[]string{"3", "integer"},
-					[]string{"4", "string"},
+					{"1", "boolean"},
+					{"2", "float"},
+					{"3", "integer"},
+					{"4", "string"},
 				},
 			},
 			expectedTags: []*idrf.Column{
-				&idrf.Column{Name: "1", DataType: idrf.IDRFBoolean},
-				&idrf.Column{Name: "2", DataType: idrf.IDRFDouble},
-				&idrf.Column{Name: "3", DataType: idrf.IDRFInteger64},
-				&idrf.Column{Name: "4", DataType: idrf.IDRFString},
+				{Name: "1", DataType: idrf.IDRFBoolean},
+				{Name: "2", DataType: idrf.IDRFDouble},
+				{Name: "3", DataType: idrf.IDRFInteger64},
+				{Name: "4", DataType: idrf.IDRFString},
 			},
 		},
 	}

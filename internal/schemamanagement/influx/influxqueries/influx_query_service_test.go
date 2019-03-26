@@ -10,29 +10,29 @@ import (
 
 func TestExecuteQuery(t *testing.T) {
 	cases := []MockClient{
-		MockClient{ //Expect client to throw error before getting result
+		{ //Expect client to throw error before getting result
 			t:             t,
 			expectedQuery: "query 1",
 			expectedError: fmt.Errorf("error"),
-		}, MockClient{ //Expect client to return a result with an error
+		}, { //Expect client to return a result with an error
 			t:             t,
 			expectedQuery: "query 2",
 			expectedResponse: &influx.Response{
 				Err: "some error in response",
 			},
 			errorInResponse: "some error in response",
-		}, MockClient{ // Expect client to return empty result, no error
+		}, { // Expect client to return empty result, no error
 			t:             t,
 			expectedQuery: "query 3",
 			expectedResponse: &influx.Response{
 				Results: []influx.Result{},
 			},
-		}, MockClient{ // Expect client to return a non-empty result, no error
+		}, { // Expect client to return a non-empty result, no error
 			t:             t,
 			expectedQuery: "query 4",
 			expectedResponse: &influx.Response{
 				Results: []influx.Result{
-					influx.Result{
+					{
 						Series: []influxModels.Row{},
 					},
 				},
@@ -83,41 +83,41 @@ func TestExecuteShowQueryWithFailure(t *testing.T) {
 	}
 
 	badCases := []MockClient{
-		MockClient{ //Expect error to be thrown when executing the query, no response
+		{ //Expect error to be thrown when executing the query, no response
 			t:             t,
 			expectedQuery: "ShOw something0",
 			expectedError: fmt.Errorf("error"),
-		}, MockClient{ //Expect client to return a single result with no errors
+		}, { //Expect client to return a single result with no errors
 			t:             t,
 			expectedQuery: "SHOW something1",
 			expectedResponse: &influx.Response{
 				Results: []influx.Result{
-					influx.Result{},
-					influx.Result{},
+					{},
+					{},
 				},
 			},
-		}, MockClient{ // Expect client to return a single result with multiple series
+		}, { // Expect client to return a single result with multiple series
 			t:             t,
 			expectedQuery: "SHOW something2",
 			expectedResponse: &influx.Response{
 				Results: []influx.Result{
-					influx.Result{
+					{
 						Series: []influxModels.Row{
-							influxModels.Row{},
-							influxModels.Row{},
+							{},
+							{},
 						},
 					},
 				},
 			},
-		}, MockClient{ // Expect client to return a result with values not castable to string
+		}, { // Expect client to return a result with values not castable to string
 			t:             t,
 			expectedQuery: "SHOW something3",
 			expectedResponse: &influx.Response{
 				Results: []influx.Result{
-					influx.Result{
+					{
 						Series: []influxModels.Row{
-							influxModels.Row{
-								Values: [][]interface{}{[]interface{}{1}},
+							{
+								Values: [][]interface{}{{1}},
 							},
 						},
 					},
@@ -146,10 +146,10 @@ func TestExecuteShowQueryWithOkResults(t *testing.T) {
 		expectedQuery: goodQuery,
 		expectedResponse: &influx.Response{
 			Results: []influx.Result{
-				influx.Result{
+				{
 					Series: []influxModels.Row{
-						influxModels.Row{
-							Values: [][]interface{}{[]interface{}{goodValue}},
+						{
+							Values: [][]interface{}{{goodValue}},
 						},
 					},
 				},
@@ -179,7 +179,7 @@ func TestExecuteShowQueryWithOkResults(t *testing.T) {
 		expectedQuery: goodQuery,
 		expectedResponse: &influx.Response{
 			Results: []influx.Result{
-				influx.Result{
+				{
 					Series: []influxModels.Row{},
 				},
 			},

@@ -7,12 +7,12 @@ import (
 )
 
 func TestDataSetToSQLTableDef(t *testing.T) {
-	singleCol := []*idrf.Column{&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamp}}
-	twoCols := []*idrf.Column{singleCol[0], &idrf.Column{Name: "col2", DataType: idrf.IDRFDouble}}
+	singleCol := []*idrf.Column{{Name: "col1", DataType: idrf.IDRFTimestamp}}
+	twoCols := []*idrf.Column{singleCol[0], {Name: "col2", DataType: idrf.IDRFDouble}}
 	threeCols := []*idrf.Column{
-		&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamptz},
-		&idrf.Column{Name: "col2", DataType: idrf.IDRFString},
-		&idrf.Column{Name: "col 3", DataType: idrf.IDRFInteger64}}
+		{Name: "col1", DataType: idrf.IDRFTimestamptz},
+		{Name: "col2", DataType: idrf.IDRFString},
+		{Name: "col 3", DataType: idrf.IDRFInteger64}}
 	ds1, _ := idrf.NewDataSet("ds1", singleCol, singleCol[0].Name)
 	ds2, _ := idrf.NewDataSet("ds2", twoCols, twoCols[0].Name)
 	ds3, _ := idrf.NewDataSet("ds 3", threeCols, threeCols[0].Name)

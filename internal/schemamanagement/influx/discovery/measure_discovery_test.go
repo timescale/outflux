@@ -41,16 +41,14 @@ func TestFetchAvailableMeasurements(t *testing.T) {
 		}, { // result has more than one column
 			expectedError: true,
 			showQueryResult: &influxqueries.InfluxShowResult{
-				Values: [][]string{
-					[]string{"1", "2"},
-				},
+				Values: [][]string{{"1", "2"}},
 			},
 			showQueryError: fmt.Errorf("too many columns"),
 		}, {
 			expectedError: false,
 			showQueryResult: &influxqueries.InfluxShowResult{ // result is proper
 				Values: [][]string{
-					[]string{"1"},
+					{"1"},
 				},
 			},
 			expectedMeasures: []string{"1"},

@@ -32,18 +32,18 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 			expectedError: true,
 			showQueryResult: &influxqueries.InfluxShowResult{
 				Values: [][]string{
-					[]string{"1", "2"},
+					{"1", "2"},
 				},
 			},
 		}, {
 			expectedError: false,
 			showQueryResult: &influxqueries.InfluxShowResult{ // result is proper
 				Values: [][]string{
-					[]string{"1"},
+					{"1"},
 				},
 			},
 			expectedTags: []*idrf.Column{
-				&idrf.Column{
+				{
 					Name:     "1",
 					DataType: idrf.IDRFString,
 				},

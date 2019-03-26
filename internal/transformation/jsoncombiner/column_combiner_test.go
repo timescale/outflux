@@ -8,10 +8,10 @@ import (
 
 func TestCombiner(t *testing.T) {
 	cols := []*idrf.Column{
-		&idrf.Column{Name: "col1", DataType: idrf.IDRFBoolean},
-		&idrf.Column{Name: "col2", DataType: idrf.IDRFDouble},
-		&idrf.Column{Name: "col3", DataType: idrf.IDRFInteger32},
-		&idrf.Column{Name: "col4", DataType: idrf.IDRFSingle},
+		{Name: "col1", DataType: idrf.IDRFBoolean},
+		{Name: "col2", DataType: idrf.IDRFDouble},
+		{Name: "col3", DataType: idrf.IDRFInteger32},
+		{Name: "col4", DataType: idrf.IDRFSingle},
 	}
 
 	resCol := &idrf.Column{Name: "res", DataType: idrf.IDRFJson}

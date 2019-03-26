@@ -137,7 +137,7 @@ func TestPrepareOk(t *testing.T) {
 		explorer schemaExplorer
 		creator  tableCreator
 		desc     string
-		strat    schemaconfig.SchemaStrategy
+		strategy schemaconfig.SchemaStrategy
 		dropper  tableDropper
 	}{
 		{

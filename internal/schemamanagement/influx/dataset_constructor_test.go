@@ -17,8 +17,8 @@ func TestNewDataSetConstructor(t *testing.T) {
 
 func TestConstruct(t *testing.T) {
 	genError := fmt.Errorf("generic error")
-	tags := []*idrf.Column{&idrf.Column{Name: "tag", DataType: idrf.IDRFString}}
-	fields := []*idrf.Column{&idrf.Column{Name: "field", DataType: idrf.IDRFBoolean}}
+	tags := []*idrf.Column{{Name: "tag", DataType: idrf.IDRFString}}
+	fields := []*idrf.Column{{Name: "field", DataType: idrf.IDRFBoolean}}
 	testCases := []struct {
 		desc        string
 		tags        []*idrf.Column

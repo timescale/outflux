@@ -30,8 +30,8 @@ func TestPrepare(t *testing.T) {
 
 	timeCol := "time"
 	columns := []*idrf.Column{
-		&idrf.Column{Name: timeCol, DataType: idrf.IDRFTimestamp},
-		&idrf.Column{Name: "col", DataType: idrf.IDRFBoolean},
+		{Name: timeCol, DataType: idrf.IDRFTimestamp},
+		{Name: "col", DataType: idrf.IDRFBoolean},
 	}
 	for _, testCase := range testCases {
 		ds, _ := idrf.NewDataSet(testCase.inName, columns, timeCol)
@@ -68,8 +68,8 @@ func TestStart(t *testing.T) {
 
 	timeCol := "time"
 	columns := []*idrf.Column{
-		&idrf.Column{Name: timeCol, DataType: idrf.IDRFTimestamp},
-		&idrf.Column{Name: "col", DataType: idrf.IDRFBoolean},
+		{Name: timeCol, DataType: idrf.IDRFTimestamp},
+		{Name: "col", DataType: idrf.IDRFBoolean},
 	}
 	ds, _ := idrf.NewDataSet("ds", columns, timeCol)
 	inBundle := &idrf.Bundle{

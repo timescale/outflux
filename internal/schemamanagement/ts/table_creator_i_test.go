@@ -29,8 +29,8 @@ func TestCreateTable(t *testing.T) {
 	dataSet := &idrf.DataSet{
 		DataSetName: "name",
 		Columns: []*idrf.Column{
-			&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamptz},
-			&idrf.Column{Name: "col2", DataType: idrf.IDRFInteger64},
+			{Name: "col1", DataType: idrf.IDRFTimestamptz},
+			{Name: "col2", DataType: idrf.IDRFInteger64},
 		},
 		TimeColumn: "col1",
 	}
@@ -40,8 +40,8 @@ func TestCreateTable(t *testing.T) {
 	}
 
 	tableColumns := fmt.Sprintf(`SELECT column_name, data_type
-	FROM information_schema.columns
-	WHERE table_schema = %s AND table_name = %s`, "'public'", "'name'")
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s`, "'public'", "'name'")
 	rows, err := dbConn.Query(tableColumns)
 	if err != nil {
 		t.Error(err)
@@ -94,8 +94,8 @@ func TestCreateTableWithSchema(t *testing.T) {
 	dataSet := &idrf.DataSet{
 		DataSetName: targetSchema + ".name",
 		Columns: []*idrf.Column{
-			&idrf.Column{Name: "col1", DataType: idrf.IDRFTimestamptz},
-			&idrf.Column{Name: "col2", DataType: idrf.IDRFInteger64},
+			{Name: "col1", DataType: idrf.IDRFTimestamptz},
+			{Name: "col2", DataType: idrf.IDRFInteger64},
 		},
 		TimeColumn: "col1",
 	}
@@ -105,8 +105,8 @@ func TestCreateTableWithSchema(t *testing.T) {
 	}
 
 	tableColumns := fmt.Sprintf(`SELECT column_name, data_type
-	FROM information_schema.columns
-	WHERE table_schema = %s AND table_name = %s`, "'"+targetSchema+"'", "'name'")
+        FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s`, "'"+targetSchema+"'", "'name'")
 	rows, err := dbConn.Query(tableColumns)
 	if err != nil {
 		t.Fatal(err)
