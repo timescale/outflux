@@ -18,7 +18,11 @@ import (
 
 func initMigrateCmd() *cobra.Command {
 	migrateCmd := &cobra.Command{
-		Use:  "migrate database [measure1 measure2 ...]",
+		Use:   "migrate database [measure1 measure2 ...]",
+		Short: "Migrate the schema and data from InfluxDB measurements into TimescaleDB hypertables",
+		Long: "Migrate the data from InfluxDB measurements into TimescaleDB. Schema discovery detects the required" +
+			" table definition to be present in the target TimescaleDB and prepares it according to the selected startegy." +
+			" Then the data is transferred, each measurement in a separate hyper-table",
 		Args: cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initAppContext()
