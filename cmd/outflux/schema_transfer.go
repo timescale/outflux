@@ -15,8 +15,10 @@ import (
 
 func initSchemaTransferCmd() *cobra.Command {
 	schemaTransferCmd := &cobra.Command{
-		Use:  "schema-transfer database [measure1 measure2 ...]",
-		Args: cobra.MinimumNArgs(1),
+		Use:   "schema-transfer database [measure1 measure2 ...]",
+		Short: "Discover the schema of measurements and validate or prepare a TimescaleDB hyper-table with the discovered schema",
+		Long:  "Discover the schema of measurements and validate or prepare a TimescaleDB hyper-table with the discovered schema",
+		Args:  cobra.MinimumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			app := initAppContext()
 			connArgs, migArgs, err := flagparsers.FlagsToSchemaTransferConfig(cmd.Flags(), args)
