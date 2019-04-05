@@ -6,6 +6,8 @@ This repo contains code for exporting complete InfluxDB databases or selected me
 
 ## Installation
 
+### Installing from source
+
 Outflux is a Go project managed by `dep` (The go dependency management tool). To download the proper dependency versions, `dep` must be installed on your system. Instructions can be found on the [official documentation page](https://golang.github.io/dep/docs/installation.html). 
 
 ```bash
@@ -21,13 +23,22 @@ $ cd cmd/outlux
 $ go install 
 ```
 
+### Binary releases
+We upload prepackaged binaries available for GNU/Linux, Windows and MacOS in the [releases](https://github.com/timescale/outflux/releases).
+Just download the binary, extract the compressed tarball and run the executable
+
 ## How to use
+
+Outflux supports InfluxDB versions 1.0 and upwards. We explicitly test for compatibility for versions 1.0, 1.5, 1.6, 1.7 and the `latest` tag of the InfluxDB docker container.
 
 ### Before using it
 
-It is recommended that you have some InfluxDB database with some data. For testing purposes you can check out the [TSBS Data Loader Tool](https://github.com/timescale/tsbs) part of the Time Series Benchmark Suite. It can generate large ammounts of data for and load them in influx. Data can be generated with [one command](https://github.com/timescale/tsbs#data-generation), just specify the format as 'influx', and them load it in with [another command](https://github.com/timescale/tsbs#data-generation).
+It is recommended that you have some InfluxDB database with some data. 
+For testing purposes you can check out the [TSBS Data Loader Tool](https://github.com/timescale/tsbs) part of the Time Series Benchmark Suite. 
+It can generate large ammounts of data for and load them in influx. 
+Data can be generated with [one command](https://github.com/timescale/tsbs#data-generation), just specify the format as 'influx', and then load it in with [another command](https://github.com/timescale/tsbs#data-generation).
 
-### !Connection params!
+### ⚠️ Connection params ⚠️
 Detailed information about how to pass the connection parameters to Outflux can be found at the bottom of this document at the [Connection](section)
 
 
