@@ -3,19 +3,90 @@ language: go
 services:
   - docker
 
-go:
-  - 1.10.x
-  - 1.11.x
-
-before_install:
-  # Setup dependency management tool
-  - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
-  - chmod +x $GOPATH/bin/dep
-  - dep ensure
-  # Start influxdb timescale in docker
-  - docker run -d --name influx1 -p 8086:8086 influxdb
-  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
-
-script:
-  # Unit tests
-  - go test -race -tags=integration -v ./...
+jobs:
+  include:
+    - stage: test
+      name: "Influx compat 1.0"
+      go:
+        - 1.11.x
+      before_install:
+        # Start timescale in docker
+        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+        # Run specific version of influx
+        - docker run -d --name influx1_0 -p 8086:8086 influxdb:1.0
+      install:
+        # Setup dependency management tool
+        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
+        - chmod +x $GOPATH/bin/dep
+        - dep ensure
+      script:
+        # Unit and integration tests
+        - go test -race -tags=integration -v ./...
+    - stage: test
+      name: "Influx compat 1.5"
+      go:
+        - 1.11.x
+      before_install:
+        # Start timescale in docker
+        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+        # Run specific version of influx
+        - docker run -d --name influx1_5 -p 8086:8086 influxdb:1.5
+      install:
+        # Setup dependency management tool
+        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
+        - chmod +x $GOPATH/bin/dep
+        - dep ensure
+      script:
+        # Unit and integration tests
+        - go test -race -tags=integration -v ./...
+    - stage: test
+      name: "Influx compat 1.6"
+      go:
+        - 1.11.x
+      before_install:
+        # Start timescale in docker
+        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+        # Run specific version of influx
+        - docker run -d --name influx1_6 -p 8086:8086 influxdb:1.6
+      install:
+        # Setup dependency management tool
+        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
+        - chmod +x $GOPATH/bin/dep
+        - dep ensure
+      script:
+        # Unit and integration tests
+        - go test -race -tags=integration -v ./...
+    - stage: test
+      name: "Influx compat 1.7"
+      go:
+        - 1.11.x
+      before_install:
+        # Start timescale in docker
+        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+        # Run specific version of influx
+        - docker run -d --name influx1_7 -p 8086:8086 influxdb:1.7
+      install:
+        # Setup dependency management tool
+        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
+        - chmod +x $GOPATH/bin/dep
+        - dep ensure
+      script:
+        # Unit and integration tests
+        - go test -race -tags=integration -v ./...
+    - stage: test
+      name: "Influx compat latest"
+      go:
+        - 1.11.x
+      before_install:
+        # Start timescale in docker
+        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+        # Run specific version of influx
+        - docker run -d --name influx_l -p 8086:8086 influxdb
+      install:
+         # Setup dependency management tool
+        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
+        - chmod +x $GOPATH/bin/dep
+        - dep ensure 
+      script:
+        # Unit and integration tests
+        - go test -race -tags=integration -v ./...
