@@ -14,62 +14,66 @@ import (
 
 func TestSchemaTransfer(t *testing.T) {
 	db := "test_schema_transfer"
-	measure := "test"
 	field := "field1"
 	value := 1
 	tags := make(map[string]string)
 	fieldValues := make(map[string]interface{})
 	fieldValues[field] = value
+	measures := []string{"test", "test 1", "test-2"}
 
 	if err := testutils.PrepareServersForITest(db); err != nil {
 		t.Fatalf("could not prepare servers: %v", err)
 	}
-	err := testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
-	if err != nil {
-		t.Fatalf("could not create measure: %v", err)
-	}
-	defer testutils.ClearServersAfterITest(db)
 
-	connConf := &cli.ConnectionConfig{
-		InputHost:          testutils.InfluxHost,
-		InputDb:            db,
-		InputMeasures:      []string{measure},
-		OutputDbConnString: fmt.Sprintf(testutils.TsConnStringTemplate, db),
-	}
-	config := &cli.MigrationConfig{
-		ChunkSize:            1,
-		OutputSchemaStrategy: schemaconfig.DropAndCreate,
-		SchemaOnly:           true,
-	}
+	defer testutils.ClearServersAfterITest(db)
 	appContext := initAppContext()
-	err = transferSchema(appContext, connConf, config)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	dbConn, err := testutils.OpenTSConn(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer dbConn.Close()
-	rows, err := dbConn.Query("SELECT count(*) FROM " + measure)
-	if err != nil {
-		t.Fatal(err)
-	}
+	for _, measure := range measures {
+		err := testutils.CreateInfluxMeasure(db, measure, []*map[string]string{&tags}, []*map[string]interface{}{&fieldValues})
+		if err != nil {
+			t.Fatalf("could not create measure: %v", err)
+		}
 
-	defer rows.Close()
-	var count int
-	if !rows.Next() {
-		t.Fatal("couldn't check state of TS DB")
-	}
+		connConf := &cli.ConnectionConfig{
+			InputHost:          testutils.InfluxHost,
+			InputDb:            db,
+			InputMeasures:      []string{measure},
+			OutputDbConnString: fmt.Sprintf(testutils.TsConnStringTemplate, db),
+		}
+		config := &cli.MigrationConfig{
+			ChunkSize:            1,
+			OutputSchemaStrategy: schemaconfig.DropAndCreate,
+			SchemaOnly:           true,
+		}
 
-	err = rows.Scan(&count)
-	if err != nil {
-		t.Fatal("couldn't check state of TS DB")
-	}
+		err = transferSchema(appContext, connConf, config)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if count != 0 {
-		t.Errorf("expected no rows in the output database, %d found", count)
+		rows, err := dbConn.Query(fmt.Sprintf(`SELECT count(*) FROM  "%s"`, measure))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var count int
+		if !rows.Next() {
+			t.Fatal("couldn't check state of TS DB")
+		}
+
+		err = rows.Scan(&count)
+		if err != nil {
+			t.Fatal("couldn't check state of TS DB")
+		}
+
+		if count != 0 {
+			t.Errorf("expected no rows in the output database, %d found", count)
+		}
+		rows.Close()
 	}
 }
 

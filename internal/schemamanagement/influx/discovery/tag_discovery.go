@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	showTagsQueryTemplate = "SHOW TAG KEYS FROM %s"
+	showTagsQueryTemplate = "SHOW TAG KEYS FROM \"%s\""
 )
 
 // TagExplorer Defines an API for discovering the tags of an InfluxDB measurement
