@@ -79,3 +79,58 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 		}
 	}
 }
+
+func TestFetchMeasurementsShowTagsQuery(t *testing.T) {
+	testCases := []struct {
+		expectedQuery string
+		measure       string
+		db            string
+	}{
+		{expectedQuery: `SHOW TAG KEYS FROM "measure"`,
+			measure: "measure",
+			db:      "db",
+		}, {
+			expectedQuery: `SHOW TAG KEYS FROM "measure 1"`,
+			measure:       "measure 1",
+			db:            "db",
+		}, {
+			expectedQuery: `SHOW TAG KEYS FROM "measure-2"`,
+			measure:       "measure-2",
+			db:            "db",
+		},
+	}
+	for _, tc := range testCases {
+		mockClient := &influxqueries.MockClient{}
+		queryService := &mockQueryServiceTD{
+			expectedDb: tc.db,
+			expectedQ:  tc.expectedQuery,
+		}
+
+		tagExplorer := defaultTagExplorer{
+			queryService: queryService,
+		}
+
+		_, err := tagExplorer.fetchMeasurementTags(mockClient, tc.db, tc.measure)
+		if err != nil {
+			t.Errorf("unexpected err: %v", err)
+		}
+	}
+}
+
+type mockQueryServiceTD struct {
+	expectedQ  string
+	expectedDb string
+}
+
+func (m *mockQueryServiceTD) ExecuteQuery(client influx.Client, database, command string) ([]influx.Result, error) {
+	return nil, nil
+}
+
+func (m *mockQueryServiceTD) ExecuteShowQuery(influxClient influx.Client, database, query string) (*influxqueries.InfluxShowResult, error) {
+	if m.expectedDb != database || m.expectedQ != query {
+		return nil, fmt.Errorf("expected db '%s' and measure '%s', got '%s' and '%s'", m.expectedDb, m.expectedQ, database, query)
+	}
+	return &influxqueries.InfluxShowResult{
+		Values: [][]string{},
+	}, nil
+}
