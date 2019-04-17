@@ -40,7 +40,6 @@ func TestDiscoverDataSets(t *testing.T) {
 func TestFetchDataSet(t *testing.T) {
 	// Given mock values used in the test cases
 	genericError := fmt.Errorf("generic error")
-	badMeasure := "b"
 	goodMeasure := "a"
 	measures := []string{goodMeasure}
 	dataSet := &idrf.DataSet{DataSetName: goodMeasure}
@@ -54,8 +53,6 @@ func TestFetchDataSet(t *testing.T) {
 		dsErr      error
 		ds         *idrf.DataSet
 	}{
-		{desc: "error discovering measures", expectErr: true, msErr: genericError},
-		{desc: "requested measure is missing", expectErr: true, measures: measures, reqMeasure: badMeasure},
 		{desc: "error constructing data set", expectErr: true, measures: measures, reqMeasure: goodMeasure, dsErr: genericError},
 		{desc: "good data set", measures: measures, reqMeasure: goodMeasure, ds: dataSet},
 	}

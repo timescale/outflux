@@ -86,6 +86,45 @@ func CreateInfluxMeasure(db, measure string, tags []*map[string]string, values [
 	return client.Write(bp)
 }
 
+// CreateInfluxMeasureWithRP creates a measure with the specified name and specified RP. For each point the tags and field values are given
+// as maps
+func CreateInfluxMeasureWithRP(db, rp, measure string, tags []*map[string]string, values []*map[string]interface{}) error {
+	client, err := newInfluxClient()
+	if err != nil {
+		return err
+	}
+
+	bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{Database: db, RetentionPolicy: rp})
+
+	for i, tagSet := range tags {
+		point, _ := influx.NewPoint(
+			measure,
+			*tagSet,
+			*values[i],
+		)
+		bp.AddPoint(point)
+	}
+
+	client.Close()
+	return client.Write(bp)
+}
+
+// CreateInfluxRP creates a retention policy with the specified name and 1 day duration
+// as maps
+func CreateInfluxRP(db, rp string) error {
+	client, err := newInfluxClient()
+	if err != nil {
+		return err
+	}
+
+	queryStr := fmt.Sprintf(`CREATE RETENTION POLICY "%s" ON %s DURATION 1d REPLICATION 1`, rp, db)
+	query := influx.NewQuery(queryStr, db, "")
+
+	_, err = client.Query(query)
+	client.Close()
+	return err
+}
+
 // CreateTimescaleDb creates a new database on the default server and then creates the extension on it
 func CreateTimescaleDb(db string) error {
 	dbConn, err := OpenTSConn(defaultPgDb)

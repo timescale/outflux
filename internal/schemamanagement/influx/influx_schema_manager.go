@@ -39,23 +39,6 @@ func (sm *SchemaManager) DiscoverDataSets() ([]string, error) {
 // FetchDataSet for a given data set identifier (retention.measureName, or just measureName)
 // returns the idrf.DataSet describing it
 func (sm *SchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSet, error) {
-	measurements, err := sm.measureExplorer.FetchAvailableMeasurements(sm.influxClient, sm.database)
-	if err != nil {
-		return nil, fmt.Errorf("could not fetch available measurements from InfluxDB\n%v", err)
-	}
-
-	measureMissing := true
-	for _, returnedMeasure := range measurements {
-		if returnedMeasure == dataSetIdentifier {
-			measureMissing = false
-			break
-		}
-	}
-
-	if measureMissing {
-		return nil, fmt.Errorf("measure '%s' not found in database '%s'", dataSetIdentifier, sm.database)
-	}
-
 	return sm.dataSetConstructor.construct(dataSetIdentifier)
 }
 

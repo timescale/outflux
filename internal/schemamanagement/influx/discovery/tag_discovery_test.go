@@ -86,9 +86,10 @@ func TestFetchMeasurementsShowTagsQuery(t *testing.T) {
 		measure       string
 		db            string
 	}{
-		{expectedQuery: `SHOW TAG KEYS FROM "measure"`,
-			measure: "measure",
-			db:      "db",
+		{
+			expectedQuery: `SHOW TAG KEYS FROM "measure"`,
+			measure:       "measure",
+			db:            "db",
 		}, {
 			expectedQuery: `SHOW TAG KEYS FROM "measure 1"`,
 			measure:       "measure 1",
@@ -96,6 +97,10 @@ func TestFetchMeasurementsShowTagsQuery(t *testing.T) {
 		}, {
 			expectedQuery: `SHOW TAG KEYS FROM "measure-2"`,
 			measure:       "measure-2",
+			db:            "db",
+		}, {
+			expectedQuery: `SHOW TAG KEYS FROM "rp"."measure-2"`,
+			measure:       "rp.measure-2",
 			db:            "db",
 		},
 	}

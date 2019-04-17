@@ -9,24 +9,27 @@ import (
 )
 
 const (
-	selectQueryDoubleBoundTemplate = "SELECT %s\nFROM \"%s\"\nWHERE time >= '%s' AND time <= '%s'"
-	selectQueryLowerBoundTemplate  = "SELECT %s\nFROM \"%s\"\nWHERE time >= '%s'"
-	selectQueryUpperBoundTemplate  = "SELECT %s\nFROM \"%s\"\nWHERE time <= '%s'"
-	selectQueryNoBoundTemplate     = "SELECT %s\nFROM \"%s\""
-	limitSuffixTemplate            = "\nLIMIT %d"
+	selectQueryDoubleBoundTemplate = "SELECT %s FROM %s WHERE time >= '%s' AND time <= '%s'"
+	selectQueryLowerBoundTemplate  = "SELECT %s FROM %s WHERE time >= '%s'"
+	selectQueryUpperBoundTemplate  = "SELECT %s FROM %s WHERE time <= '%s'"
+	selectQueryNoBoundTemplate     = "SELECT %s FROM %s"
+	limitSuffixTemplate            = "LIMIT %d"
+	measurementNameTemplate        = `"%s"`
+	measurementNameWithRPTemplate  = `"%s"."%s"`
 )
 
 func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.Column) string {
 	projection := buildProjection(columns)
+	measurementName := buildMeasurementName(config.Measure)
 	var command string
 	if config.From != "" && config.To != "" {
-		command = fmt.Sprintf(selectQueryDoubleBoundTemplate, projection, config.Measure, config.From, config.To)
+		command = fmt.Sprintf(selectQueryDoubleBoundTemplate, projection, measurementName, config.From, config.To)
 	} else if config.From != "" {
-		command = fmt.Sprintf(selectQueryLowerBoundTemplate, projection, config.Measure, config.From)
+		command = fmt.Sprintf(selectQueryLowerBoundTemplate, projection, measurementName, config.From)
 	} else if config.To != "" {
-		command = fmt.Sprintf(selectQueryUpperBoundTemplate, projection, config.Measure, config.To)
+		command = fmt.Sprintf(selectQueryUpperBoundTemplate, projection, measurementName, config.To)
 	} else {
-		command = fmt.Sprintf(selectQueryNoBoundTemplate, projection, config.Measure)
+		command = fmt.Sprintf(selectQueryNoBoundTemplate, projection, measurementName)
 	}
 
 	if config.Limit == 0 {
@@ -37,10 +40,19 @@ func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.Column
 	return fmt.Sprintf("%s %s", command, limit)
 }
 
+func buildMeasurementName(measurement string) string {
+	if !strings.Contains(measurement, ".") {
+		return fmt.Sprintf(measurementNameTemplate, measurement)
+	}
+
+	parts := strings.SplitN(measurement, ".", 2)
+	return fmt.Sprintf(measurementNameWithRPTemplate, parts[0], parts[1])
+}
+
 func buildProjection(columns []*idrf.Column) string {
 	columnNames := make([]string, len(columns))
 	for i, column := range columns {
-		columnNames[i] = fmt.Sprintf("\"%s\"", column.Name)
+		columnNames[i] = fmt.Sprintf(`"%s"`, column.Name)
 	}
 
 	return strings.Join(columnNames, ", ")

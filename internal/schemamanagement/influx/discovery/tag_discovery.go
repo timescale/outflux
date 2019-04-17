@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"fmt"
+	"strings"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/idrf"
@@ -9,7 +10,8 @@ import (
 )
 
 const (
-	showTagsQueryTemplate = "SHOW TAG KEYS FROM \"%s\""
+	showTagsQueryTemplate       = "SHOW TAG KEYS FROM \"%s\""
+	showTagsQueryWithRPTemplate = "SHOW TAG KEYS FROM \"%s\".\"%s\""
 )
 
 // TagExplorer Defines an API for discovering the tags of an InfluxDB measurement
@@ -40,7 +42,13 @@ func (te *defaultTagExplorer) DiscoverMeasurementTags(influxClient influx.Client
 }
 
 func (te *defaultTagExplorer) fetchMeasurementTags(influxClient influx.Client, database, measure string) ([]string, error) {
-	showTagsQuery := fmt.Sprintf(showTagsQueryTemplate, measure)
+	var showTagsQuery string
+	if strings.Contains(measure, ".") {
+		parts := strings.SplitN(measure, ".", 2)
+		showTagsQuery = fmt.Sprintf(showTagsQueryWithRPTemplate, parts[0], parts[1])
+	} else {
+		showTagsQuery = fmt.Sprintf(showTagsQueryTemplate, measure)
+	}
 	result, err := te.queryService.ExecuteShowQuery(influxClient, database, showTagsQuery)
 
 	if err != nil {
