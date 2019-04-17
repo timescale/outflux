@@ -53,7 +53,9 @@ $ cd $GOPATH/bin/
 $ ./outflux schema-transfer --help
 ```
 
-Usage of the is `outflux schema-transfer database [measure1 measure2 ...] [flags]`. Where database is the name of the InfluxDB database you wish to export. `[measure1 ...] ` are optional and if specified will export only those measurements from the selected database.
+Usage of the is `outflux schema-transfer database [measure1 measure2 ...] [flags]`. Where database is the name of the InfluxDB database you wish to export. `[measure1 ...] ` are optional and if specified will export only those measurements from the selected database. 
+Additionally you can specify the retention policy as `retention_policy.measure` or `"retention-policy"."measure name"` if some of the identifiers contain a space or dash.
+⚠️ *The resulting target table will be named `"retention_policy.measure"` in TimescaleDB*
 
 For example `outflux schema-transfer benchmark cpu mem` will discover the schema for the `cpu` and `mem` measurements from the `benchmark` database.
 
@@ -133,9 +135,10 @@ $ outflux migrate benchmark \
 > --output-conn='dbname=targetdb user=test password=test' \
 ```
 
-* Export only measurement 'cpu' from the 'benchmark' drop the existing 'cpu' table in 'targetdb' if exists, create if not
+* Export only measurement 'cpu' from 'two_week' retention policy in the 'benchmark' database. 
+Drop the existing '"two_week.cpu"' table in 'targetdb' if exists, create if not
 ```bash
-$ outflux migrate benchmark cpu \
+$ outflux migrate benchmark two_week.cpu \
 > --input-user=test \
 > --input-pass=test \
 > --output-con='dbname=targetdb user=test pass=test'\

@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"fmt"
+	"strings"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/idrf"
@@ -9,7 +10,8 @@ import (
 )
 
 const (
-	showFieldsQueryTemplate = "SHOW FIELD KEYS FROM \"%s\""
+	showFieldsQueryTemplate       = "SHOW FIELD KEYS FROM \"%s\""
+	showFieldsQueryWithRPTemplate = "SHOW FIELD KEYS FROM \"%s\".\"%s\""
 )
 
 // FieldExplorer defines an API for discoering InfluxDB fields of a specified measurement
@@ -37,7 +39,13 @@ func (fe *defaultFieldExplorer) DiscoverMeasurementFields(influxClient influx.Cl
 }
 
 func (fe *defaultFieldExplorer) fetchMeasurementFields(influxClient influx.Client, database, measurement string) ([][2]string, error) {
-	showFieldsQuery := fmt.Sprintf(showFieldsQueryTemplate, measurement)
+	var showFieldsQuery string
+	if strings.Contains(measurement, ".") {
+		parts := strings.SplitN(measurement, ".", 2)
+		showFieldsQuery = fmt.Sprintf(showFieldsQueryWithRPTemplate, parts[0], parts[1])
+	} else {
+		showFieldsQuery = fmt.Sprintf(showFieldsQueryTemplate, measurement)
+	}
 	result, err := fe.queryService.ExecuteShowQuery(influxClient, database, showFieldsQuery)
 
 	if err != nil {
