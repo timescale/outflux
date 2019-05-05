@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	dropTableQueryTemplate        = "DROP TABLE %s"
-	dropTableCascadeQueryTemplate = "DROP TABLE %s CASCADE"
+	dropTableQueryTemplate        = "DROP TABLE \"%s\""
+	dropTableCascadeQueryTemplate = "DROP TABLE \"%s\" CASCADE"
 )
 
 type tableDropper interface {
