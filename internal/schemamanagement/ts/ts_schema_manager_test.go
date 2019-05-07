@@ -99,10 +99,18 @@ func TestPrepareDataSetFails(t *testing.T) {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: notPartitionedProperly(existingColumns),
 			desc:     "validate only, compatible, is hypertable, partitioned by another column",
+		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
+			explorer: properMock(existingColumns),
+			creator:  errorOnMetadataUpdate(existingColumns),
+			desc:     "validate only, compatible, is hyper, partitioned properly, error on updating metadata",
 		},
 	}
 
 	for _, testC := range testCases {
+		if testC.desc == "validate only, compatible, is hyper, partitioned properly, error on updating metadata" {
+			fmt.Println()
+		}
 		manager := &TSSchemaManager{
 			explorer: testC.explorer,
 			dropper:  testC.dropper,
@@ -143,10 +151,12 @@ func TestPrepareOk(t *testing.T) {
 		{
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: properMock(existingColumns),
+			creator:  okOnTableCreate(),
 			desc:     "validate only, compatible",
 		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.CreateIfMissing},
 			explorer: properMock(existingColumns),
+			creator:  okOnTableCreate(),
 			desc:     "create if missing, table exists, compatible",
 		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.CreateIfMissing},
@@ -219,8 +229,12 @@ func notPartitionedProperly(cols []*columnDesc) schemaExplorer {
 	return newSchemaExplorerWith(mocker, mocker, mocker, mocker, mocker)
 }
 
+func errorOnMetadataUpdate(cols []*columnDesc) tableCreator {
+	return &mocker{updateMetadataErr: fmt.Errorf("error")}
+}
+
 func properMock(cols []*columnDesc) schemaExplorer {
-	mocker := &mocker{tableExistsR: true, fetcColR: cols, tsExt: true, isHyper: true, isTimePartBy: true}
+	mocker := &mocker{tableExistsR: true, fetcColR: cols, tsExt: true, isHyper: true, isTimePartBy: true, metadataTable: "table"}
 	return newSchemaExplorerWith(mocker, mocker, mocker, mocker, mocker)
 }
 
@@ -232,6 +246,7 @@ func properMockForCreateIfMissing(cols []*columnDesc) schemaExplorer {
 func okOnTableCreate() tableCreator {
 	return &mocker{}
 }
+
 func errorOnCreateTable() tableCreator {
 	return &mocker{tableCreateError: fmt.Errorf("error")}
 }
@@ -241,24 +256,31 @@ func errorOnDrop() tableDropper {
 }
 
 type mocker struct {
-	tableExistsR     bool
-	tableExistsErr   error
-	tableCreateError error
-	dropError        error
-	fetchColError    error
-	fetcColR         []*columnDesc
-	tsExt            bool
-	tsExtErr         error
-	isHypertableErr  error
-	isHyper          bool
-	isTimePartBy     bool
-	isTimePartErr    error
-	createHyperErr   error
-	extErr           error
+	tableExistsR         bool
+	tableExistsErr       error
+	tableCreateError     error
+	dropError            error
+	fetchColError        error
+	fetcColR             []*columnDesc
+	tsExt                bool
+	tsExtErr             error
+	isHypertableErr      error
+	isHyper              bool
+	isTimePartBy         bool
+	isTimePartErr        error
+	createHyperErr       error
+	extErr               error
+	metadataTable        string
+	metadataTableNameErr error
+	updateMetadataErr    error
 }
 
 func (m *mocker) tableExists(db *pgx.Conn, schemaName, tableName string) (bool, error) {
 	return m.tableExistsR, m.tableExistsErr
+}
+
+func (m *mocker) metadataTableName(db *pgx.Conn) (string, error) {
+	return m.metadataTable, m.metadataTableNameErr
 }
 
 func (m *mocker) fetchTableColumns(db *pgx.Conn, schemaName, tableName string) ([]*columnDesc, error) {
@@ -267,6 +289,10 @@ func (m *mocker) fetchTableColumns(db *pgx.Conn, schemaName, tableName string) (
 
 func (m *mocker) CreateTable(dbConn *pgx.Conn, info *idrf.DataSet) error {
 	return m.tableCreateError
+}
+
+func (m *mocker) UpdateMetadata(dbConn *pgx.Conn, metadataTableName string) error {
+	return m.updateMetadataErr
 }
 
 func (m *mocker) CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSet) error {

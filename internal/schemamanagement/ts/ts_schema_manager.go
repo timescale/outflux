@@ -47,18 +47,25 @@ func (sm *TSSchemaManager) PrepareDataSet(dataSet *idrf.DataSet, strategy schema
 		return fmt.Errorf("could not prepare data set '%s'. Could not check if table exists. \n%v", dataSet.DataSetName, err)
 	}
 
+	var preparationError error
 	switch strategy {
 	case schemaconfig.DropAndCreate:
-		return sm.prepareWithDropStrategy(dataSet, strategy, tableExists)
+		preparationError = sm.prepareWithDropStrategy(dataSet, strategy, tableExists)
 	case schemaconfig.DropCascadeAndCreate:
-		return sm.prepareWithDropStrategy(dataSet, strategy, tableExists)
+		preparationError = sm.prepareWithDropStrategy(dataSet, strategy, tableExists)
 	case schemaconfig.CreateIfMissing:
-		return sm.prepareWithCreateIfMissing(dataSet, tableExists)
+		preparationError = sm.prepareWithCreateIfMissing(dataSet, tableExists)
 	case schemaconfig.ValidateOnly:
-		return sm.validateOnly(dataSet, tableExists)
+		preparationError = sm.validateOnly(dataSet, tableExists)
 	default:
 		panic("unexpected type")
 	}
+
+	if preparationError != nil {
+		return preparationError
+	}
+
+	return sm.updateMetadata()
 }
 
 func (sm *TSSchemaManager) validateOnly(dataSet *idrf.DataSet, tableExists bool) error {
@@ -169,4 +176,17 @@ func (sm *TSSchemaManager) validatePartitioning(dataSet *idrf.DataSet) error {
 
 	log.Printf("existing hypertable '%s' is partitioned properly", dataSet.DataSetName)
 	return nil
+}
+
+func (sm *TSSchemaManager) updateMetadata() error {
+	metadataTableName, err := sm.explorer.metadataTableName(sm.dbConn)
+	if err != nil {
+		return fmt.Errorf("could not check existance of installation metadata table. %v", err)
+	}
+	if metadataTableName == "" {
+		log.Println("Installation metadata table doesn't exist in existing TimescaleDB version")
+		return nil
+	}
+
+	return sm.creator.UpdateMetadata(sm.dbConn, metadataTableName)
 }
