@@ -24,12 +24,16 @@ const (
 										 WHERE h.schema_name = $1 AND h.table_name = $2
 										 ORDER BY d.id ASC
 										 LIMIT 1;`
-	timescaleCreatedQuery     = "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb')"
-	isNullableSignifyingValue = "YES"
+	timescaleCreatedQuery         = "SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb')"
+	isNullableSignifyingValue     = "YES"
+	installationMetadataTableName = "installation_metadata"
+	telemetryMetadataTableName    = "telemetry_metadata"
+	timescaleCatalogSchema        = "_timescaledb_catalog"
 )
 
 type tableFinder interface {
 	tableExists(db *pgx.Conn, schemaName, tableName string) (bool, error)
+	metadataTableName(db *pgx.Conn) (string, error)
 }
 
 type columnFinder interface {
@@ -113,6 +117,23 @@ func (f *defaultTableFinder) tableExists(db *pgx.Conn, schemaName, tableName str
 	}
 
 	return exists, nil
+}
+
+func (f *defaultTableFinder) metadataTableName(db *pgx.Conn) (string, error) {
+	oldTableExists, err := f.tableExists(db, timescaleCatalogSchema, installationMetadataTableName)
+	if err != nil {
+		return "", err
+	} else if oldTableExists {
+		return installationMetadataTableName, err
+	}
+	newTableExists, err := f.tableExists(db, timescaleCatalogSchema, telemetryMetadataTableName)
+	if err != nil {
+		return "", err
+	} else if newTableExists {
+		return telemetryMetadataTableName, nil
+	}
+
+	return "", nil
 }
 
 func (f *defaultColumnFinder) fetchTableColumns(db *pgx.Conn, schemaName, tableName string) ([]*columnDesc, error) {
