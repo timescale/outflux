@@ -21,7 +21,9 @@ jobs:
         - dep ensure
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -v ./...
+        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
     - stage: test
       name: "Influx compat 1.5"
       go:
@@ -38,7 +40,9 @@ jobs:
         - dep ensure
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -v ./...
+        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
     - stage: test
       name: "Influx compat 1.6"
       go:
@@ -55,7 +59,9 @@ jobs:
         - dep ensure
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -v ./...
+        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
     - stage: test
       name: "Influx compat 1.7"
       go:
@@ -72,7 +78,9 @@ jobs:
         - dep ensure
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -v ./...
+        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
     - stage: test
       name: "Influx compat latest"
       go:
@@ -89,4 +97,6 @@ jobs:
         - dep ensure 
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -v ./...
+        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
