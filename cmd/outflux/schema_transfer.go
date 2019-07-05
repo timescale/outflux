@@ -75,10 +75,11 @@ func transferSchema(app *appContext, connArgs *cli.ConnectionConfig, args *cli.M
 
 func discoverMeasures(app *appContext, connArgs *cli.ConnectionConfig) ([]string, error) {
 	client, err := app.ics.NewConnection(&connections.InfluxConnectionParams{
-		Server:   connArgs.InputHost,
-		Username: connArgs.InputUser,
-		Password: connArgs.InputPass,
-		Database: connArgs.InputDb,
+		Server:      connArgs.InputHost,
+		Username:    connArgs.InputUser,
+		Password:    connArgs.InputPass,
+		Database:    connArgs.InputDb,
+		UnsafeHTTPS: connArgs.InputUnsafeHTTPS,
 	})
 	if err != nil {
 		return nil, err

@@ -15,10 +15,11 @@ const (
 
 // InfluxConnectionParams represents the parameters required to open a InfluxDB connection
 type InfluxConnectionParams struct {
-	Server   string
-	Username string
-	Password string
-	Database string
+	Server      string
+	Username    string
+	Password    string
+	Database    string
+	UnsafeHTTPS bool
 }
 
 // InfluxConnectionService creates new clients connected to some Influx server
@@ -51,7 +52,12 @@ func (s *defaultInfluxConnectionService) NewConnection(params *InfluxConnectionP
 	} else {
 		pass = os.Getenv(PassEnvVar)
 	}
-	clientConfig := influx.HTTPConfig{Addr: params.Server, Username: user, Password: pass}
+	clientConfig := influx.HTTPConfig{
+		Addr:               params.Server,
+		Username:           user,
+		Password:           pass,
+		InsecureSkipVerify: params.UnsafeHTTPS,
+	}
 
 	newClient, err := influx.NewHTTPClient(clientConfig)
 	return newClient, err

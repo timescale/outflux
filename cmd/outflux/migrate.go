@@ -174,9 +174,10 @@ func openConnections(app *appContext, connArgs *cli.ConnectionConfig) (influx.Cl
 
 func influxConnParams(connParams *cli.ConnectionConfig) *connections.InfluxConnectionParams {
 	return &connections.InfluxConnectionParams{
-		Server:   connParams.InputHost,
-		Database: connParams.InputDb,
-		Username: connParams.InputUser,
-		Password: connParams.InputPass,
+		Server:      connParams.InputHost,
+		Database:    connParams.InputDb,
+		Username:    connParams.InputUser,
+		Password:    connParams.InputPass,
+		UnsafeHTTPS: connParams.InputUnsafeHTTPS,
 	}
 }

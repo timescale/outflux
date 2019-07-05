@@ -18,6 +18,10 @@ func AddConnectionFlagsToCmd(cmd *cobra.Command) {
 		InputPassFlag,
 		DefaultInputPass,
 		"Password to use when connecting to the input database. If set overrides $INFLUX_PASSWORD")
+	cmd.PersistentFlags().Bool(
+		InputUnsafeHTTPSFlag,
+		DefaultInputUnsafeHTTPS,
+		"Should 'InsecureSkipVerify' be passed to the input connection")
 	cmd.PersistentFlags().String(
 		OutputConnFlag,
 		DefaultOutputConn,
