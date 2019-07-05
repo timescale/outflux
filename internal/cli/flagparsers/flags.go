@@ -10,6 +10,7 @@ const (
 	InputServerFlag             = "input-server"
 	InputUserFlag               = "input-user"
 	InputPassFlag               = "input-pass"
+	InputUnsafeHTTPSFlag        = "input-unsafe-https"
 	OutputConnFlag              = "output-conn"
 	SchemaStrategyFlag          = "schema-strategy"
 	CommitStrategyFlag          = "commit-strategy"
@@ -31,6 +32,7 @@ const (
 	DefaultInputServer             = "http://localhost:8086"
 	DefaultInputUser               = ""
 	DefaultInputPass               = ""
+	DefaultInputUnsafeHTTPS        = false
 	DefaultOutputConn              = "sslmode=disable"
 	DefaultOutputSchema            = ""
 	DefaultSchemaStrategy          = schemaconfig.CreateIfMissing

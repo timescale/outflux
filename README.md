@@ -61,19 +61,20 @@ For example `outflux schema-transfer benchmark cpu mem` will discover the schema
 
 Available flags for schema-transfer are:
 
-| flag             | type    | default               | description |
-|------------------|---------|-----------------------|-------------|
-| input-server     | string  | http://localhost:8086 | Location of the input database, http(s)://location:port. |
-| input-pass       | string  |                       | Password to use when connecting to the input database |
-| input-user       | string  |                       | Username to use when connecting to the input database |
-| output-conn      | string  | sslmode=disable       | Connection string to use to connect to the output database|
-| output-schema    | string  |                       | The schema of the output database that the data will be inserted into |
-| schema-strategy  | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
-| tags-as-json     | bool    | false                 | If this flag is set to true, then the Tags of the influx measures being exported will be combined into a single JSONb column in Timescale |
-| tags-column      | string  | tags                  | When `tags-as-json` is set, this column specifies the name of the JSON column for the tags |
-| fields-as-json   | bool    | false                 | If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale |
-| fields-column    | string  | fields                | When `fields-as-json` is set, this column specifies the name of the JSON column for the fields |
-| quiet            | bool    | false                 | If specified will suppress any log to STDOUT |
+| flag               | type    | default               | description |
+|--------------------|---------|-----------------------|-------------|
+| input-server       | string  | http://localhost:8086 | Location of the input database, http(s)://location:port. |
+| input-pass         | string  |                       | Password to use when connecting to the input database |
+| input-user         | string  |                       | Username to use when connecting to the input database |
+| input-unsafe-https | bool    | false                 | Should 'InsecureSkipVerify' be passed to the input connection |
+| output-conn        | string  | sslmode=disable       | Connection string to use to connect to the output database|
+| output-schema      | string  |                       | The schema of the output database that the data will be inserted into |
+| schema-strategy    | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
+| tags-as-json       | bool    | false                 | If this flag is set to true, then the Tags of the influx measures being exported will be combined into a single JSONb column in Timescale |
+| tags-column        | string  | tags                  | When `tags-as-json` is set, this column specifies the name of the JSON column for the tags |
+| fields-as-json     | bool    | false                 | If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale |
+| fields-column      | string  | fields                | When `fields-as-json` is set, this column specifies the name of the JSON column for the fields |
+| quiet              | bool    | false                 | If specified will suppress any log to STDOUT |
 
 ### Migrate
 
@@ -95,6 +96,7 @@ Available flags are:
 | input-server               | string  | http://localhost:8086 | Location of the input database, http(s)://location:port. |
 | input-pass                 | string  |                       | Password to use when connecting to the input database |
 | input-user                 | string  |                       | Username to use when connecting to the input database |
+| input-unsafe-https         | bool    | false                 | Should 'InsecureSkipVerify' be passed to the input connection |
 | limit                      | uint64  | 0                     | If specified will limit the export points to its value. 0 = NO LIMIT |
 | from                       | string  |                       | If specified will export data with a timestamp >= of its value. Accepted format: RFC3339 |
 | to                         | string  |                       | If specified will export data with a timestamp <= of its value. Accepted format: RFC3339 |
@@ -173,3 +175,5 @@ The connection parameters to the InfluxDB instance can be passed also through fl
 These are the same environment variables that the InfluxDB CLI uses. 
 
 If they are not set, or if you wish to override them, you can do so with the `--input-user` and `--input-pass`. 
+Also you can specify to Outflux to skip HTTPS verification when communicating with the InfluxDB server by setting the 
+`--input-unsafe-https` flag to `true`. 

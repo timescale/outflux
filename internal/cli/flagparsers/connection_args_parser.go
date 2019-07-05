@@ -16,15 +16,16 @@ func FlagsToConnectionConfig(flags *pflag.FlagSet, args []string) (*cli.Connecti
 	inputUser, _ := flags.GetString(InputUserFlag)
 	inputPass, _ := flags.GetString(InputPassFlag)
 	inputHost, _ := flags.GetString(InputServerFlag)
+	inputUnsafe, _ := flags.GetBool(InputUnsafeHTTPSFlag)
 	outputConnString, _ := flags.GetString(OutputConnFlag)
 	schema, _ := flags.GetString(OutputSchemaFlag)
-
 	return &cli.ConnectionConfig{
 		InputDb:            args[0],
 		InputMeasures:      args[1:],
 		InputHost:          inputHost,
 		InputUser:          inputUser,
 		InputPass:          inputPass,
+		InputUnsafeHTTPS:   inputUnsafe,
 		OutputDbConnString: outputConnString,
 		OutputSchema:       schema,
 	}, nil
