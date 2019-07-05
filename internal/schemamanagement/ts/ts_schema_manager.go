@@ -65,7 +65,8 @@ func (sm *TSSchemaManager) PrepareDataSet(dataSet *idrf.DataSet, strategy schema
 		return preparationError
 	}
 
-	return sm.updateMetadata()
+	sm.updateMetadata()
+	return nil
 }
 
 func (sm *TSSchemaManager) validateOnly(dataSet *idrf.DataSet, tableExists bool) error {
@@ -178,15 +179,22 @@ func (sm *TSSchemaManager) validatePartitioning(dataSet *idrf.DataSet) error {
 	return nil
 }
 
-func (sm *TSSchemaManager) updateMetadata() error {
+func (sm *TSSchemaManager) updateMetadata() {
 	metadataTableName, err := sm.explorer.metadataTableName(sm.dbConn)
 	if err != nil {
-		return fmt.Errorf("could not check existance of installation metadata table. %v", err)
-	}
-	if metadataTableName == "" {
-		log.Println("Installation metadata table doesn't exist in existing TimescaleDB version")
-		return nil
+		log.Println("could not check for the existence of the timescale metadata table")
+		log.Println("reason: " + err.Error())
+		return
 	}
 
-	return sm.creator.UpdateMetadata(sm.dbConn, metadataTableName)
+	if metadataTableName == "" {
+		log.Println("Installation metadata table doesn't exist in this TimescaleDB version")
+		return
+	}
+
+	err = sm.creator.UpdateMetadata(sm.dbConn, metadataTableName)
+	if err != nil {
+		log.Println("could not update TimescaleDB metadata")
+		log.Println("reason:" + err.Error())
+	}
 }

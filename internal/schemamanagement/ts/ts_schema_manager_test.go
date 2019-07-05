@@ -99,11 +99,6 @@ func TestPrepareDataSetFails(t *testing.T) {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
 			explorer: notPartitionedProperly(existingColumns),
 			desc:     "validate only, compatible, is hypertable, partitioned by another column",
-		}, {
-			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
-			explorer: properMock(existingColumns),
-			creator:  errorOnMetadataUpdate(existingColumns),
-			desc:     "validate only, compatible, is hyper, partitioned properly, error on updating metadata",
 		},
 	}
 
@@ -163,6 +158,12 @@ func TestPrepareOk(t *testing.T) {
 			explorer: properMockForCreateIfMissing(existingColumns),
 			creator:  okOnTableCreate(),
 			desc:     "validate not called if need to create",
+		},
+		{
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.ValidateOnly},
+			explorer: properMock(existingColumns),
+			creator:  errorOnMetadataUpdate(existingColumns),
+			desc:     "error on updating metadata",
 		},
 	}
 
