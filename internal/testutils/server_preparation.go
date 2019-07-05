@@ -147,12 +147,33 @@ func CreateTimescaleSchema(db, schema string) error {
 	return err
 }
 
-// OpenTSConn opens a connection to a TimescaleDB
+// OpenTSConn opens a connection to a TimescaleDB with the default (super admin) user/pass
 func OpenTSConn(db string) (*pgx.Conn, error) {
 	connString := fmt.Sprintf(TsConnStringTemplate, db)
 	connConfig, _ := pgx.ParseConnectionString(connString)
-	log.Printf("opening ts conn to '%s' with: %s", db, connString)
+	log.Printf("opening ts conn to '%s' with:\n%s", db, connString)
 	return pgx.Connect(connConfig)
+}
+
+// OpenTsConnWithUser opens a connection to a TimescaleDB with the supplied user and pass
+func OpenTsConnWithUser(db, user, pass string) (*pgx.Conn, error) {
+	connString := fmt.Sprintf("user=%s password=%s port=5433 dbname=%s sslmode=disable", user, pass, db)
+	connConfig, _ := pgx.ParseConnectionString(connString)
+	log.Printf("opening ts conn to '%s' with:\n%s", db, connString)
+	return pgx.Connect(connConfig)
+}
+
+// CreateNonAdminInTS creates a user with login and password
+func CreateNonAdminInTS(user, pass string) error {
+	connString := fmt.Sprintf(TsConnStringTemplate, defaultPgDb)
+	connConfig, _ := pgx.ParseConnectionString(connString)
+	log.Printf("opening ts conn to '%s' with: %s", defaultPgDb, connString)
+	db, err := pgx.Connect(connConfig)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(fmt.Sprintf("create user %s with login password '%s'", user, pass))
+	return err
 }
 
 // DeleteTimescaleDb drops a databass on the default server

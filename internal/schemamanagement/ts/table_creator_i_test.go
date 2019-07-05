@@ -204,3 +204,40 @@ func TestUpdateMetadata(t *testing.T) {
 		t.Fatalf("update time not proper, expected to be > than %v", timeBeforeUpdate)
 	}
 }
+
+func TestMetadataTableNameNoPermissions(t *testing.T) {
+	db := "test_update_metadata_2"
+	if err := testutils.DeleteTimescaleDb(db); err != nil {
+		t.Fatalf("could not prepare db: %v", err)
+	}
+	if err := testutils.CreateTimescaleDb(db); err != nil {
+		t.Fatalf("could not prepare db: %v", err)
+	}
+	defer testutils.DeleteTimescaleDb(db)
+	if err := testutils.CreateNonAdminInTS("dumb", "dumber"); err != nil {
+		t.Fatalf("could not prepare db: %v", err)
+	}
+
+	explorer := &defaultTableFinder{}
+	dbConnAdmin, err := testutils.OpenTSConn(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dbConnAdmin.Exec(createTimescaleExtensionQuery)
+	dbConnAdmin.Close()
+
+	dbConn, err := testutils.OpenTsConnWithUser(db, "dumb", "dumber")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dbConn.Close()
+	metadataTable, err := explorer.metadataTableName(dbConn)
+	if err != nil {
+		t.Fatal("unexpected err: ", err)
+	}
+
+	creator := defaultTableCreator{}
+	if creator.UpdateMetadata(dbConn, metadataTable) == nil {
+		t.Fatal("unexpected lack of error")
+	}
+}
