@@ -177,3 +177,7 @@ These are the same environment variables that the InfluxDB CLI uses.
 If they are not set, or if you wish to override them, you can do so with the `--input-user` and `--input-pass`. 
 Also you can specify to Outflux to skip HTTPS verification when communicating with the InfluxDB server by setting the 
 `--input-unsafe-https` flag to `true`. 
+
+## Known limitations
+
+Outflux doesn't support fields that have the same name but different data types across shards in InfluxDB (https://github.com/timescale/outflux/issues/59)
