@@ -9,5 +9,4 @@ type ConnectionConfig struct {
 	InputPass          string
 	InputUnsafeHTTPS   bool
 	OutputDbConnString string
-	OutputSchema       string
 }

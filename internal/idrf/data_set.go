@@ -5,7 +5,6 @@ package idrf
 
 import (
 	"fmt"
-	"strings"
 )
 
 // DataSet represents DDL description of a single data set (table, measurement) in IDRF
@@ -29,16 +28,6 @@ func (set *DataSet) ColumnNamed(columnName string) *Column {
 	}
 
 	return nil
-}
-
-// SchemaAndTable splits the data set identifier, "schema.table" -> "schema", "table"
-func (set *DataSet) SchemaAndTable() (string, string) {
-	dataSetNameParts := strings.SplitN(set.DataSetName, ".", 2)
-	if len(dataSetNameParts) > 1 {
-		return dataSetNameParts[0], dataSetNameParts[1]
-	}
-
-	return "", dataSetNameParts[0]
 }
 
 // NewDataSet creates a new instance of DataSet with checked arguments
@@ -77,12 +66,4 @@ func NewDataSet(dataSetName string, columns []*Column, timeColumn string) (*Data
 	}
 
 	return &DataSet{dataSetName, columns, timeColumn}, nil
-}
-
-// GenerateDataSetIdentifier combines a schema name and table name in a single data set identifier
-func GenerateDataSetIdentifier(schema, table string) string {
-	if schema != "" {
-		return schema + "." + table
-	}
-	return table
 }

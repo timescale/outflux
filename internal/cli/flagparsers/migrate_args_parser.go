@@ -78,8 +78,12 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*cli.ConnectionC
 	if fieldsAsJSON && fieldsColumn == "" {
 		return nil, nil, fmt.Errorf("When the '%s' flag is set, the '%s' must also have a value", FieldsAsJSONFlag, FieldsColumnFlag)
 	}
+	outputSchema, _ := flags.GetString(OutputSchemaFlag)
+	rp, _ := flags.GetString(RetentionPolicyFlag)
 	migrateArgs := &cli.MigrationConfig{
+		RetentionPolicy:                      rp,
 		OutputSchemaStrategy:                 strategy,
+		OutputSchema:                         outputSchema,
 		From:                                 from,
 		To:                                   to,
 		Limit:                                limit,

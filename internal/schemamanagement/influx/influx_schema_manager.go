@@ -1,10 +1,6 @@
 package influx
 
 import (
-	"fmt"
-
-	"github.com/timescale/outflux/internal/schemamanagement/influx/influxqueries"
-
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/schemamanagement/influx/discovery"
@@ -17,23 +13,29 @@ type SchemaManager struct {
 	influxClient       influx.Client
 	dataSetConstructor dataSetConstructor
 	database           string
+	rp                 string
 }
 
 // NewSchemaManager creates new schema manager that can discover influx data sets
-func NewSchemaManager(client influx.Client, db string, iqs influxqueries.InfluxQueryService) *SchemaManager {
-	measureExplorer := discovery.NewMeasureExplorer(iqs)
-	dsConstructor := newDataSetConstructor(db, client, iqs)
+func NewSchemaManager(
+	client influx.Client,
+	db, rp string,
+	me discovery.MeasureExplorer,
+	tagExplorer discovery.TagExplorer,
+	fieldExplorer discovery.FieldExplorer) *SchemaManager {
+	dsConstructor := newDataSetConstructor(db, rp, client, tagExplorer, fieldExplorer)
 	return &SchemaManager{
-		measureExplorer:    measureExplorer,
+		measureExplorer:    me,
 		influxClient:       client,
 		dataSetConstructor: dsConstructor,
 		database:           db,
+		rp:                 rp,
 	}
 }
 
 // DiscoverDataSets returns a list of the available measurements in the connected
 func (sm *SchemaManager) DiscoverDataSets() ([]string, error) {
-	return sm.measureExplorer.FetchAvailableMeasurements(sm.influxClient, sm.database)
+	return sm.measureExplorer.FetchAvailableMeasurements(sm.influxClient, sm.database, sm.rp)
 }
 
 // FetchDataSet for a given data set identifier (retention.measureName, or just measureName)
@@ -44,5 +46,5 @@ func (sm *SchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSet, 
 
 // PrepareDataSet NOT IMPLEMENTED
 func (sm *SchemaManager) PrepareDataSet(dataSet *idrf.DataSet, strategy schemaconfig.SchemaStrategy) error {
-	panic(fmt.Errorf("not implemented"))
+	panic("not implemented")
 }

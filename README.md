@@ -54,8 +54,7 @@ $ ./outflux schema-transfer --help
 ```
 
 Usage of the is `outflux schema-transfer database [measure1 measure2 ...] [flags]`. Where database is the name of the InfluxDB database you wish to export. `[measure1 ...] ` are optional and if specified will export only those measurements from the selected database. 
-Additionally you can specify the retention policy as `retention_policy.measure` or `"retention-policy"."measure name"` if some of the identifiers contain a space or dash.
-⚠️ *The resulting target table will be named `"retention_policy.measure"` in TimescaleDB*
+Additionally you can specify the retention policy with the `retention-policy` flag.
 
 For example `outflux schema-transfer benchmark cpu mem` will discover the schema for the `cpu` and `mem` measurements from the `benchmark` database.
 
@@ -67,6 +66,7 @@ Available flags for schema-transfer are:
 | input-pass         | string  |                       | Password to use when connecting to the input database |
 | input-user         | string  |                       | Username to use when connecting to the input database |
 | input-unsafe-https | bool    | false                 | Should 'InsecureSkipVerify' be passed to the input connection |
+| retention-policy   | string  | autogen               | The retention policy to select the tags and fields from |
 | output-conn        | string  | sslmode=disable       | Connection string to use to connect to the output database|
 | output-schema      | string  |                       | The schema of the output database that the data will be inserted into |
 | schema-strategy    | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
@@ -85,7 +85,9 @@ $ cd $GOPATH/bin/
 $ ./outflux migrate --help
 ```
 
-Usage of the command is `outflux migrate database [measure1 measure2 ...] [flags]`. Where database is the name of the `database` you wish to export. `[measure1 measure2 ...]` are optional and if specified will export only those measurements from the selected database.
+Usage of the command is `outflux migrate database [measure1 measure2 ...] [flags]`. Where database is the name of the `database` you wish to export. `[measure1 measure2 ...]` are optional and if specified will export only those measurements from the selected database. 
+
+The retention policy can be specified with the `retention-policy` flag. By default the 'autogen' retention policy is used.
 
 For example `outflux migrate benchmark cpu mem` will export the `cpu` and `mem` measurements from the `benchmark` database. On the other hand `outflux migrate benchmark` will export all measurements in the `benchmark` database.
 
@@ -97,6 +99,7 @@ Available flags are:
 | input-pass                 | string  |                       | Password to use when connecting to the input database |
 | input-user                 | string  |                       | Username to use when connecting to the input database |
 | input-unsafe-https         | bool    | false                 | Should 'InsecureSkipVerify' be passed to the input connection |
+| retention-policy           | string  | autogen               | The retention policy to select the data from |
 | limit                      | uint64  | 0                     | If specified will limit the export points to its value. 0 = NO LIMIT |
 | from                       | string  |                       | If specified will export data with a timestamp >= of its value. Accepted format: RFC3339 |
 | to                         | string  |                       | If specified will export data with a timestamp <= of its value. Accepted format: RFC3339 |

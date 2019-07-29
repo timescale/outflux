@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -18,16 +19,18 @@ type testCase struct {
 	showQueryError   error
 	expectedMeasures []string
 	expectedTags     []*idrf.Column
+	fieldsErr        error
 }
 
 func TestNewMeasureExplorer(t *testing.T) {
-	NewMeasureExplorer(nil)
+	NewMeasureExplorer(nil, nil)
 }
+
 func TestFetchAvailableMeasurements(t *testing.T) {
 	var mockClient influx.Client
 	mockClient = &influxqueries.MockClient{}
 	database := "database"
-
+	rp := "autogen"
 	cases := []testCase{
 		{
 			expectedError:  true,
@@ -52,15 +55,26 @@ func TestFetchAvailableMeasurements(t *testing.T) {
 				},
 			},
 			expectedMeasures: []string{"1"},
+		}, {
+			expectedError: false, // no fields discovered for measure in given rp, measure is not returned
+			showQueryResult: &influxqueries.InfluxShowResult{
+				Values: [][]string{
+					{"1"},
+				},
+			},
+			fieldsErr:        errors.New("generic error"),
+			expectedMeasures: []string{},
 		},
 	}
 
 	for _, testC := range cases {
+		mock := mock(testC)
 		measureExplorer := defaultMeasureExplorer{
-			queryService: mock(testC),
+			queryService:  mock,
+			fieldExplorer: mock,
 		}
 
-		result, err := measureExplorer.FetchAvailableMeasurements(mockClient, database)
+		result, err := measureExplorer.FetchAvailableMeasurements(mockClient, database, rp)
 		if err != nil && !testC.expectedError {
 			t.Errorf("no error expected, got: %v", err)
 		} else if err == nil && testC.expectedError {
@@ -84,21 +98,26 @@ func TestFetchAvailableMeasurements(t *testing.T) {
 	}
 }
 
-type mockQueryService struct {
-	sqRes *influxqueries.InfluxShowResult
-	sqErr error
+type mockAll struct {
+	sqRes     *influxqueries.InfluxShowResult
+	sqErr     error
+	fieldsErr error
 }
 
-func (m *mockQueryService) ExecuteQuery(client influx.Client, database, command string) ([]influx.Result, error) {
+func (m *mockAll) ExecuteQuery(client influx.Client, database, command string) ([]influx.Result, error) {
 	panic("should not come here")
 }
 
-func (m *mockQueryService) ExecuteShowQuery(influxClient influx.Client, database, query string) (*influxqueries.InfluxShowResult, error) {
+func (m *mockAll) ExecuteShowQuery(influxClient influx.Client, database, query string) (*influxqueries.InfluxShowResult, error) {
 	return m.sqRes, m.sqErr
 }
 
-func mock(tc testCase) influxqueries.InfluxQueryService {
-	return &mockQueryService{
-		sqRes: tc.showQueryResult, sqErr: tc.showQueryError,
+func (m *mockAll) DiscoverMeasurementFields(c influx.Client, db, rp, ms string) ([]*idrf.Column, error) {
+	return nil, m.fieldsErr
+}
+
+func mock(tc testCase) *mockAll {
+	return &mockAll{
+		sqRes: tc.showQueryResult, sqErr: tc.showQueryError, fieldsErr: tc.fieldsErr,
 	}
 }

@@ -38,7 +38,6 @@ func (i *TSIngestor) Start(errChan chan error) error {
 	dataSet := i.cachedBundle.DataDef
 	colNames := extractColumnNames(dataSet.Columns)
 
-	schema, table := dataSet.SchemaAndTable()
 	ingestArgs := &ingestDataArgs{
 		ingestorID:              i.Config.IngestorID,
 		errChan:                 errChan,
@@ -47,8 +46,8 @@ func (i *TSIngestor) Start(errChan chan error) error {
 		batchSize:               i.Config.BatchSize,
 		dbConn:                  i.DbConn,
 		colNames:                colNames,
-		tableName:               table,
-		schemaName:              schema,
+		tableName:               dataSet.DataSetName,
+		schemaName:              i.Config.Schema,
 		commitStrategy:          i.Config.CommitStrategy,
 	}
 

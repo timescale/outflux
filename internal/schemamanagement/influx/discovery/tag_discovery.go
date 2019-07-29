@@ -2,7 +2,6 @@ package discovery
 
 import (
 	"fmt"
-	"strings"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/idrf"
@@ -10,13 +9,12 @@ import (
 )
 
 const (
-	showTagsQueryTemplate       = "SHOW TAG KEYS FROM \"%s\""
-	showTagsQueryWithRPTemplate = "SHOW TAG KEYS FROM \"%s\".\"%s\""
+	showTagsQueryTemplate = `SHOW TAG KEYS FROM "%s"."%s"`
 )
 
 // TagExplorer Defines an API for discovering the tags of an InfluxDB measurement
 type TagExplorer interface {
-	DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.Column, error)
+	DiscoverMeasurementTags(influxClient influx.Client, database, rp, measure string) ([]*idrf.Column, error)
 }
 
 type defaultTagExplorer struct {
@@ -31,8 +29,8 @@ func NewTagExplorer(queryService influxqueries.InfluxQueryService) TagExplorer {
 }
 
 // DiscoverMeasurementTags retrieves the tags for a given measurement and returns an IDRF representation for them.
-func (te *defaultTagExplorer) DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.Column, error) {
-	tags, err := te.fetchMeasurementTags(influxClient, database, measure)
+func (te *defaultTagExplorer) DiscoverMeasurementTags(influxClient influx.Client, database, rp, measure string) ([]*idrf.Column, error) {
+	tags, err := te.fetchMeasurementTags(influxClient, database, rp, measure)
 
 	if err != nil {
 		return nil, fmt.Errorf("error fetching tags for measurement '%s'\n%v", measure, err)
@@ -41,14 +39,8 @@ func (te *defaultTagExplorer) DiscoverMeasurementTags(influxClient influx.Client
 	return convertTags(tags)
 }
 
-func (te *defaultTagExplorer) fetchMeasurementTags(influxClient influx.Client, database, measure string) ([]string, error) {
-	var showTagsQuery string
-	if strings.Contains(measure, ".") {
-		parts := strings.SplitN(measure, ".", 2)
-		showTagsQuery = fmt.Sprintf(showTagsQueryWithRPTemplate, parts[0], parts[1])
-	} else {
-		showTagsQuery = fmt.Sprintf(showTagsQueryTemplate, measure)
-	}
+func (te *defaultTagExplorer) fetchMeasurementTags(influxClient influx.Client, database, rp, measure string) ([]string, error) {
+	showTagsQuery := fmt.Sprintf(showTagsQueryTemplate, rp, measure)
 	result, err := te.queryService.ExecuteShowQuery(influxClient, database, showTagsQuery)
 
 	if err != nil {

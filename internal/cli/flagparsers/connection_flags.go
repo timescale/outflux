@@ -26,8 +26,4 @@ func AddConnectionFlagsToCmd(cmd *cobra.Command) {
 		OutputConnFlag,
 		DefaultOutputConn,
 		"Connection string to use to connect to the output database, overrides values in the PG environment variables")
-	cmd.PersistentFlags().String(
-		OutputSchemaFlag,
-		DefaultOutputSchema,
-		"The schema of the output database that the data will be inserted into")
 }

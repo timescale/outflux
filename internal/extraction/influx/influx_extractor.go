@@ -59,10 +59,11 @@ func (e *Extractor) Start(errChan chan error) error {
 	intChunkSize := int(measureConf.ChunkSize)
 
 	query := &influx.Query{
-		Command:   buildSelectCommand(measureConf, dataDef.Columns),
-		Database:  measureConf.Database,
-		Chunked:   true,
-		ChunkSize: intChunkSize,
+		Command:         buildSelectCommand(measureConf, dataDef.Columns),
+		Database:        measureConf.Database,
+		RetentionPolicy: measureConf.RetentionPolicy,
+		Chunked:         true,
+		ChunkSize:       intChunkSize,
 	}
 
 	log.Printf("%s: Extracting data from database '%s'\n", id, query.Database)

@@ -11,13 +11,16 @@ import (
 )
 
 type appContext struct {
-	ics                  connections.InfluxConnectionService
-	tscs                 connections.TSConnectionService
-	pipeService          cli.PipeService
-	influxQueryService   influxqueries.InfluxQueryService
-	extractorService     extraction.ExtractorService
-	schemaManagerService schemamanagement.SchemaManagerService
-	transformerService   cli.TransformerService
+	ics                   connections.InfluxConnectionService
+	tscs                  connections.TSConnectionService
+	pipeService           cli.PipeService
+	influxQueryService    influxqueries.InfluxQueryService
+	influxTagExplorer     discovery.TagExplorer
+	influxFieldExplorer   discovery.FieldExplorer
+	influxMeasureExplorer discovery.MeasureExplorer
+	extractorService      extraction.ExtractorService
+	schemaManagerService  schemamanagement.SchemaManagerService
+	transformerService    cli.TransformerService
 }
 
 func initAppContext() *appContext {
@@ -25,19 +28,24 @@ func initAppContext() *appContext {
 	ics := connections.NewInfluxConnectionService()
 	ingestorService := ingestion.NewIngestorService()
 	influxQueryService := influxqueries.NewInfluxQueryService()
-	schemaManagerService := schemamanagement.NewSchemaManagerService(influxQueryService)
-	extractorService := extraction.NewExtractorService(schemaManagerService)
 	influxTagExplorer := discovery.NewTagExplorer(influxQueryService)
 	influxFieldExplorer := discovery.NewFieldExplorer(influxQueryService)
+	influxMeasureExplorer := discovery.NewMeasureExplorer(influxQueryService, influxFieldExplorer)
+	schemaManagerService := schemamanagement.NewSchemaManagerService(influxMeasureExplorer, influxTagExplorer, influxFieldExplorer)
+	extractorService := extraction.NewExtractorService(schemaManagerService)
+
 	transformerService := cli.NewTransformerService(influxTagExplorer, influxFieldExplorer)
 	pipeService := cli.NewPipeService(ingestorService, extractorService, transformerService)
 	return &appContext{
-		ics:                  ics,
-		tscs:                 tscs,
-		pipeService:          pipeService,
-		influxQueryService:   influxQueryService,
-		extractorService:     extractorService,
-		schemaManagerService: schemaManagerService,
-		transformerService:   transformerService,
+		ics:                   ics,
+		tscs:                  tscs,
+		pipeService:           pipeService,
+		influxQueryService:    influxQueryService,
+		extractorService:      extractorService,
+		schemaManagerService:  schemaManagerService,
+		transformerService:    transformerService,
+		influxTagExplorer:     influxTagExplorer,
+		influxFieldExplorer:   influxFieldExplorer,
+		influxMeasureExplorer: influxMeasureExplorer,
 	}
 }

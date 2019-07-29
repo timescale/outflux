@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/timescale/outflux/internal/cli"
+
 	ingestionConfig "github.com/timescale/outflux/internal/ingestion/config"
 	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 
@@ -243,7 +244,7 @@ func TestMigrateRenameOutputSchema(t *testing.T) {
 
 	// run
 	connConf, config := defaultConfig(db, measure)
-	connConf.OutputSchema = targetSchema
+	config.OutputSchema = targetSchema
 	config.TagsAsJSON = true
 	config.TagsCol = "tags"
 	appContext := initAppContext()
@@ -316,8 +317,9 @@ func TestMigrateRetentionPolicy(t *testing.T) {
 	}
 
 	// run
-	connConf, config := defaultConfig(db, rp+"."+measure)
-	connConf.OutputSchema = targetSchema
+	connConf, config := defaultConfig(db, measure)
+	config.OutputSchema = targetSchema
+	config.RetentionPolicy = rp
 	config.TagsAsJSON = true
 	config.TagsCol = "tags"
 	appContext := initAppContext()

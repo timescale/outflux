@@ -13,17 +13,6 @@ import (
 	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
 
-func TestDiscoverMeasuresErrorNewConnection(t *testing.T) {
-	app := &appContext{
-		ics: &mockService{inflConnErr: fmt.Errorf("error")},
-	}
-	connArgs := &cli.ConnectionConfig{}
-	res, err := discoverMeasures(app, connArgs)
-	if res != nil || err == nil {
-		t.Errorf("expected error, none received")
-	}
-}
-
 func TestDiscoverMeasures(t *testing.T) {
 	mockClient := &tdmc{}
 	mockSchemaMngr := &tdmsm{}
@@ -32,14 +21,13 @@ func TestDiscoverMeasures(t *testing.T) {
 		ics:                  mockAll,
 		schemaManagerService: mockAll,
 	}
-	connArgs := &cli.ConnectionConfig{}
-	_, err := discoverMeasures(app, connArgs)
+	_, err := discoverMeasures(app, mockClient, "db", "autogen")
 	if err != nil {
 		t.Errorf("unexpected error:%v", err)
 	}
 
-	if !mockClient.closed || !mockSchemaMngr.discoverCalled {
-		t.Errorf("expected closed: true, discover: true\ngot closed:%v, discover:%v", mockClient.closed, mockSchemaMngr.discoverCalled)
+	if mockClient.closed || !mockSchemaMngr.discoverCalled {
+		t.Errorf("expected closed: false, discover: true\ngot closed:%v, discover:%v", mockClient.closed, mockSchemaMngr.discoverCalled)
 	}
 }
 

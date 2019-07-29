@@ -2,6 +2,7 @@ package connections
 
 import (
 	"log"
+	"strings"
 
 	"github.com/jackc/pgx"
 )
@@ -23,6 +24,12 @@ func (s *defaultTSConnectionService) NewConnection(connectionString string) (*pg
 	envConnConfig, err := pgx.ParseEnvLibpq()
 	if err != nil {
 		return nil, err
+	}
+
+	if strings.HasPrefix(connectionString, `'`) && strings.HasSuffix(connectionString, `'`) {
+		connectionString = connectionString[1 : len(connectionString)-1]
+	} else if strings.HasPrefix(connectionString, `"`) && strings.HasSuffix(connectionString, `"`) {
+		connectionString = connectionString[1 : len(connectionString)-1]
 	}
 
 	connConfig, err := pgx.ParseConnectionString(connectionString)

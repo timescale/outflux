@@ -5,15 +5,12 @@ import (
 	"testing"
 
 	"github.com/timescale/outflux/internal/idrf"
-	"github.com/timescale/outflux/internal/schemamanagement/influx/influxqueries"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 )
 
 func TestNewInfluxSchemaManager(t *testing.T) {
-	client := &influxqueries.MockClient{}
-	db := "db"
-	NewSchemaManager(client, db, nil)
+	NewSchemaManager(nil, "", "", nil, nil, nil)
 }
 
 func TestDiscoverDataSets(t *testing.T) {
@@ -83,7 +80,7 @@ type ismMeasureExp struct {
 	measureErr error
 }
 
-func (i *ismMeasureExp) FetchAvailableMeasurements(influxClient influx.Client, database string) ([]string, error) {
+func (i *ismMeasureExp) FetchAvailableMeasurements(influxClient influx.Client, db, rp string) ([]string, error) {
 	return i.measures, i.measureErr
 }
 

@@ -35,8 +35,8 @@ func TestCreateTransformers(t *testing.T) {
 			expectErr: true,
 		}, {
 			desc:             "tags transformer is nil, no tags for measure",
-			mock:             &psctMockService{renameT: &psctMockTrans{"r"}},
-			expectedTransIds: []string{"r"},
+			mock:             &psctMockService{},
+			expectedTransIds: []string{},
 			conf:             &MigrationConfig{TagsAsJSON: true},
 			connConf:         &ConnectionConfig{},
 		}, {
@@ -44,9 +44,8 @@ func TestCreateTransformers(t *testing.T) {
 			mock: &psctMockService{
 				tagsT:   &psctMockTrans{id: "t"},
 				fieldsT: &psctMockTrans{id: "f"},
-				renameT: &psctMockTrans{id: "r"},
 			},
-			expectedTransIds: []string{"t", "f", "r"},
+			expectedTransIds: []string{"t", "f"},
 			conf:             &MigrationConfig{FieldsAsJSON: true, TagsAsJSON: true},
 			connConf:         &ConnectionConfig{},
 		},
@@ -56,7 +55,7 @@ func TestCreateTransformers(t *testing.T) {
 			transformerService: tc.mock,
 		}
 
-		trans, err := ps.createTransformers("id", nil, "measure", tc.connConf, tc.conf)
+		trans, err := ps.createTransformers("id", nil, "measure", "inputDb", tc.conf)
 		if err == nil && tc.expectErr {
 			t.Fatalf("%s:expected error, none got", tc.desc)
 		} else if err != nil && !tc.expectErr {
@@ -84,18 +83,14 @@ type psctMockService struct {
 	tagsErr   error
 	fieldsT   transformation.Transformer
 	fieldsErr error
-	renameT   transformation.Transformer
 }
 
-func (p *psctMockService) TagsAsJSON(infConn influx.Client, id, db, measure string, resultCol string) (transformation.Transformer, error) {
+func (p *psctMockService) TagsAsJSON(infConn influx.Client, id, db, rp, measure string, resultCol string) (transformation.Transformer, error) {
 	return p.tagsT, p.tagsErr
 }
 
-func (p *psctMockService) FieldsAsJSON(infConn influx.Client, id, db, measure string, resultCol string) (transformation.Transformer, error) {
+func (p *psctMockService) FieldsAsJSON(infConn influx.Client, id, db, rp, measure string, resultCol string) (transformation.Transformer, error) {
 	return p.fieldsT, p.fieldsErr
-}
-func (p *psctMockService) RenameOutputSchema(id, outputSchema string) transformation.Transformer {
-	return p.renameT
 }
 
 type psctMockTrans struct {

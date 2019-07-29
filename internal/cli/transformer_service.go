@@ -9,14 +9,12 @@ import (
 	"github.com/timescale/outflux/internal/schemamanagement/influx/discovery"
 	"github.com/timescale/outflux/internal/transformation"
 	jsonCombiner "github.com/timescale/outflux/internal/transformation/jsoncombiner"
-	"github.com/timescale/outflux/internal/transformation/schemarenamer"
 )
 
 // TransformerService creates different transformers
 type TransformerService interface {
-	TagsAsJSON(infConn influx.Client, id, db, measure string, resultCol string) (transformation.Transformer, error)
-	FieldsAsJSON(infConn influx.Client, id, db, measure string, resultCol string) (transformation.Transformer, error)
-	RenameOutputSchema(id, outputSchema string) transformation.Transformer
+	TagsAsJSON(infConn influx.Client, id, db, rp, measure string, resultCol string) (transformation.Transformer, error)
+	FieldsAsJSON(infConn influx.Client, id, db, rp, measure string, resultCol string) (transformation.Transformer, error)
 }
 
 // NewTransformerService creates a new implementation of the TransformerService interface
@@ -36,9 +34,9 @@ type transformerService struct {
 // Returns a Transformer instance or nil if there are no tags.
 // Returns an error if the tags couldn't be discovered or the instance of the transformer
 // could not be created.
-func (t *transformerService) TagsAsJSON(infConn influx.Client, id, db, measure string, resultCol string) (transformation.Transformer, error) {
+func (t *transformerService) TagsAsJSON(infConn influx.Client, id, db, rp, measure string, resultCol string) (transformation.Transformer, error) {
 	log.Printf("Tags for measure '%s' will be combined into a single JSONB column", measure)
-	tags, err := t.fetchTags(infConn, db, measure)
+	tags, err := t.fetchTags(infConn, db, rp, measure)
 	if err != nil {
 		return nil, fmt.Errorf("could not create the transformer for measure '%s'\n%v", measure, err)
 	}
@@ -51,9 +49,9 @@ func (t *transformerService) TagsAsJSON(infConn influx.Client, id, db, measure s
 }
 
 // FieldsAsJSON returns a transformer that combines the fields into a single JSONb column.
-func (t *transformerService) FieldsAsJSON(infConn influx.Client, id, db, measure string, resultCol string) (transformation.Transformer, error) {
+func (t *transformerService) FieldsAsJSON(infConn influx.Client, id, db, rp, measure string, resultCol string) (transformation.Transformer, error) {
 	log.Printf("Fields for measure '%s' will be combined into a single JSONB column", measure)
-	fields, err := t.fetchFields(infConn, db, measure)
+	fields, err := t.fetchFields(infConn, db, rp, measure)
 	if err != nil {
 		return nil, fmt.Errorf("could not create the transformer for measure '%s'\n%v", measure, err)
 	}
@@ -61,23 +59,19 @@ func (t *transformerService) FieldsAsJSON(infConn influx.Client, id, db, measure
 	return jsonCombiner.NewTransformer(id, fields, resultCol)
 }
 
-func (t *transformerService) RenameOutputSchema(id, outputSchema string) transformation.Transformer {
-	return schemarenamer.NewTransformer(id, outputSchema)
-}
-
 type fetchColumnsFn func() ([]*idrf.Column, error)
 
-func (t *transformerService) fetchTags(infConn influx.Client, db, measure string) ([]string, error) {
+func (t *transformerService) fetchTags(infConn influx.Client, db, rp, measure string) ([]string, error) {
 	fetchFn := func() ([]*idrf.Column, error) {
-		return t.influxTagExplorer.DiscoverMeasurementTags(infConn, db, measure)
+		return t.influxTagExplorer.DiscoverMeasurementTags(infConn, db, rp, measure)
 	}
 
 	return fetch(fetchFn)
 }
 
-func (t *transformerService) fetchFields(infConn influx.Client, db, measure string) ([]string, error) {
+func (t *transformerService) fetchFields(infConn influx.Client, db, rp, measure string) ([]string, error) {
 	fetchFn := func() ([]*idrf.Column, error) {
-		return t.influxFieldExplorer.DiscoverMeasurementFields(infConn, db, measure)
+		return t.influxFieldExplorer.DiscoverMeasurementFields(infConn, db, rp, measure)
 	}
 
 	return fetch(fetchFn)

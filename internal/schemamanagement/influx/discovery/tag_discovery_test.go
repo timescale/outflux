@@ -18,7 +18,7 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 	mockClient = &influxqueries.MockClient{}
 	database := "database"
 	measure := "measure"
-
+	rp := "autogen"
 	cases := []testCase{
 		{
 			expectedError:  true,
@@ -56,7 +56,7 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 			queryService: mock(testCase),
 		}
 
-		result, err := tagExplorer.DiscoverMeasurementTags(mockClient, database, measure)
+		result, err := tagExplorer.DiscoverMeasurementTags(mockClient, database, rp, measure)
 		if err != nil && !testCase.expectedError {
 			t.Errorf("did not еxpected error. got '%v'", err)
 		} else if err == nil && testCase.expectedError {
@@ -81,33 +81,28 @@ func TestDiscoverMeasurementTags(t *testing.T) {
 }
 
 func TestFetchMeasurementsShowTagsQuery(t *testing.T) {
+	db := "db"
+	rp := "rp"
 	testCases := []struct {
 		expectedQuery string
 		measure       string
 		db            string
 	}{
 		{
-			expectedQuery: `SHOW TAG KEYS FROM "measure"`,
+			expectedQuery: `SHOW TAG KEYS FROM "rp"."measure"`,
 			measure:       "measure",
-			db:            "db",
 		}, {
-			expectedQuery: `SHOW TAG KEYS FROM "measure 1"`,
+			expectedQuery: `SHOW TAG KEYS FROM "rp"."measure 1"`,
 			measure:       "measure 1",
-			db:            "db",
-		}, {
-			expectedQuery: `SHOW TAG KEYS FROM "measure-2"`,
-			measure:       "measure-2",
-			db:            "db",
 		}, {
 			expectedQuery: `SHOW TAG KEYS FROM "rp"."measure-2"`,
-			measure:       "rp.measure-2",
-			db:            "db",
+			measure:       "measure-2",
 		},
 	}
 	for _, tc := range testCases {
 		mockClient := &influxqueries.MockClient{}
 		queryService := &mockQueryServiceTD{
-			expectedDb: tc.db,
+			expectedDb: db,
 			expectedQ:  tc.expectedQuery,
 		}
 
@@ -115,7 +110,7 @@ func TestFetchMeasurementsShowTagsQuery(t *testing.T) {
 			queryService: queryService,
 		}
 
-		_, err := tagExplorer.fetchMeasurementTags(mockClient, tc.db, tc.measure)
+		_, err := tagExplorer.fetchMeasurementTags(mockClient, db, rp, tc.measure)
 		if err != nil {
 			t.Errorf("unexpected err: %v", err)
 		}

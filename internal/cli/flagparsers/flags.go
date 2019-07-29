@@ -11,6 +11,7 @@ const (
 	InputUserFlag               = "input-user"
 	InputPassFlag               = "input-pass"
 	InputUnsafeHTTPSFlag        = "input-unsafe-https"
+	RetentionPolicyFlag         = "retention-policy"
 	OutputConnFlag              = "output-conn"
 	SchemaStrategyFlag          = "schema-strategy"
 	CommitStrategyFlag          = "commit-strategy"
@@ -33,6 +34,7 @@ const (
 	DefaultInputUser               = ""
 	DefaultInputPass               = ""
 	DefaultInputUnsafeHTTPS        = false
+	DefaultRetentionPolicy         = "autogen"
 	DefaultOutputConn              = "sslmode=disable"
 	DefaultOutputSchema            = ""
 	DefaultSchemaStrategy          = schemaconfig.CreateIfMissing

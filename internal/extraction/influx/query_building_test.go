@@ -9,17 +9,18 @@ import (
 
 func TestBuildMeasurementName(t *testing.T) {
 	testCases := []struct {
-		in  string
-		exp string
+		in   string
+		inRp string
+		exp  string
 	}{
-		{in: "measure", exp: `"measure"`},
-		{in: "rp.measure", exp: `"rp"."measure"`},
-		{in: "rp.measure name", exp: `"rp"."measure name"`},
-		{in: "rp name.measure.name", exp: `"rp name"."measure.name"`},
+		{in: "measure", inRp: "", exp: `"measure"`},
+		{in: "m.easure", inRp: "rp", exp: `"rp"."m.easure"`},
+		{in: "m.measure name", inRp: "r p", exp: `"r p"."m.measure name"`},
+		{in: "measure name.measure.name", exp: `"measure name.measure.name"`},
 	}
 
 	for _, tc := range testCases {
-		out := buildMeasurementName(tc.in)
+		out := buildMeasurementName(tc.inRp, tc.in)
 		if out != tc.exp {
 			t.Errorf("expected: %s, got: %s", tc.exp, out)
 		}
@@ -47,6 +48,7 @@ func TestBuildProjection(t *testing.T) {
 func TestBuildSelectCommand(t *testing.T) {
 	testCases := []struct {
 		measure string
+		rp      string
 		columns []*idrf.Column
 		from    string
 		to      string
@@ -58,10 +60,10 @@ func TestBuildSelectCommand(t *testing.T) {
 			columns: []*idrf.Column{{Name: "col1"}},
 			exp:     `SELECT "col1" FROM "m"`,
 		}, {
-			measure: "rp.m",
+			measure: "m.m",
 			columns: []*idrf.Column{{Name: "col1"}, {Name: "col 2"}},
 			from:    "a",
-			exp:     `SELECT "col1", "col 2" FROM "rp"."m" WHERE time >= 'a'`,
+			exp:     `SELECT "col1", "col 2" FROM "m.m" WHERE time >= 'a'`,
 		}, {
 			measure: "m",
 			columns: []*idrf.Column{{Name: "col1"}},
@@ -78,15 +80,23 @@ func TestBuildSelectCommand(t *testing.T) {
 			columns: []*idrf.Column{{Name: "col1"}},
 			limit:   11,
 			exp:     `SELECT "col1" FROM "m" LIMIT 11`,
+		}, {
+			measure: "m",
+			rp:      "rep pol",
+			columns: []*idrf.Column{{Name: "col1"}},
+			from:    "a",
+			to:      "b",
+			exp:     `SELECT "col1" FROM "rep pol"."m" WHERE time >= 'a' AND time <= 'b'`,
 		},
 	}
 
 	for _, tc := range testCases {
 		config := &config.MeasureExtraction{
-			Measure: tc.measure,
-			From:    tc.from,
-			To:      tc.to,
-			Limit:   tc.limit,
+			Measure:         tc.measure,
+			RetentionPolicy: tc.rp,
+			From:            tc.from,
+			To:              tc.to,
+			Limit:           tc.limit,
 		}
 
 		out := buildSelectCommand(config, tc.columns)

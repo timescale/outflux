@@ -5,24 +5,6 @@ import (
 	"testing"
 )
 
-func TestSchemaAndTable(t *testing.T) {
-	tss := []struct {
-		in  string
-		exp []string
-	}{
-		{in: "name", exp: []string{"", "name"}},
-		{in: "schema.table", exp: []string{"schema", "table"}},
-		{in: "db.rp.measure", exp: []string{"db", "rp.measure"}},
-	}
-	for _, ts := range tss {
-		ds := &DataSet{DataSetName: ts.in}
-		schema, table := ds.SchemaAndTable()
-		str := ds.String()
-		if schema != ts.exp[0] || table != ts.exp[1] {
-			t.Errorf("%s\nexpected: %s %s, got %s %s", str, ts.exp[0], ts.exp[1], schema, table)
-		}
-	}
-}
 func TestNewDataSet(t *testing.T) {
 	column, _ := NewColumn("Col 1", IDRFTimestamp)
 	intColumn, _ := NewColumn("Col 1", IDRFInteger32)

@@ -20,7 +20,7 @@ type mockService struct {
 	inflSchemMngr schemamanagement.SchemaManager
 }
 
-func (m *mockService) Create(influx.Client, *pgx.Conn, string, *cli.ConnectionConfig, *cli.MigrationConfig) (pipeline.Pipe, error) {
+func (m *mockService) Create(infConn influx.Client, tsConn *pgx.Conn, measure, inputDb string, conf *cli.MigrationConfig) (pipeline.Pipe, error) {
 	return m.pipe, m.pipeErr
 }
 
@@ -28,11 +28,13 @@ func (m *mockService) NewConnection(arg *connections.InfluxConnectionParams) (in
 	return m.inflConn, m.inflConnErr
 }
 
-func (m *mockService) Influx(c influx.Client, a string) schemamanagement.SchemaManager {
+func (m *mockService) Influx(c influx.Client, db, rp string) schemamanagement.SchemaManager {
 	return m.inflSchemMngr
 }
 
-func (m *mockService) TimeScale(dbConn *pgx.Conn) schemamanagement.SchemaManager { return nil }
+func (m *mockService) TimeScale(dbConn *pgx.Conn, schema string) schemamanagement.SchemaManager {
+	return nil
+}
 
 type mockTsConnSer struct {
 	tsConn    *pgx.Conn

@@ -2,7 +2,6 @@ package discovery
 
 import (
 	"fmt"
-	"strings"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/idrf"
@@ -10,14 +9,13 @@ import (
 )
 
 const (
-	showFieldsQueryTemplate       = "SHOW FIELD KEYS FROM \"%s\""
-	showFieldsQueryWithRPTemplate = "SHOW FIELD KEYS FROM \"%s\".\"%s\""
+	showFieldsQueryTemplate = `SHOW FIELD KEYS FROM "%s"."%s"`
 )
 
-// FieldExplorer defines an API for discoering InfluxDB fields of a specified measurement
+// FieldExplorer defines an API for discovering InfluxDB fields of a specified measurement
 type FieldExplorer interface {
 	// DiscoverMeasurementFields creates the ColumnInfo for the Fields of a given measurement
-	DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.Column, error)
+	DiscoverMeasurementFields(influxClient influx.Client, db, rp, measurement string) ([]*idrf.Column, error)
 }
 
 type defaultFieldExplorer struct {
@@ -29,8 +27,8 @@ func NewFieldExplorer(queryService influxqueries.InfluxQueryService) FieldExplor
 	return &defaultFieldExplorer{queryService}
 }
 
-func (fe *defaultFieldExplorer) DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.Column, error) {
-	fields, err := fe.fetchMeasurementFields(influxClient, database, measurement)
+func (fe *defaultFieldExplorer) DiscoverMeasurementFields(influxClient influx.Client, db, rp, measurement string) ([]*idrf.Column, error) {
+	fields, err := fe.fetchMeasurementFields(influxClient, db, rp, measurement)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching fields for measurement '%s'\n%v", measurement, err)
 	}
@@ -38,15 +36,9 @@ func (fe *defaultFieldExplorer) DiscoverMeasurementFields(influxClient influx.Cl
 	return convertFields(fields)
 }
 
-func (fe *defaultFieldExplorer) fetchMeasurementFields(influxClient influx.Client, database, measurement string) ([][2]string, error) {
-	var showFieldsQuery string
-	if strings.Contains(measurement, ".") {
-		parts := strings.SplitN(measurement, ".", 2)
-		showFieldsQuery = fmt.Sprintf(showFieldsQueryWithRPTemplate, parts[0], parts[1])
-	} else {
-		showFieldsQuery = fmt.Sprintf(showFieldsQueryTemplate, measurement)
-	}
-	result, err := fe.queryService.ExecuteShowQuery(influxClient, database, showFieldsQuery)
+func (fe *defaultFieldExplorer) fetchMeasurementFields(influxClient influx.Client, db, rp, measurement string) ([][2]string, error) {
+	showFieldsQuery := fmt.Sprintf(showFieldsQueryTemplate, rp, measurement)
+	result, err := fe.queryService.ExecuteShowQuery(influxClient, db, showFieldsQuery)
 
 	if err != nil {
 		return nil, fmt.Errorf("error executing query: %s\n%v", showFieldsQuery, err)
