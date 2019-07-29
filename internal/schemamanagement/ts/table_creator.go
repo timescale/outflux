@@ -31,14 +31,16 @@ type tableCreator interface {
 	UpdateMetadata(dbConn *pgx.Conn, metadataTableName string) error
 }
 
-func newTableCreator() tableCreator {
-	return &defaultTableCreator{}
+func newTableCreator(schema string) tableCreator {
+	return &defaultTableCreator{schema: schema}
 }
 
-type defaultTableCreator struct{}
+type defaultTableCreator struct {
+	schema string
+}
 
 func (d *defaultTableCreator) CreateTable(dbConn *pgx.Conn, info *idrf.DataSet) error {
-	query := dataSetToSQLTableDef(info)
+	query := dataSetToSQLTableDef(d.schema, info)
 	log.Printf("Creating table with:\n %s", query)
 
 	_, err := dbConn.Exec(query)
@@ -52,10 +54,9 @@ func (d *defaultTableCreator) CreateTable(dbConn *pgx.Conn, info *idrf.DataSet) 
 		return err
 	}
 
-	schema, table := info.SchemaAndTable()
 	var hypertableQuery string
-	if schema != "" {
-		hypertableQuery = fmt.Sprintf(createHypertableWithSchemaQueryTemplate, schema, table, info.TimeColumn)
+	if d.schema != "" {
+		hypertableQuery = fmt.Sprintf(createHypertableWithSchemaQueryTemplate, d.schema, info.DataSetName, info.TimeColumn)
 	} else {
 		hypertableQuery = fmt.Sprintf(createHypertableQueryTemplate, info.DataSetName, info.TimeColumn)
 	}
@@ -112,7 +113,7 @@ func (d *defaultTableCreator) UpdateMetadata(dbConn *pgx.Conn, metadataTableName
 	return err
 }
 
-func dataSetToSQLTableDef(dataSet *idrf.DataSet) string {
+func dataSetToSQLTableDef(schema string, dataSet *idrf.DataSet) string {
 	columnDefinitions := make([]string, len(dataSet.Columns))
 	for i, column := range dataSet.Columns {
 		dataType := idrfToPgType(column.DataType)
@@ -121,10 +122,9 @@ func dataSetToSQLTableDef(dataSet *idrf.DataSet) string {
 
 	columnsString := strings.Join(columnDefinitions, ", ")
 
-	schema, table := dataSet.SchemaAndTable()
 	if schema != "" {
-		return fmt.Sprintf(createTableWithSchemaQueryTemplate, schema, table, columnsString)
+		return fmt.Sprintf(createTableWithSchemaQueryTemplate, schema, dataSet.DataSetName, columnsString)
 	}
 
-	return fmt.Sprintf(createTableQueryTemplate, table, columnsString)
+	return fmt.Sprintf(createTableQueryTemplate, dataSet.DataSetName, columnsString)
 }

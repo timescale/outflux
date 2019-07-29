@@ -24,5 +24,6 @@ func (s *defaultIngestionConfCreator) create(pipeID string, conf *MigrationConfi
 		RollbackOnExternalError: conf.RollbackAllMeasureExtractionsOnError,
 		CommitStrategy:          conf.CommitStrategy,
 		SchemaStrategy:          conf.OutputSchemaStrategy,
+		Schema:                  conf.OutputSchema,
 	}
 }

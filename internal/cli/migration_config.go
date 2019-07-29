@@ -7,6 +7,8 @@ import (
 
 // MigrationConfig contains the configurable parameters for migrating an InfluxDB to TimescaleDB
 type MigrationConfig struct {
+	RetentionPolicy                      string
+	OutputSchema                         string
 	OutputSchemaStrategy                 schemaconfig.SchemaStrategy
 	From                                 string
 	To                                   string

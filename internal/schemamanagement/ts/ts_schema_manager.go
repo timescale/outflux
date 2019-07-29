@@ -16,14 +16,16 @@ type TSSchemaManager struct {
 	creator  tableCreator
 	dropper  tableDropper
 	dbConn   *pgx.Conn
+	schema   string
 }
 
 // NewTSSchemaManager creates a new TimeScale Schema Manager
-func NewTSSchemaManager(dbConn *pgx.Conn) *TSSchemaManager {
+func NewTSSchemaManager(dbConn *pgx.Conn, schema string) *TSSchemaManager {
 	return &TSSchemaManager{
 		dbConn:   dbConn,
+		schema:   schema,
 		explorer: newSchemaExplorer(),
-		creator:  newTableCreator(),
+		creator:  newTableCreator(schema),
 		dropper:  newTableDropper(),
 	}
 }
@@ -41,8 +43,7 @@ func (sm *TSSchemaManager) FetchDataSet(dataSetIdentifier string) (*idrf.DataSet
 // PrepareDataSet prepares a table in TimeScale compatible with the provided dataSet
 func (sm *TSSchemaManager) PrepareDataSet(dataSet *idrf.DataSet, strategy schemaconfig.SchemaStrategy) error {
 	log.Printf("Selected Schema Strategy: %s", strategy.String())
-	schema, table := dataSet.SchemaAndTable()
-	tableExists, err := sm.explorer.tableExists(sm.dbConn, schema, table)
+	tableExists, err := sm.explorer.tableExists(sm.dbConn, sm.schema, dataSet.DataSetName)
 	if err != nil {
 		return fmt.Errorf("could not prepare data set '%s'. Could not check if table exists. \n%v", dataSet.DataSetName, err)
 	}
@@ -87,8 +88,7 @@ func (sm *TSSchemaManager) validateOnly(dataSet *idrf.DataSet, tableExists bool)
 		return fmt.Errorf("timescaledb extension not installed in database")
 	}
 
-	schema, table := dataSet.SchemaAndTable()
-	isHypertable, err := sm.explorer.isHypertable(sm.dbConn, schema, table)
+	isHypertable, err := sm.explorer.isHypertable(sm.dbConn, sm.schema, dataSet.DataSetName)
 	if err != nil {
 		return fmt.Errorf("could not check if table %s is hypertable", dataSet.DataSetName)
 	}
@@ -134,8 +134,7 @@ func (sm *TSSchemaManager) prepareWithCreateIfMissing(dataSet *idrf.DataSet, tab
 		}
 	}
 
-	schema, table := dataSet.SchemaAndTable()
-	isHypertable, err := sm.explorer.isHypertable(sm.dbConn, schema, table)
+	isHypertable, err := sm.explorer.isHypertable(sm.dbConn, sm.schema, dataSet.DataSetName)
 	if err != nil {
 		return fmt.Errorf("could not check if table %s is hypertable", dataSet.DataSetName)
 	}
@@ -150,10 +149,9 @@ func (sm *TSSchemaManager) prepareWithCreateIfMissing(dataSet *idrf.DataSet, tab
 }
 
 func (sm *TSSchemaManager) validateColumns(dataSet *idrf.DataSet) error {
-	schema, table := dataSet.SchemaAndTable()
-	existingTableColumns, err := sm.explorer.fetchTableColumns(sm.dbConn, schema, table)
+	existingTableColumns, err := sm.explorer.fetchTableColumns(sm.dbConn, sm.schema, dataSet.DataSetName)
 	if err != nil {
-		return fmt.Errorf("could not retriеve column information for table %s", dataSet.DataSetName)
+		return fmt.Errorf("could not retreive column information for table %s", dataSet.DataSetName)
 	}
 
 	err = isExistingTableCompatible(existingTableColumns, dataSet.Columns, dataSet.TimeColumn)
@@ -165,8 +163,7 @@ func (sm *TSSchemaManager) validateColumns(dataSet *idrf.DataSet) error {
 }
 
 func (sm *TSSchemaManager) validatePartitioning(dataSet *idrf.DataSet) error {
-	schema, table := dataSet.SchemaAndTable()
-	isPartitionedProperly, err := sm.explorer.isTimePartitionedBy(sm.dbConn, schema, table, dataSet.TimeColumn)
+	isPartitionedProperly, err := sm.explorer.isTimePartitionedBy(sm.dbConn, sm.schema, dataSet.DataSetName, dataSet.TimeColumn)
 	if err != nil {
 		return fmt.Errorf("could not check if existing hypertable '%s' is partitioned properly\n%v", dataSet.DataSetName, err)
 	}

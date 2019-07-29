@@ -93,14 +93,16 @@ func TestCreateTableWithSchema(t *testing.T) {
 	}
 	defer dbConn.Close()
 	dataSet := &idrf.DataSet{
-		DataSetName: targetSchema + ".name",
+		DataSetName: "name",
 		Columns: []*idrf.Column{
 			{Name: "col1", DataType: idrf.IDRFTimestamptz},
 			{Name: "col2", DataType: idrf.IDRFInteger64},
 		},
 		TimeColumn: "col1",
 	}
-	creator := &defaultTableCreator{}
+	creator := &defaultTableCreator{
+		schema: targetSchema,
+	}
 	if err := creator.CreateTable(dbConn, dataSet); err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}

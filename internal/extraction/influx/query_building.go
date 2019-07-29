@@ -20,7 +20,7 @@ const (
 
 func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.Column) string {
 	projection := buildProjection(columns)
-	measurementName := buildMeasurementName(config.Measure)
+	measurementName := buildMeasurementName(config.RetentionPolicy, config.Measure)
 	var command string
 	if config.From != "" && config.To != "" {
 		command = fmt.Sprintf(selectQueryDoubleBoundTemplate, projection, measurementName, config.From, config.To)
@@ -40,13 +40,11 @@ func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.Column
 	return fmt.Sprintf("%s %s", command, limit)
 }
 
-func buildMeasurementName(measurement string) string {
-	if !strings.Contains(measurement, ".") {
-		return fmt.Sprintf(measurementNameTemplate, measurement)
+func buildMeasurementName(rp, measurement string) string {
+	if rp != "" {
+		return fmt.Sprintf(measurementNameWithRPTemplate, rp, measurement)
 	}
-
-	parts := strings.SplitN(measurement, ".", 2)
-	return fmt.Sprintf(measurementNameWithRPTemplate, parts[0], parts[1])
+	return fmt.Sprintf(measurementNameTemplate, measurement)
 }
 
 func buildProjection(columns []*idrf.Column) string {

@@ -23,7 +23,7 @@ type ingestorService struct {
 // NewIngestor creates a new instance of an Ingestor with a specified config, for a specified
 // data set and data channel
 func (i *ingestorService) NewTimescaleIngestor(dbConn *pgx.Conn, config *config.IngestorConfig) Ingestor {
-	schemaManager := tsSchema.NewTSSchemaManager(dbConn)
+	schemaManager := tsSchema.NewTSSchemaManager(dbConn, config.Schema)
 	return &ts.TSIngestor{
 		DbConn:           dbConn,
 		Config:           config,

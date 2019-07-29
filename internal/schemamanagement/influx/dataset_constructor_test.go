@@ -5,14 +5,12 @@ import (
 	"testing"
 
 	"github.com/timescale/outflux/internal/idrf"
-	"github.com/timescale/outflux/internal/schemamanagement/influx/influxqueries"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 )
 
 func TestNewDataSetConstructor(t *testing.T) {
-	var qs influxqueries.InfluxQueryService
-	newDataSetConstructor("", &influxqueries.MockClient{}, qs)
+	newDataSetConstructor("", "rp", nil, nil, nil)
 }
 
 func TestConstruct(t *testing.T) {
@@ -82,10 +80,10 @@ type mocker struct {
 	fieldsErr error
 }
 
-func (m *mocker) DiscoverMeasurementTags(influxClient influx.Client, database, measure string) ([]*idrf.Column, error) {
+func (m *mocker) DiscoverMeasurementTags(influxClient influx.Client, db, rp, measure string) ([]*idrf.Column, error) {
 	return m.tags, m.tagsErr
 }
 
-func (m *mocker) DiscoverMeasurementFields(influxClient influx.Client, database, measurement string) ([]*idrf.Column, error) {
+func (m *mocker) DiscoverMeasurementFields(influxClient influx.Client, db, rp, measurement string) ([]*idrf.Column, error) {
 	return m.fields, m.fieldsErr
 }

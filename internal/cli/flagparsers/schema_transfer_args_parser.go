@@ -15,6 +15,7 @@ func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*cli.Conn
 		return nil, nil, err
 	}
 
+	retentionPolicy, _ := flags.GetString(RetentionPolicyFlag)
 	strategyAsStr, _ := flags.GetString(SchemaStrategyFlag)
 	var strategy schemaconfig.SchemaStrategy
 	if strategy, err = schemaconfig.ParseStrategyString(strategyAsStr); err != nil {
@@ -37,7 +38,11 @@ func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*cli.Conn
 	if err != nil {
 		return nil, nil, fmt.Errorf("value for the '%s' flag must be a true or false", QuietFlag)
 	}
+	outputSchema, _ := flags.GetString(OutputSchemaFlag)
+
 	return connectionArgs, &cli.MigrationConfig{
+		RetentionPolicy:      retentionPolicy,
+		OutputSchema:         outputSchema,
 		OutputSchemaStrategy: strategy,
 		Quiet:                quiet,
 		SchemaOnly:           true,

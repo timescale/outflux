@@ -13,6 +13,7 @@ type IngestorConfig struct {
 	RollbackOnExternalError bool
 	CommitStrategy          CommitStrategy
 	SchemaStrategy          schemaconfig.SchemaStrategy
+	Schema                  string
 }
 
 // CommitStrategy describes how the ingestor should handle the ingested data

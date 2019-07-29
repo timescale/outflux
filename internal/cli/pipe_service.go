@@ -17,7 +17,7 @@ const (
 
 // PipeService defines methods for creating pipelines
 type PipeService interface {
-	Create(influx.Client, *pgx.Conn, string, *ConnectionConfig, *MigrationConfig) (pipeline.Pipe, error)
+	Create(infConn influx.Client, pgConn *pgx.Conn, measure, inputDb string, conf *MigrationConfig) (pipeline.Pipe, error)
 }
 
 type pipeService struct {
@@ -42,16 +42,16 @@ func NewPipeService(
 	}
 }
 
-func (s *pipeService) Create(infConn influx.Client, tsConn *pgx.Conn, measure string, connConf *ConnectionConfig, conf *MigrationConfig) (pipeline.Pipe, error) {
+func (s *pipeService) Create(infConn influx.Client, tsConn *pgx.Conn, measure, inputDb string, conf *MigrationConfig) (pipeline.Pipe, error) {
 	pipeID := fmt.Sprintf(pipeIDTemplate, measure)
-	extractionConf := s.extractionConfCreator.create(pipeID, connConf.InputDb, measure, conf)
+	extractionConf := s.extractionConfCreator.create(pipeID, inputDb, measure, conf)
 	ingestionConf := s.ingestionConfCreator.create(pipeID, conf)
 	extractor, ingestor, err := s.createElements(infConn, tsConn, extractionConf, ingestionConf)
 	if err != nil {
 		return nil, fmt.Errorf("%s: could not create extractor and ingestor:\n%v", pipeID, err)
 	}
 
-	transformers, err := s.createTransformers(pipeID, infConn, measure, connConf, conf)
+	transformers, err := s.createTransformers(pipeID, infConn, measure, inputDb, conf)
 	if err != nil {
 		return nil, fmt.Errorf("%s: could not create transformers:\n%v", pipeID, err)
 	}
