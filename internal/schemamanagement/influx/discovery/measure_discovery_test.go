@@ -14,12 +14,14 @@ import (
 type executeShowQueryFn = func(influxClient influx.Client, database, query string) (*influxqueries.InfluxShowResult, error)
 
 type testCase struct {
-	expectedError    bool
-	showQueryResult  *influxqueries.InfluxShowResult
-	showQueryError   error
-	expectedMeasures []string
-	expectedTags     []*idrf.Column
-	fieldsErr        error
+	desc                        string
+	expectedError               bool
+	showQueryResult             *influxqueries.InfluxShowResult
+	showQueryError              error
+	expectedMeasures            []string
+	expectedTags                []*idrf.Column
+	fieldsErr                   error
+	onConflictConvertIntToFloat bool
 }
 
 func TestNewMeasureExplorer(t *testing.T) {
@@ -74,7 +76,7 @@ func TestFetchAvailableMeasurements(t *testing.T) {
 			fieldExplorer: mock,
 		}
 
-		result, err := measureExplorer.FetchAvailableMeasurements(mockClient, database, rp)
+		result, err := measureExplorer.FetchAvailableMeasurements(mockClient, database, rp, false)
 		if err != nil && !testC.expectedError {
 			t.Errorf("no error expected, got: %v", err)
 		} else if err == nil && testC.expectedError {
@@ -112,7 +114,7 @@ func (m *mockAll) ExecuteShowQuery(influxClient influx.Client, database, query s
 	return m.sqRes, m.sqErr
 }
 
-func (m *mockAll) DiscoverMeasurementFields(c influx.Client, db, rp, ms string) ([]*idrf.Column, error) {
+func (m *mockAll) DiscoverMeasurementFields(c influx.Client, db, rp, ms string, onConflictConvertIntToFloat bool) ([]*idrf.Column, error) {
 	return nil, m.fieldsErr
 }
 

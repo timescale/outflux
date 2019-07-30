@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"fmt"
+	"log"
 
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/timescale/outflux/internal/schemamanagement/influx/influxqueries"
@@ -13,7 +14,7 @@ const (
 
 // MeasureExplorer defines an API for discovering the available measures in an InfluxDB database
 type MeasureExplorer interface {
-	FetchAvailableMeasurements(influxClient influx.Client, db, rp string) ([]string, error)
+	FetchAvailableMeasurements(influxClient influx.Client, db, rp string, onConflictConvertIntToFloat bool) ([]string, error)
 }
 
 // defaultMeasureExplorer contains the functions that can be swapped out during testing
@@ -32,7 +33,7 @@ func NewMeasureExplorer(queryService influxqueries.InfluxQueryService, fieldExpl
 
 // FetchAvailableMeasurements returns the names of all available measurements for a given database,
 // or an error if the query could not be executed, or the result was in an unexpected format
-func (me *defaultMeasureExplorer) FetchAvailableMeasurements(influxClient influx.Client, db, rp string) ([]string, error) {
+func (me *defaultMeasureExplorer) FetchAvailableMeasurements(influxClient influx.Client, db, rp string, onConflictConvertIntToFloat bool) ([]string, error) {
 	result, err := me.queryService.ExecuteShowQuery(influxClient, db, showMeasurementsQuery)
 	if err != nil {
 		return nil, fmt.Errorf("error executing query: %s\nerror: %v", showMeasurementsQuery, err)
@@ -51,8 +52,9 @@ func (me *defaultMeasureExplorer) FetchAvailableMeasurements(influxClient influx
 
 	measuresInRP := []string{}
 	for _, measure := range measuresInDb {
-		_, err := me.fieldExplorer.DiscoverMeasurementFields(influxClient, db, rp, measure)
+		_, err := me.fieldExplorer.DiscoverMeasurementFields(influxClient, db, rp, measure, onConflictConvertIntToFloat)
 		if err != nil {
+			log.Printf("Will ignore measurement '%s' because:\n%s", measure, err.Error())
 			continue
 		}
 

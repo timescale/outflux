@@ -39,17 +39,18 @@ func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*cli.Conn
 		return nil, nil, fmt.Errorf("value for the '%s' flag must be a true or false", QuietFlag)
 	}
 	outputSchema, _ := flags.GetString(OutputSchemaFlag)
-
+	intToFloat, _ := flags.GetBool(MultishardIntFloatCast)
 	return connectionArgs, &cli.MigrationConfig{
-		RetentionPolicy:      retentionPolicy,
-		OutputSchema:         outputSchema,
-		OutputSchemaStrategy: strategy,
-		Quiet:                quiet,
-		SchemaOnly:           true,
-		ChunkSize:            1,
-		TagsAsJSON:           tagsAsJSON,
-		TagsCol:              tagsColumn,
-		FieldsAsJSON:         fieldsAsJSON,
-		FieldsCol:            fieldsColumn,
+		RetentionPolicy:             retentionPolicy,
+		OutputSchema:                outputSchema,
+		OutputSchemaStrategy:        strategy,
+		Quiet:                       quiet,
+		SchemaOnly:                  true,
+		ChunkSize:                   1,
+		TagsAsJSON:                  tagsAsJSON,
+		TagsCol:                     tagsColumn,
+		FieldsAsJSON:                fieldsAsJSON,
+		FieldsCol:                   fieldsColumn,
+		OnConflictConvertIntToFloat: intToFloat,
 	}, nil
 }

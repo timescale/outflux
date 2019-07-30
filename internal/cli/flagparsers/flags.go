@@ -29,6 +29,11 @@ const (
 	TagsColumnFlag              = "tags-column"
 	FieldsAsJSONFlag            = "fields-as-json"
 	FieldsColumnFlag            = "fields-column"
+	// InfluxDB can have different data types for the same field accross
+	// different shards. If a field is discovered with an Int64 and a Float64 type
+	// and this flag is TRUE it will allow the field to be converted to float,
+	// otherwise it will return an error.
+	MultishardIntFloatCast = "multishard-int-float-cast"
 
 	DefaultInputServer             = "http://localhost:8086"
 	DefaultInputUser               = ""
@@ -49,4 +54,5 @@ const (
 	DefaultTagsColumn              = "tags"
 	DefaultFieldsAsJSON            = false
 	DefaultFieldsColumn            = "fields"
+	DefaultMultishardIntFloatCast  = false
 )

@@ -70,8 +70,11 @@ func (t *transformerService) fetchTags(infConn influx.Client, db, rp, measure st
 }
 
 func (t *transformerService) fetchFields(infConn influx.Client, db, rp, measure string) ([]string, error) {
+	// Because the columns are combined in a JSON it doesn't matter if they are
+	// int or float in different shards
+	onConflictConvertIntToFloat := true
 	fetchFn := func() ([]*idrf.Column, error) {
-		return t.influxFieldExplorer.DiscoverMeasurementFields(infConn, db, rp, measure)
+		return t.influxFieldExplorer.DiscoverMeasurementFields(infConn, db, rp, measure, onConflictConvertIntToFloat)
 	}
 
 	return fetch(fetchFn)

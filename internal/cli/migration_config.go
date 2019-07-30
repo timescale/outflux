@@ -25,4 +25,5 @@ type MigrationConfig struct {
 	TagsCol                              string
 	FieldsAsJSON                         bool
 	FieldsCol                            string
+	OnConflictConvertIntToFloat          bool
 }

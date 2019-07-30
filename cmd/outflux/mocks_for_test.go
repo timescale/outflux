@@ -28,7 +28,7 @@ func (m *mockService) NewConnection(arg *connections.InfluxConnectionParams) (in
 	return m.inflConn, m.inflConnErr
 }
 
-func (m *mockService) Influx(c influx.Client, db, rp string) schemamanagement.SchemaManager {
+func (m *mockService) Influx(c influx.Client, db, rp string, convertIntToFloat bool) schemamanagement.SchemaManager {
 	return m.inflSchemMngr
 }
 

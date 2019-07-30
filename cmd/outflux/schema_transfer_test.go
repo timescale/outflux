@@ -21,7 +21,7 @@ func TestDiscoverMeasures(t *testing.T) {
 		ics:                  mockAll,
 		schemaManagerService: mockAll,
 	}
-	_, err := discoverMeasures(app, mockClient, "db", "autogen")
+	_, err := discoverMeasures(app, mockClient, "db", "autogen", true)
 	if err != nil {
 		t.Errorf("unexpected error:%v", err)
 	}

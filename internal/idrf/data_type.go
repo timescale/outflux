@@ -20,25 +20,25 @@ const (
 func (d DataType) String() string {
 	switch d {
 	case IDRFBoolean:
-		return "IDRFBoolean"
+		return "Boolean"
 	case IDRFDouble:
-		return "IDRFDouble"
+		return "Double"
 	case IDRFInteger32:
-		return "IDRFInteger32"
+		return "Integer32"
 	case IDRFString:
-		return "IDRFString"
+		return "String"
 	case IDRFTimestamp:
 		return "IDRFTimestamp"
 	case IDRFTimestamptz:
-		return "IDRFTimestamptz"
+		return "Timestamptz"
 	case IDRFInteger64:
-		return "IDRFInteger64"
+		return "Integer64"
 	case IDRFSingle:
-		return "IDRFSingle"
+		return "Single"
 	case IDRFJson:
-		return "IDRFJson"
+		return "Json"
 	case IDRFUnknown:
-		return "IDRFUnknown"
+		return "Unknown"
 	default:
 		panic("Unexpected value")
 	}
@@ -50,15 +50,12 @@ func (d DataType) CanFitInto(other DataType) bool {
 		return true
 	}
 
-	if d == IDRFInteger32 {
+	switch d {
+	case IDRFInteger32:
 		return other == IDRFSingle || other == IDRFDouble || other == IDRFInteger64
-	}
-
-	if d == IDRFInteger64 || d == IDRFSingle {
+	case IDRFSingle:
 		return other == IDRFDouble
-	}
-
-	if d == IDRFTimestamp {
+	case IDRFTimestamp:
 		return other == IDRFTimestamptz
 	}
 
