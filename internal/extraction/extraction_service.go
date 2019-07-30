@@ -24,12 +24,13 @@ type extractorService struct {
 }
 
 func (e *extractorService) InfluxExtractor(conn influx.Client, conf *config.ExtractionConfig) (Extractor, error) {
-	err := config.ValidateMeasureExtractionConfig(conf.MeasureExtraction)
+	exConf := conf.MeasureExtraction
+	err := config.ValidateMeasureExtractionConfig(exConf)
 	if err != nil {
 		return nil, fmt.Errorf("measure extraction config is not valid: %s", err.Error())
 	}
 
-	sm := e.schemaManagerService.Influx(conn, conf.MeasureExtraction.Database, conf.MeasureExtraction.RetentionPolicy)
+	sm := e.schemaManagerService.Influx(conn, exConf.Database, exConf.RetentionPolicy, exConf.OnConflictConvertIntToFloat)
 	dataProducer := influxExtraction.NewDataProducer(conf.ExtractorID, conn)
 	return &influxExtraction.Extractor{
 		Config:       conf,

@@ -55,7 +55,7 @@ func initMigrateCmd() *cobra.Command {
 	migrateCmd.PersistentFlags().Bool(flagparsers.FieldsAsJSONFlag, flagparsers.DefaultFieldsAsJSON, "If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale")
 	migrateCmd.PersistentFlags().String(flagparsers.FieldsColumnFlag, flagparsers.DefaultFieldsColumn, "When "+flagparsers.FieldsAsJSONFlag+" is set, this column specifies the name of the JSON column for the fields")
 	migrateCmd.PersistentFlags().String(flagparsers.OutputSchemaFlag, flagparsers.DefaultOutputSchema, "The schema of the output database that the data will be inserted into")
-
+	migrateCmd.PersistentFlags().Bool(flagparsers.MultishardIntFloatCast, flagparsers.DefaultMultishardIntFloatCast, "If a field is Int64 in one shard, and Float64 in another, with this flag it will be cast to Float64 despite possible data loss")
 	return migrateCmd
 }
 
@@ -70,7 +70,7 @@ func migrate(app *appContext, connArgs *cli.ConnectionConfig, args *cli.Migratio
 		if err != nil {
 			return fmt.Errorf("could not open connection to Influx Server\n%v", err)
 		}
-		connArgs.InputMeasures, err = discoverMeasures(app, influxConn, connArgs.InputDb, args.RetentionPolicy)
+		connArgs.InputMeasures, err = discoverMeasures(app, influxConn, connArgs.InputDb, args.RetentionPolicy, args.OnConflictConvertIntToFloat)
 		influxConn.Close()
 		if err != nil {
 			return fmt.Errorf("could not discover the available measures for the input db '%s'", connArgs.InputDb)

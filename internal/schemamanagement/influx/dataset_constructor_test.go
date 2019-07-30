@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewDataSetConstructor(t *testing.T) {
-	newDataSetConstructor("", "rp", nil, nil, nil)
+	newDataSetConstructor("", "rp", true, nil, nil, nil)
 }
 
 func TestConstruct(t *testing.T) {
@@ -84,6 +84,6 @@ func (m *mocker) DiscoverMeasurementTags(influxClient influx.Client, db, rp, mea
 	return m.tags, m.tagsErr
 }
 
-func (m *mocker) DiscoverMeasurementFields(influxClient influx.Client, db, rp, measurement string) ([]*idrf.Column, error) {
+func (m *mocker) DiscoverMeasurementFields(influxClient influx.Client, db, rp, measurement string, convertIntToFloat bool) ([]*idrf.Column, error) {
 	return m.fields, m.fieldsErr
 }

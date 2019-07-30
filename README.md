@@ -4,6 +4,22 @@
 
 This repo contains code for exporting complete InfluxDB databases or selected measurements to TimescaleDB.
 
+## Table of Contents
+
+1. [Installation](#installation)
+  - [Installing from source](#installing-from-source)
+  - [Binary releases](#binary-releases)
+2. [How to use](#how-to-use)
+  - [Before using it](#before-using-it)
+  - [Connection params](#connection-params)
+  - [Schema Transfer](#schema-transfer)
+  - [Migrate](#igrate)
+  - [Examples](#examples)
+3. [Connection](#connection)
+  - [TimescaleDB connection params](#timescaledb-connection-params)
+  - [InfluxDB connection params](#influxdb-connection-params)
+4. [Known limitations](#known-limitations)
+
 ## Installation
 
 ### Installing from source
@@ -38,7 +54,7 @@ For testing purposes you can check out the [TSBS Data Loader Tool](https://githu
 It can generate large ammounts of data for and load them in influx. 
 Data can be generated with [one command](https://github.com/timescale/tsbs#data-generation), just specify the format as 'influx', and then load it in with [another command](https://github.com/timescale/tsbs#data-generation).
 
-### ⚠️ Connection params ⚠️
+### Connection params
 Detailed information about how to pass the connection parameters to Outflux can be found at the bottom of this document at the [Connection](section)
 
 
@@ -60,21 +76,22 @@ For example `outflux schema-transfer benchmark cpu mem` will discover the schema
 
 Available flags for schema-transfer are:
 
-| flag               | type    | default               | description |
-|--------------------|---------|-----------------------|-------------|
-| input-server       | string  | http://localhost:8086 | Location of the input database, http(s)://location:port. |
-| input-pass         | string  |                       | Password to use when connecting to the input database |
-| input-user         | string  |                       | Username to use when connecting to the input database |
-| input-unsafe-https | bool    | false                 | Should 'InsecureSkipVerify' be passed to the input connection |
-| retention-policy   | string  | autogen               | The retention policy to select the tags and fields from |
-| output-conn        | string  | sslmode=disable       | Connection string to use to connect to the output database|
-| output-schema      | string  |                       | The schema of the output database that the data will be inserted into |
-| schema-strategy    | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
-| tags-as-json       | bool    | false                 | If this flag is set to true, then the Tags of the influx measures being exported will be combined into a single JSONb column in Timescale |
-| tags-column        | string  | tags                  | When `tags-as-json` is set, this column specifies the name of the JSON column for the tags |
-| fields-as-json     | bool    | false                 | If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale |
-| fields-column      | string  | fields                | When `fields-as-json` is set, this column specifies the name of the JSON column for the fields |
-| quiet              | bool    | false                 | If specified will suppress any log to STDOUT |
+| flag                      | type    | default               | description |
+|---------------------------|---------|-----------------------|-------------|
+| input-server              | string  | http://localhost:8086 | Location of the input database, http(s)://location:port. |
+| input-pass                | string  |                       | Password to use when connecting to the input database |
+| input-user                | string  |                       | Username to use when connecting to the input database |
+| input-unsafe-https        | bool    | false                 | Should 'InsecureSkipVerify' be passed to the input connection |
+| retention-policy          | string  | autogen               | The retention policy to select the tags and fields from |
+| output-conn               | string  | sslmode=disable       | Connection string to use to connect to the output database|
+| output-schema             | string  |                       | The schema of the output database that the data will be inserted into |
+| schema-strategy           | string  | CreateIfMissing       | Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate |
+| tags-as-json              | bool    | false                 | If this flag is set to true, then the Tags of the influx measures being exported will be combined into a single JSONb column in Timescale |
+| tags-column               | string  | tags                  | When `tags-as-json` is set, this column specifies the name of the JSON column for the tags |
+| fields-as-json            | bool    | false                 | If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale |
+| fields-column             | string  | fields                | When `fields-as-json` is set, this column specifies the name of the JSON column for the fields |
+| multishard-int-float-cast | bool    | false                 | If a field is Int64 in one shard, and Float64 in another, with this flag it will be cast to Float64 despite possible data loss |
+| quiet                     | bool    | false                 | If specified will suppress any log to STDOUT |
 
 ### Migrate
 
@@ -115,6 +132,7 @@ Available flags are:
 | tags-column      | string  | tags                  | When `tags-as-json` is set, this column specifies the name of the JSON column for the tags |
 | fields-as-json   | bool    | false                 | If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale |
 | fields-column    | string  | fields                | When `fields-as-json` is set, this column specifies the name of the JSON column for the fields |
+| multishard-int-float-cast | bool    | false                 | If a field is Int64 in one shard, and Float64 in another, with this flag it will be cast to Float64 despite possible data loss |
 | quiet                      | bool    | false                 | If specified will suppress any log to STDOUT |
 
 ### Examples
@@ -183,4 +201,17 @@ Also you can specify to Outflux to skip HTTPS verification when communicating wi
 
 ## Known limitations
 
-Outflux doesn't support fields that have the same name but different data types across shards in InfluxDB (https://github.com/timescale/outflux/issues/59)
+### Fields with different data types across shards
+
+Outflux doesn't support fields that have the same name but different data types across shards in InfluxDB, 
+**UNLESS** the field is an `integer` and `float` in the InfluxDB shards. 
+InfluxDB can store the fields as `integer` (64bit integer), `float` (64bit float), `string`, and `boolean`.
+You can specify the `multishard-int-float-cast` flag. This will tell Outflux to cast the `integer` values to 
+`float` values. A 64bit float can't hold all the int64 values, so this may result in scrambled data (for values > 2^53). 
+
+If the same field is of any of the other possible InfluxDB types, an error will be thrown, since the values can't be 
+converted.
+
+This is also an issue even if you select a time interval in which a field has a consistent type, but exists as a different type
+in a shard outside of that interval. This is because the `SHOW FIELD KEYS FROM measurement_name` doesn't accept a time interval
+for which you would be asking

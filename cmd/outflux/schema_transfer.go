@@ -43,7 +43,7 @@ func initSchemaTransferCmd() *cobra.Command {
 	schemaTransferCmd.PersistentFlags().Bool(flagparsers.FieldsAsJSONFlag, flagparsers.DefaultFieldsAsJSON, "If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale")
 	schemaTransferCmd.PersistentFlags().String(flagparsers.FieldsColumnFlag, flagparsers.DefaultFieldsColumn, "When "+flagparsers.FieldsAsJSONFlag+" is set, this column specifies the name of the JSON column for the fields")
 	schemaTransferCmd.PersistentFlags().String(flagparsers.OutputSchemaFlag, flagparsers.DefaultOutputSchema, "The schema of the output database that the data will be inserted into")
-
+	schemaTransferCmd.PersistentFlags().Bool(flagparsers.MultishardIntFloatCast, flagparsers.DefaultMultishardIntFloatCast, "If a field is Int64 in one shard, and Float64 in another, with this flag it will be cast to Float64 despite possible data loss")
 	return schemaTransferCmd
 }
 
@@ -68,9 +68,14 @@ func transferSchema(app *appContext, connArgs *cli.ConnectionConfig, args *cli.M
 
 	// transfer the schema for all measures
 	if len(connArgs.InputMeasures) == 0 {
-		connArgs.InputMeasures, err = discoverMeasures(app, infConn, connArgs.InputDb, args.RetentionPolicy)
+		log.Printf("No measurements explicitly specified. Discovering automatically")
+		connArgs.InputMeasures, err = discoverMeasures(app, infConn, connArgs.InputDb, args.RetentionPolicy, args.OnConflictConvertIntToFloat)
 		if err != nil {
 			return fmt.Errorf("could not discover the available measures for the input db '%s'", connArgs.InputDb)
+		}
+		if len(connArgs.InputMeasures) == 0 {
+			log.Printf("No candidate measurements discovered. Exiting")
+			return nil
 		}
 	}
 
@@ -86,8 +91,8 @@ func transferSchema(app *appContext, connArgs *cli.ConnectionConfig, args *cli.M
 	return nil
 }
 
-func discoverMeasures(app *appContext, influxConn influx.Client, db, rp string) ([]string, error) {
-	schemaManager := app.schemaManagerService.Influx(influxConn, db, rp)
+func discoverMeasures(app *appContext, influxConn influx.Client, db, rp string, onConflictConvertIntToFloat bool) ([]string, error) {
+	schemaManager := app.schemaManagerService.Influx(influxConn, db, rp, onConflictConvertIntToFloat)
 	return schemaManager.DiscoverDataSets()
 }
 

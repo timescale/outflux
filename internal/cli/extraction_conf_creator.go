@@ -18,14 +18,15 @@ type defaultExtractionConfCreator struct{}
 
 func (d *defaultExtractionConfCreator) create(pipeID, db, measure string, conf *MigrationConfig) *config.ExtractionConfig {
 	measureExtractionConf := &config.MeasureExtraction{
-		Database:        db,
-		Measure:         measure,
-		From:            conf.From,
-		To:              conf.To,
-		ChunkSize:       conf.ChunkSize,
-		Limit:           conf.Limit,
-		SchemaOnly:      conf.SchemaOnly,
-		RetentionPolicy: conf.RetentionPolicy,
+		Database:                    db,
+		Measure:                     measure,
+		From:                        conf.From,
+		To:                          conf.To,
+		ChunkSize:                   conf.ChunkSize,
+		Limit:                       conf.Limit,
+		SchemaOnly:                  conf.SchemaOnly,
+		RetentionPolicy:             conf.RetentionPolicy,
+		OnConflictConvertIntToFloat: conf.OnConflictConvertIntToFloat,
 	}
 
 	ex := &config.ExtractionConfig{

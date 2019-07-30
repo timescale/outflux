@@ -25,29 +25,29 @@ func TestCanFitInto(t *testing.T) {
 	for _, dt := range allTypes {
 		if dt == IDRFInteger64 || dt == IDRFSingle || dt == IDRFDouble {
 			if !IDRFInteger32.CanFitInto(dt) {
-				t.Errorf("should've fit")
+				t.Errorf("%s should've fit in %s", IDRFInteger32, dt)
 			}
 		} else if dt != IDRFInteger32 && IDRFInteger32.CanFitInto(dt) {
-			t.Error("shouldn't have fit")
+			t.Errorf("%s shouldn't have fit in %s", IDRFInteger32, dt)
 			continue
 		}
 
 		if dt == IDRFDouble {
-			if !IDRFInteger64.CanFitInto(dt) && !IDRFSingle.CanFitInto(dt) {
-				t.Error("should've fit")
+			if !IDRFSingle.CanFitInto(dt) {
+				t.Errorf("%s should've fit in %s", IDRFSingle, dt)
 			}
-		} else if dt != IDRFInteger64 && dt != IDRFSingle && (IDRFInteger64.CanFitInto(dt) || IDRFSingle.CanFitInto(dt)) {
-			t.Error("shouldn't have")
+		} else if dt != IDRFSingle && IDRFSingle.CanFitInto(dt) {
+			t.Errorf("%s shouldn't have fit in %s", IDRFSingle, dt)
 			continue
 		}
 
 		if dt == IDRFTimestamptz && !IDRFTimestamp.CanFitInto(dt) {
-			t.Error("should've fit")
+			t.Errorf("%s should've fit in %s", IDRFTimestamp, dt)
 			continue
 		}
 
 		if dt != IDRFString && dt.CanFitInto(IDRFString) {
-			t.Error("shoulnd't have fit")
+			t.Errorf("%s shouldn't have fit in %s", dt, IDRFString)
 		}
 	}
 }

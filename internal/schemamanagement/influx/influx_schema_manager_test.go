@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewInfluxSchemaManager(t *testing.T) {
-	NewSchemaManager(nil, "", "", nil, nil, nil)
+	NewSchemaManager(nil, "", "", true, nil, nil, nil)
 }
 
 func TestDiscoverDataSets(t *testing.T) {
@@ -80,7 +80,7 @@ type ismMeasureExp struct {
 	measureErr error
 }
 
-func (i *ismMeasureExp) FetchAvailableMeasurements(influxClient influx.Client, db, rp string) ([]string, error) {
+func (i *ismMeasureExp) FetchAvailableMeasurements(influxClient influx.Client, db, rp string, convertIntToFloat bool) ([]string, error) {
 	return i.measures, i.measureErr
 }
 

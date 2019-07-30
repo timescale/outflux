@@ -15,25 +15,27 @@ type dataSetConstructor interface {
 
 // NewDataSetConstructor creates a new instance of a DataSetConstructor
 func newDataSetConstructor(
-	db, rp string,
+	db, rp string, onConflictConvertIntToFloat bool,
 	client influx.Client,
 	tagExplorer discovery.TagExplorer,
 	fieldExplorer discovery.FieldExplorer) dataSetConstructor {
 	return &defaultDSConstructor{
-		database:      db,
-		rp:            rp,
-		influxClient:  client,
-		tagExplorer:   tagExplorer,
-		fieldExplorer: fieldExplorer,
+		database:                    db,
+		rp:                          rp,
+		influxClient:                client,
+		tagExplorer:                 tagExplorer,
+		fieldExplorer:               fieldExplorer,
+		onConflictConvertIntToFloat: onConflictConvertIntToFloat,
 	}
 }
 
 type defaultDSConstructor struct {
-	database      string
-	rp            string
-	tagExplorer   discovery.TagExplorer
-	fieldExplorer discovery.FieldExplorer
-	influxClient  influx.Client
+	database                    string
+	rp                          string
+	onConflictConvertIntToFloat bool
+	tagExplorer                 discovery.TagExplorer
+	fieldExplorer               discovery.FieldExplorer
+	influxClient                influx.Client
 }
 
 func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSet, error) {
@@ -42,7 +44,7 @@ func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSet, error) 
 		return nil, fmt.Errorf("could not discover the tags of measurement '%s'\n%v", measure, err)
 	}
 
-	idrfFields, err := d.fieldExplorer.DiscoverMeasurementFields(d.influxClient, d.database, d.rp, measure)
+	idrfFields, err := d.fieldExplorer.DiscoverMeasurementFields(d.influxClient, d.database, d.rp, measure, d.onConflictConvertIntToFloat)
 	if err != nil {
 		return nil, fmt.Errorf("could not discover the fields of measure '%s'\n%v", measure, err)
 	}
