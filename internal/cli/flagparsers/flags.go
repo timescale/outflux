@@ -7,6 +7,7 @@ import (
 
 // Flags used in outflux and their default values
 const (
+	VersionFlag                 = "version"
 	InputServerFlag             = "input-server"
 	InputUserFlag               = "input-user"
 	InputPassFlag               = "input-pass"
