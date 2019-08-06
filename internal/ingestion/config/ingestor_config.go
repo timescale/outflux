@@ -37,7 +37,6 @@ func ParseStrategyString(strategy string) (CommitStrategy, error) {
 	default:
 		return CommitOnEnd, fmt.Errorf("unknown commit strategy '%s'", strategy)
 	}
-
 }
 
 func (s CommitStrategy) String() string {
