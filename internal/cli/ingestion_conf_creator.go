@@ -25,5 +25,6 @@ func (s *defaultIngestionConfCreator) create(pipeID string, conf *MigrationConfi
 		CommitStrategy:          conf.CommitStrategy,
 		SchemaStrategy:          conf.OutputSchemaStrategy,
 		Schema:                  conf.OutputSchema,
+		ChunkTimeInterval:       conf.ChunkTimeInterval,
 	}
 }

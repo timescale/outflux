@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx"
-
+	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
@@ -15,17 +14,17 @@ type TSSchemaManager struct {
 	explorer schemaExplorer
 	creator  tableCreator
 	dropper  tableDropper
-	dbConn   *pgx.Conn
+	dbConn   connections.PgxWrap
 	schema   string
 }
 
 // NewTSSchemaManager creates a new TimeScale Schema Manager
-func NewTSSchemaManager(dbConn *pgx.Conn, schema string) *TSSchemaManager {
+func NewTSSchemaManager(dbConn connections.PgxWrap, schema, chunkTimeInterval string) *TSSchemaManager {
 	return &TSSchemaManager{
 		dbConn:   dbConn,
 		schema:   schema,
 		explorer: newSchemaExplorer(),
-		creator:  newTableCreator(schema),
+		creator:  newTableCreator(schema, chunkTimeInterval),
 		dropper:  newTableDropper(),
 	}
 }

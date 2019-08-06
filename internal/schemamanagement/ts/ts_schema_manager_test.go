@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/jackc/pgx"
-
+	"github.com/stretchr/testify/assert"
+	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/schemamanagement/schemaconfig"
 )
@@ -58,6 +58,13 @@ func TestPrepareDataSetFails(t *testing.T) {
 			dropper:  errorOnDrop(),
 			strategy: schemaconfig.DropAndCreate,
 			desc:     "drop strategy, table exists, error on drop",
+		}, {
+			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.DropAndCreate},
+			explorer: onTableExists(true),
+			creator:  okOnTableCreate(),
+			dropper:  errorOnDrop(),
+			strategy: schemaconfig.DropCascadeAndCreate,
+			desc:     "drop cascade strategy, table exists, error on drop",
 		}, {
 			args:     prepareArgs{DataSet: dataSet, Strategy: schemaconfig.CreateIfMissing},
 			explorer: onTableExists(false),
@@ -181,6 +188,18 @@ func TestPrepareOk(t *testing.T) {
 	}
 }
 
+func TestNewTsSchemaManager(t *testing.T) {
+	sm := NewTSSchemaManager(&tcMockPgxW{}, "she ma", "1m")
+	assert.Equal(t, "she ma", sm.schema)
+	assert.NotNil(t, sm.dbConn)
+	assert.NotNil(t, sm.explorer)
+	assert.NotNil(t, sm.creator)
+	assert.NotNil(t, sm.dropper)
+	creator := sm.creator.(*defaultTableCreator)
+	assert.Equal(t, "she ma", creator.schema)
+	assert.Equal(t, "1m", creator.chunkTimeInterval)
+}
+
 func errorOnTableExistsExplorer() schemaExplorer {
 	errorTableFinder := &mocker{tableExistsR: false, tableExistsErr: fmt.Errorf("error")}
 	return newSchemaExplorerWith(errorTableFinder, nil, nil, nil, nil)
@@ -276,46 +295,46 @@ type mocker struct {
 	updateMetadataErr    error
 }
 
-func (m *mocker) tableExists(db *pgx.Conn, schemaName, tableName string) (bool, error) {
+func (m *mocker) tableExists(db connections.PgxWrap, schemaName, tableName string) (bool, error) {
 	return m.tableExistsR, m.tableExistsErr
 }
 
-func (m *mocker) metadataTableName(db *pgx.Conn) (string, error) {
+func (m *mocker) metadataTableName(db connections.PgxWrap) (string, error) {
 	return m.metadataTable, m.metadataTableNameErr
 }
 
-func (m *mocker) fetchTableColumns(db *pgx.Conn, schemaName, tableName string) ([]*columnDesc, error) {
+func (m *mocker) fetchTableColumns(db connections.PgxWrap, schemaName, tableName string) ([]*columnDesc, error) {
 	return m.fetcColR, m.fetchColError
 }
 
-func (m *mocker) CreateTable(dbConn *pgx.Conn, info *idrf.DataSet) error {
+func (m *mocker) CreateTable(dbConn connections.PgxWrap, info *idrf.DataSet) error {
 	return m.tableCreateError
 }
 
-func (m *mocker) UpdateMetadata(dbConn *pgx.Conn, metadataTableName string) error {
+func (m *mocker) UpdateMetadata(dbConn connections.PgxWrap, metadataTableName string) error {
 	return m.updateMetadataErr
 }
 
-func (m *mocker) CreateHypertable(dbConn *pgx.Conn, info *idrf.DataSet) error {
+func (m *mocker) CreateHypertable(dbConn connections.PgxWrap, info *idrf.DataSet) error {
 	return m.createHyperErr
 }
 
-func (m *mocker) CreateTimescaleExtension(dbConn *pgx.Conn) error {
+func (m *mocker) CreateTimescaleExtension(dbConn connections.PgxWrap) error {
 	return m.extErr
 }
 
-func (m *mocker) Drop(db *pgx.Conn, table string, cascade bool) error {
+func (m *mocker) Drop(db connections.PgxWrap, table string, cascade bool) error {
 	return m.dropError
 }
 
-func (m *mocker) isHypertable(db *pgx.Conn, schemaName, tableName string) (bool, error) {
+func (m *mocker) isHypertable(db connections.PgxWrap, schemaName, tableName string) (bool, error) {
 	return m.isHyper, m.isHypertableErr
 }
 
-func (m *mocker) isTimePartitionedBy(db *pgx.Conn, schema, table, time string) (bool, error) {
+func (m *mocker) isTimePartitionedBy(db connections.PgxWrap, schema, table, time string) (bool, error) {
 	return m.isTimePartBy, m.isTimePartErr
 }
 
-func (m *mocker) timescaleExists(db *pgx.Conn) (bool, error) {
+func (m *mocker) timescaleExists(db connections.PgxWrap) (bool, error) {
 	return m.tsExt, m.tsExtErr
 }

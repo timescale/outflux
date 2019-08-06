@@ -2,7 +2,7 @@ package schemamanagement
 
 import (
 	influx "github.com/influxdata/influxdb/client/v2"
-	"github.com/jackc/pgx"
+	"github.com/timescale/outflux/internal/connections"
 	influxSchema "github.com/timescale/outflux/internal/schemamanagement/influx"
 	"github.com/timescale/outflux/internal/schemamanagement/influx/discovery"
 	tsSchema "github.com/timescale/outflux/internal/schemamanagement/ts"
@@ -11,7 +11,7 @@ import (
 // SchemaManagerService defines methods for creating SchemaManagers
 type SchemaManagerService interface {
 	Influx(client influx.Client, db, rp string, onConflictConvertIntToFloat bool) SchemaManager
-	TimeScale(dbConn *pgx.Conn, schema string) SchemaManager
+	TimeScale(dbConn connections.PgxWrap, schema, chunkTimeInterval string) SchemaManager
 }
 
 // NewSchemaManagerService returns an instance of SchemaManagerService
@@ -34,6 +34,6 @@ func (s *schemaManagerService) Influx(client influx.Client, db, rp string, onCon
 	return influxSchema.NewSchemaManager(client, db, rp, onConflictConvertIntToFloat, s.measureExplorer, s.tagExplorer, s.fieldExplorer)
 }
 
-func (s *schemaManagerService) TimeScale(dbConn *pgx.Conn, schema string) SchemaManager {
-	return tsSchema.NewTSSchemaManager(dbConn, schema)
+func (s *schemaManagerService) TimeScale(dbConn connections.PgxWrap, schema, chunkTimeInterval string) SchemaManager {
+	return tsSchema.NewTSSchemaManager(dbConn, schema, chunkTimeInterval)
 }

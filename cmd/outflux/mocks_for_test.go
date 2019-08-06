@@ -5,7 +5,6 @@ import (
 	"time"
 
 	influx "github.com/influxdata/influxdb/client/v2"
-	"github.com/jackc/pgx"
 	"github.com/timescale/outflux/internal/cli"
 	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/pipeline"
@@ -20,7 +19,7 @@ type mockService struct {
 	inflSchemMngr schemamanagement.SchemaManager
 }
 
-func (m *mockService) Create(infConn influx.Client, tsConn *pgx.Conn, measure, inputDb string, conf *cli.MigrationConfig) (pipeline.Pipe, error) {
+func (m *mockService) Create(infConn influx.Client, tsConn connections.PgxWrap, measure, inputDb string, conf *cli.MigrationConfig) (pipeline.Pipe, error) {
 	return m.pipe, m.pipeErr
 }
 
@@ -32,16 +31,16 @@ func (m *mockService) Influx(c influx.Client, db, rp string, convertIntToFloat b
 	return m.inflSchemMngr
 }
 
-func (m *mockService) TimeScale(dbConn *pgx.Conn, schema string) schemamanagement.SchemaManager {
+func (m *mockService) TimeScale(dbConn connections.PgxWrap, schema, chunkInterval string) schemamanagement.SchemaManager {
 	return nil
 }
 
 type mockTsConnSer struct {
-	tsConn    *pgx.Conn
+	tsConn    connections.PgxWrap
 	tsConnErr error
 }
 
-func (m *mockTsConnSer) NewConnection(connStr string) (*pgx.Conn, error) {
+func (m *mockTsConnSer) NewConnection(connStr string) (connections.PgxWrap, error) {
 	return m.tsConn, m.tsConnErr
 }
 
