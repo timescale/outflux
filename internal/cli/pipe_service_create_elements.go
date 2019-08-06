@@ -4,12 +4,11 @@ import (
 	"fmt"
 
 	influx "github.com/influxdata/influxdb/client/v2"
+	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/extraction"
 	extrConfig "github.com/timescale/outflux/internal/extraction/config"
 	"github.com/timescale/outflux/internal/ingestion"
 	ingConfig "github.com/timescale/outflux/internal/ingestion/config"
-	"github.com/timescale/outflux/internal/connections"
-
 )
 
 func (p *pipeService) createElements(

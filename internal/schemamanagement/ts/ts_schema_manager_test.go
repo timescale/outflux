@@ -189,7 +189,7 @@ func TestPrepareOk(t *testing.T) {
 }
 
 func TestNewTsSchemaManager(t *testing.T) {
-	sm := NewTSSchemaManager(&tcMockPgxW{}, "she ma", "1m")
+	sm := NewTSSchemaManager(&connections.MockPgxW{}, "she ma", "1m")
 	assert.Equal(t, "she ma", sm.schema)
 	assert.NotNil(t, sm.dbConn)
 	assert.NotNil(t, sm.explorer)

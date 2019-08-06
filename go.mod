@@ -13,6 +13,6 @@ require (
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
-	github.com/stretchr/testify v1.2.2
+	github.com/stretchr/testify v1.3.0
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4
 )

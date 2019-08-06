@@ -1,89 +1,27 @@
 language: go
 
+go:
+  - 1.12.x
 services:
   - docker
-env:
-  global:
-    - GO111MODULE=on
-jobs:
-  include:
-    - stage: test
-      name: "Influx compat 1.0"
-      go:
-        - 1.11.x
-      before_install:
-        # Start timescale in docker
-        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
-        # Run specific version of influx
-        - docker run -d --name influx1_0 -p 8086:8086 influxdb:1.0
-      install: 
-        - echo 'do not run default install step'
-      script:
-        # Unit and integration tests
-        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-    - stage: test
-      name: "Influx compat 1.5"
-      go:
-        - 1.11.x
-      before_install:
-        # Start timescale in docker
-        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
-        # Run specific version of influx
-        - docker run -d --name influx1_5 -p 8086:8086 influxdb:1.5
-      install: 
-        - echo 'do not run default install step'
-      script:
-        # Unit and integration tests
-        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-    - stage: test
-      name: "Influx compat 1.6"
-      go:
-        - 1.11.x
-      before_install:
-        # Start timescale in docker
-        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
-        # Run specific version of influx
-        - docker run -d --name influx1_6 -p 8086:8086 influxdb:1.6
-      install: 
-        - echo 'do not run default install step'
-      script:
-        # Unit and integration tests
-        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-    - stage: test
-      name: "Influx compat 1.7"
-      go:
-        - 1.11.x
-      before_install:
-        # Start timescale in docker
-        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
-        # Run specific version of influx
-        - docker run -d --name influx1_7 -p 8086:8086 influxdb:1.7
-      install:
-        - echo 'do not run default install step'
-      script:
-        # Unit and integration tests
-        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-    - stage: test
-      name: "Influx compat latest"
-      go:
-        - 1.11.x
-      before_install:
-        # Start timescale in docker
-        - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
-        # Run specific version of influx
-        - docker run -d --name influx_l -p 8086:8086 influxdb
-      install: 
-        - echo 'do not run default install step'
-      script:
-        # Unit and integration tests
-        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+install: true
+script: 
+  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+  - docker run -d --name influx1_0 -p 8086:8086 influxdb:1.0
+  - GO111MODULE=on go test -race -tags=integration ./...
+  - go clean -testcache
+  - docker stop influx1_0 && docker rm influx1_0
+  - docker stop ts1 && docker rm ts1
+  - echo '- - - - -'
+  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+  - docker run -d --name influx1_6 -p 8086:8086 influxdb:1.6
+  - GO111MODULE=on go test -race -tags=integration ./...
+  - go clean -testcache
+  - docker stop influx1_6 && docker rm influx1_6
+  - docker stop ts1 && docker rm ts1
+  - echo '- - - - -'
+  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+  - docker run -d --name influx_l -p 8086:8086 influxdb
+  - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

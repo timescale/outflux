@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx"
 	"github.com/stretchr/testify/assert"
+	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/idrf"
 )
 
@@ -42,7 +43,7 @@ func TestCreateTable(t *testing.T) {
 	genErr := errors.New("generic error")
 	testCases := []struct {
 		desc                string
-		db                  *tcMockPgxW
+		db                  *connections.MockPgxW
 		info                *idrf.DataSet
 		expectErr           bool
 		expectNumExecCalls  int
@@ -50,36 +51,36 @@ func TestCreateTable(t *testing.T) {
 	}{
 		{
 			desc: "error on exec create basic table",
-			db: &tcMockPgxW{
-				execRes:  []pgx.CommandTag{""},
-				execErrs: []error{genErr},
+			db: &connections.MockPgxW{
+				ExecRes:  []pgx.CommandTag{""},
+				ExecErrs: []error{genErr},
 			},
 			info:               &idrf.DataSet{},
 			expectErr:          true,
 			expectNumExecCalls: 1,
 		}, {
 			desc: "error on create timescale extension",
-			db: &tcMockPgxW{
-				execRes:  []pgx.CommandTag{"", ""},
-				execErrs: []error{nil, genErr},
+			db: &connections.MockPgxW{
+				ExecRes:  []pgx.CommandTag{"", ""},
+				ExecErrs: []error{nil, genErr},
 			},
 			info:               &idrf.DataSet{},
 			expectErr:          true,
 			expectNumExecCalls: 2,
 		}, {
 			desc: "error on create hypertable",
-			db: &tcMockPgxW{
-				execRes:  []pgx.CommandTag{"", "", ""},
-				execErrs: []error{nil, nil, genErr},
+			db: &connections.MockPgxW{
+				ExecRes:  []pgx.CommandTag{"", "", ""},
+				ExecErrs: []error{nil, nil, genErr},
 			},
 			info:               &idrf.DataSet{},
 			expectErr:          true,
 			expectNumExecCalls: 3,
 		}, {
 			desc: "all good",
-			db: &tcMockPgxW{
-				execRes:  []pgx.CommandTag{"", "", ""},
-				execErrs: []error{nil, nil, genErr},
+			db: &connections.MockPgxW{
+				ExecRes:  []pgx.CommandTag{"", "", ""},
+				ExecErrs: []error{nil, nil, genErr},
 			},
 			info:               &idrf.DataSet{},
 			expectErr:          true,
@@ -96,8 +97,8 @@ func TestCreateTable(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			assert.Equal(t, tc.expectNumExecCalls, tc.db.currentExec)
-			assert.Equal(t, tc.expectNumQueryCalls, tc.db.currentQ)
+			assert.Equal(t, tc.expectNumExecCalls, tc.db.CurrentExec)
+			assert.Equal(t, tc.expectNumQueryCalls, tc.db.CurrentQ)
 		})
 	}
 }
@@ -107,7 +108,7 @@ func TestUpdateMetadata(t *testing.T) {
 	metTabName := "meta table"
 	testCases := []struct {
 		desc                string
-		db                  *tcMockPgxW
+		db                  *connections.MockPgxW
 		expectErr           bool
 		expectNumExecCalls  int
 		expectNumQueryCalls int
@@ -118,9 +119,9 @@ func TestUpdateMetadata(t *testing.T) {
 	}{
 		{
 			desc: "error on get metadata table",
-			db: &tcMockPgxW{
-				queryRes:  []*pgx.Rows{nil},
-				queryErrs: []error{genErr},
+			db: &connections.MockPgxW{
+				QueryRes:  []*pgx.Rows{nil},
+				QueryErrs: []error{genErr},
 			},
 			expectErr:           true,
 			expectNumQueryCalls: 1,
@@ -138,12 +139,12 @@ func TestUpdateMetadata(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			db := tc.db
-			assert.Equal(t, tc.expectNumExecCalls, db.currentExec)
-			assert.Equal(t, tc.expectNumQueryCalls, db.currentQ)
-			assert.Equal(t, tc.expectedQueries, db.expQ)
-			assert.Equal(t, tc.expectedQueryArgs, db.expQArgs)
-			assert.Equal(t, tc.expectedExecs, db.expExec)
-			assert.Equal(t, tc.expectedExecArgs, db.expExecArgs)
+			assert.Equal(t, tc.expectNumExecCalls, db.CurrentExec)
+			assert.Equal(t, tc.expectNumQueryCalls, db.CurrentQ)
+			assert.Equal(t, tc.expectedQueries, db.ExpQ)
+			assert.Equal(t, tc.expectedQueryArgs, db.ExpQArgs)
+			assert.Equal(t, tc.expectedExecs, db.ExpExec)
+			assert.Equal(t, tc.expectedExecArgs, db.ExpExecArgs)
 		})
 	}
 }
@@ -153,7 +154,7 @@ func TestCreateHypertable(t *testing.T) {
 	tabName := "table name"
 	testCases := []struct {
 		desc                string
-		db                  *tcMockPgxW
+		db                  *connections.MockPgxW
 		info                *idrf.DataSet
 		schema              string
 		chunkTimeInterval   string
@@ -168,9 +169,9 @@ func TestCreateHypertable(t *testing.T) {
 			info: &idrf.DataSet{
 				TimeColumn:  "tajm col",
 				DataSetName: tabName},
-			db: &tcMockPgxW{
-				execRes:  []pgx.CommandTag{""},
-				execErrs: []error{genErr}},
+			db: &connections.MockPgxW{
+				ExecRes:  []pgx.CommandTag{""},
+				ExecErrs: []error{genErr}},
 			expectNumExecCalls: 1,
 			expectedExecs:      []string{`SELECT create_hypertable('"` + tabName + `"', 'tajm col');`},
 		}, {
@@ -178,9 +179,9 @@ func TestCreateHypertable(t *testing.T) {
 			info: &idrf.DataSet{
 				TimeColumn:  "tajm col",
 				DataSetName: tabName},
-			db: &tcMockPgxW{
-				execRes:  []pgx.CommandTag{""},
-				execErrs: []error{nil}},
+			db: &connections.MockPgxW{
+				ExecRes:  []pgx.CommandTag{""},
+				ExecErrs: []error{nil}},
 			expectNumExecCalls: 1,
 			expectedExecs:      []string{`SELECT create_hypertable('"` + tabName + `"', 'tajm col');`},
 		}, {
@@ -189,9 +190,9 @@ func TestCreateHypertable(t *testing.T) {
 				TimeColumn:  "tajm col",
 				DataSetName: tabName},
 			schema: "she ma",
-			db: &tcMockPgxW{
-				execRes:  []pgx.CommandTag{""},
-				execErrs: []error{nil}},
+			db: &connections.MockPgxW{
+				ExecRes:  []pgx.CommandTag{""},
+				ExecErrs: []error{nil}},
 			expectNumExecCalls: 1,
 			expectedExecs:      []string{`SELECT create_hypertable('"she ma"."` + tabName + `"', 'tajm col');`},
 		}, {
@@ -201,9 +202,9 @@ func TestCreateHypertable(t *testing.T) {
 				DataSetName: tabName},
 			schema:            "she ma",
 			chunkTimeInterval: "1m",
-			db: &tcMockPgxW{
-				execRes:  []pgx.CommandTag{""},
-				execErrs: []error{nil}},
+			db: &connections.MockPgxW{
+				ExecRes:  []pgx.CommandTag{""},
+				ExecErrs: []error{nil}},
 			expectNumExecCalls: 1,
 			expectedExecs:      []string{`SELECT create_hypertable('"she ma"."` + tabName + `"', 'tajm col', chunk_time_interval => interval '1m');`},
 		},
@@ -221,52 +222,9 @@ func TestCreateHypertable(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			db := tc.db
-			assert.Equal(t, tc.expectNumExecCalls, db.currentExec)
-			assert.Equal(t, tc.expectNumQueryCalls, db.currentQ)
-			assert.Equal(t, tc.expectedExecs, db.expExec)
+			assert.Equal(t, tc.expectNumExecCalls, db.CurrentExec)
+			assert.Equal(t, tc.expectNumQueryCalls, db.CurrentQ)
+			assert.Equal(t, tc.expectedExecs, db.ExpExec)
 		})
 	}
-}
-
-type tcMockPgxW struct {
-	execRes     []pgx.CommandTag
-	execErrs    []error
-	currentExec int
-	queryRes    []*pgx.Rows
-	queryErrs   []error
-	currentQ    int
-	expQ        []string
-	expQArgs    [][]interface{}
-	expExec     []string
-	expExecArgs [][]interface{}
-}
-
-func (t *tcMockPgxW) Begin() (*pgx.Tx, error) { return nil, nil }
-func (t *tcMockPgxW) CopyFrom(tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int, error) {
-	return 0, nil
-}
-func (t *tcMockPgxW) Exec(sql string, arguments ...interface{}) (commandTag pgx.CommandTag, err error) {
-	if t.expExec == nil {
-		t.expExec = make([]string, len(t.execRes))
-		t.expExecArgs = make([][]interface{}, len(t.execRes))
-	}
-	tmp := t.currentExec
-	t.expExec[tmp] = sql
-	t.expExecArgs[tmp] = arguments
-	t.currentExec++
-	return t.execRes[tmp], t.execErrs[tmp]
-}
-func (t *tcMockPgxW) Query(sql string, args ...interface{}) (*pgx.Rows, error) {
-	if t.expQ == nil {
-		t.expQ = make([]string, len(t.queryRes))
-		t.expQArgs = make([][]interface{}, len(t.queryRes))
-	}
-	tmp := t.currentQ
-	t.expQ[tmp] = sql
-	t.expQArgs[tmp] = args
-	t.currentQ++
-	return t.queryRes[tmp], t.queryErrs[tmp]
-}
-func (t *tcMockPgxW) Close() error {
-	return nil
 }
