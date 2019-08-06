@@ -8,7 +8,6 @@ import (
 	"time"
 
 	influx "github.com/influxdata/influxdb/client/v2"
-	"github.com/jackc/pgx"
 	"github.com/spf13/cobra"
 	"github.com/timescale/outflux/internal/cli"
 	"github.com/timescale/outflux/internal/cli/flagparsers"
@@ -56,6 +55,8 @@ func initMigrateCmd() *cobra.Command {
 	migrateCmd.PersistentFlags().String(flagparsers.FieldsColumnFlag, flagparsers.DefaultFieldsColumn, "When "+flagparsers.FieldsAsJSONFlag+" is set, this column specifies the name of the JSON column for the fields")
 	migrateCmd.PersistentFlags().String(flagparsers.OutputSchemaFlag, flagparsers.DefaultOutputSchema, "The schema of the output database that the data will be inserted into")
 	migrateCmd.PersistentFlags().Bool(flagparsers.MultishardIntFloatCast, flagparsers.DefaultMultishardIntFloatCast, "If a field is Int64 in one shard, and Float64 in another, with this flag it will be cast to Float64 despite possible data loss")
+	migrateCmd.PersistentFlags().String(flagparsers.ChunkTimeIntervalFlag, flagparsers.DefaultChunkTimeInterval, "chunk_time_interval of the hypertables created by Outflux")
+
 	return migrateCmd
 }
 
@@ -163,7 +164,7 @@ func preparePipeErrors(errors []error) error {
 	return fmt.Errorf(errString)
 }
 
-func openConnections(app *appContext, connArgs *cli.ConnectionConfig) (influx.Client, *pgx.Conn, error) {
+func openConnections(app *appContext, connArgs *cli.ConnectionConfig) (influx.Client, connections.PgxWrap, error) {
 	influxConn, err := app.ics.NewConnection(influxConnParams(connArgs))
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not open connection to Influx Server\n%v", err)

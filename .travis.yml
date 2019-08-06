@@ -2,7 +2,9 @@ language: go
 
 services:
   - docker
-
+env:
+  global:
+    - GO111MODULE=on
 jobs:
   include:
     - stage: test
@@ -14,14 +16,11 @@ jobs:
         - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
         # Run specific version of influx
         - docker run -d --name influx1_0 -p 8086:8086 influxdb:1.0
-      install:
-        # Setup dependency management tool
-        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
-        - chmod +x $GOPATH/bin/dep
-        - dep ensure
+      install: 
+        - echo 'do not run default install step'
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - stage: test
@@ -33,14 +32,11 @@ jobs:
         - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
         # Run specific version of influx
         - docker run -d --name influx1_5 -p 8086:8086 influxdb:1.5
-      install:
-        # Setup dependency management tool
-        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
-        - chmod +x $GOPATH/bin/dep
-        - dep ensure
+      install: 
+        - echo 'do not run default install step'
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - stage: test
@@ -52,14 +48,11 @@ jobs:
         - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
         # Run specific version of influx
         - docker run -d --name influx1_6 -p 8086:8086 influxdb:1.6
-      install:
-        # Setup dependency management tool
-        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
-        - chmod +x $GOPATH/bin/dep
-        - dep ensure
+      install: 
+        - echo 'do not run default install step'
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - stage: test
@@ -72,13 +65,10 @@ jobs:
         # Run specific version of influx
         - docker run -d --name influx1_7 -p 8086:8086 influxdb:1.7
       install:
-        # Setup dependency management tool
-        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
-        - chmod +x $GOPATH/bin/dep
-        - dep ensure
+        - echo 'do not run default install step'
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - stage: test
@@ -90,13 +80,10 @@ jobs:
         - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
         # Run specific version of influx
         - docker run -d --name influx_l -p 8086:8086 influxdb
-      install:
-         # Setup dependency management tool
-        - curl -L -s https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -o $GOPATH/bin/dep
-        - chmod +x $GOPATH/bin/dep
-        - dep ensure 
+      install: 
+        - echo 'do not run default install step'
       script:
         # Unit and integration tests
-        - go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+        - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
       after_success:
         - bash <(curl -s https://codecov.io/bash)

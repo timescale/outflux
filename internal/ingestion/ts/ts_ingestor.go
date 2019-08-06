@@ -3,7 +3,7 @@ package ts
 import (
 	"fmt"
 
-	"github.com/jackc/pgx"
+	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/ingestion/config"
 	"github.com/timescale/outflux/internal/schemamanagement"
@@ -12,7 +12,7 @@ import (
 // TSIngestor implements a TimescaleDB ingestor
 type TSIngestor struct {
 	Config           *config.IngestorConfig
-	DbConn           *pgx.Conn
+	DbConn           connections.PgxWrap
 	IngestionRoutine Routine
 	SchemaManager    schemamanagement.SchemaManager
 	cachedBundle     *idrf.Bundle

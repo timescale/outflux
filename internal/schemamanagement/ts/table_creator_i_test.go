@@ -4,28 +4,25 @@ package ts
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/testutils"
 )
 
-func TestCreateTable(t *testing.T) {
+func TestIntegratedCreateTable(t *testing.T) {
 	db := "test_create_table"
-	if err := testutils.DeleteTimescaleDb(db); err != nil {
-		t.Fatalf("could not prepare db: %v", err)
-	}
-	if err := testutils.CreateTimescaleDb(db); err != nil {
-		t.Fatalf("could not prepare db: %v", err)
-	}
+	require.NoError(t, testutils.DeleteTimescaleDb(db))
+	require.NoError(t, testutils.CreateTimescaleDb(db))
 	defer testutils.DeleteTimescaleDb(db)
 	creator := &defaultTableCreator{}
 	dbConn, err := testutils.OpenTSConn(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer dbConn.Close()
 	dataSet := &idrf.DataSet{
 		DataSetName: "name",
@@ -35,62 +32,39 @@ func TestCreateTable(t *testing.T) {
 		},
 		TimeColumn: "col1",
 	}
-	err = creator.CreateTable(dbConn, dataSet)
-	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
+	require.NoError(t, creator.CreateTable(dbConn, dataSet))
 
 	tableColumns := fmt.Sprintf(`SELECT column_name, data_type
         FROM information_schema.columns
         WHERE table_schema = %s AND table_name = %s`, "'public'", "'name'")
 	rows, err := dbConn.Query(tableColumns)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
 	defer rows.Close()
 	currCol := 0
 	for rows.Next() {
 		var name, dataType string
 		colInfo := dataSet.Columns[currCol]
-		err = rows.Scan(&name, &dataType)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if colInfo.Name != name || colInfo.DataType != pgTypeToIdrf(dataType) {
-			t.Fatalf("Expected column name: %s and type %v\ngot: %s and %s", colInfo.Name, colInfo.DataType, name, dataType)
-		}
+		require.NoError(t, rows.Scan(&name, &dataType))
+		require.Equal(t, colInfo.Name, name)
+		require.Equal(t, colInfo.DataType, pgTypeToIdrf(dataType))
 		currCol++
 	}
-	if currCol == 0 {
-		t.Fatal("table wasn't created")
-	}
-
+	require.NotZero(t, currCol)
 	// Creating the table again should fail
 	err = creator.CreateTable(dbConn, dataSet)
-	if err == nil {
-		t.Error("table creation should have failed because table exists")
-	}
+	assert.Error(t, err)
 }
 
 func TestCreateTableWithSchema(t *testing.T) {
 	db := "test_create_table_with_schema"
 	targetSchema := "some_schema"
-	if err := testutils.DeleteTimescaleDb(db); err != nil {
-		t.Fatalf("could not prepare db: %v", err)
-	}
-	if err := testutils.CreateTimescaleDb(db); err != nil {
-		t.Fatalf("could not prepare db: %v", err)
-	}
+	require.NoError(t, testutils.DeleteTimescaleDb(db))
+	require.NoError(t, testutils.CreateTimescaleDb(db))
 	defer testutils.DeleteTimescaleDb(db)
-	if err := testutils.CreateTimescaleSchema(db, targetSchema); err != nil {
-		t.Fatalf("could not create target schema: %v", err)
-	}
+	require.NoError(t, testutils.CreateTimescaleSchema(db, targetSchema))
 
 	dbConn, err := testutils.OpenTSConn(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer dbConn.Close()
 	dataSet := &idrf.DataSet{
 		DataSetName: "name",
@@ -103,57 +77,39 @@ func TestCreateTableWithSchema(t *testing.T) {
 	creator := &defaultTableCreator{
 		schema: targetSchema,
 	}
-	if err := creator.CreateTable(dbConn, dataSet); err != nil {
-		t.Fatalf("expected no error, got: %v", err)
-	}
+	require.NoError(t, creator.CreateTable(dbConn, dataSet))
 
 	tableColumns := fmt.Sprintf(`SELECT column_name, data_type
         FROM information_schema.columns
         WHERE table_schema = %s AND table_name = %s`, "'"+targetSchema+"'", "'name'")
 	rows, err := dbConn.Query(tableColumns)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer rows.Close()
 	currCol := 0
 	for rows.Next() {
 		var name, dataType string
 		colInfo := dataSet.Columns[currCol]
-		err = rows.Scan(&name, &dataType)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if colInfo.Name != name || colInfo.DataType != pgTypeToIdrf(dataType) {
-			t.Fatalf("Expected column name: %s and type %v\ngot: %s and %s", colInfo.Name, colInfo.DataType, name, dataType)
-		}
+		require.NoError(t, rows.Scan(&name, &dataType))
+		require.Equal(t, colInfo.Name, name)
+		require.Equal(t, colInfo.DataType, pgTypeToIdrf(dataType))
 		currCol++
 	}
-	if currCol == 0 {
-		t.Fatal("table wasn't created")
-	}
+	require.NotZero(t, currCol)
 }
 
-func TestUpdateMetadata(t *testing.T) {
+func TestIntegratedUpdateMetadata(t *testing.T) {
 	db := "test_update_metadata"
-	if err := testutils.DeleteTimescaleDb(db); err != nil {
-		t.Fatalf("could not prepare db: %v", err)
-	}
-	if err := testutils.CreateTimescaleDb(db); err != nil {
-		t.Fatalf("could not prepare db: %v", err)
-	}
+	require.NoError(t, testutils.DeleteTimescaleDb(db))
+	require.NoError(t, testutils.CreateTimescaleDb(db))
 	defer testutils.DeleteTimescaleDb(db)
 	explorer := &defaultTableFinder{}
 	creator := &defaultTableCreator{}
 	dbConn, err := testutils.OpenTSConn(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer dbConn.Close()
 	dbConn.Exec(createTimescaleExtensionQuery)
 	metadataTableName, err := explorer.metadataTableName(dbConn)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	if metadataTableName == "" {
 		return
@@ -164,82 +120,93 @@ func TestUpdateMetadata(t *testing.T) {
 		metadataKey))
 	timeBeforeUpdate := time.Now()
 	time.Sleep(1 * time.Second)
-	err = creator.UpdateMetadata(dbConn, metadataTableName)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, creator.UpdateMetadata(dbConn, metadataTableName))
 
 	q := fmt.Sprintf("SELECT value FROM %s.%s WHERE key='%s'",
 		timescaleCatalogSchema,
 		metadataTableName,
 		metadataKey)
 	rows, err := dbConn.Query(q)
-	if err != nil || !rows.Next() {
-		t.Fatal(err)
-	}
+	require.True(t, err == nil && rows.Next())
 
 	var updateTimeValStr string
-	if err := rows.Scan(&updateTimeValStr); err != nil {
-		t.Fatal(err)
-	}
-
+	require.NoError(t, rows.Scan(&updateTimeValStr))
 	rows.Close()
 
 	updateTimeVal, _ := time.Parse(time.RFC3339, updateTimeValStr)
-	if updateTimeVal.Before(timeBeforeUpdate) {
-		t.Fatalf("update time not proper, expected to be > than %v", timeBeforeUpdate)
-	}
+	require.True(t, updateTimeVal.After(timeBeforeUpdate))
 
 	// update again, first time it inserts, second time it updates the same key
 	time.Sleep(1 * time.Second)
 	err = creator.UpdateMetadata(dbConn, metadataTableName)
 	rows2, err := dbConn.Query(q)
-	if err != nil || !rows2.Next() {
-		t.Fatal(err)
-	}
+	require.True(t, err == nil && rows2.Next())
 	defer rows2.Close()
-	if err := rows2.Scan(&updateTimeValStr); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, rows2.Scan(&updateTimeValStr))
 	updateTimeVal2, _ := time.Parse(time.RFC3339, updateTimeValStr)
-	if updateTimeVal2.Before(updateTimeVal) {
-		t.Fatalf("update time not proper, expected to be > than %v", timeBeforeUpdate)
-	}
+	require.True(t, updateTimeVal2.After(updateTimeVal))
 }
 
 func TestMetadataTableNameNoPermissions(t *testing.T) {
 	db := "test_update_metadata_2"
-	if err := testutils.DeleteTimescaleDb(db); err != nil {
-		t.Fatalf("could not prepare db: %v", err)
-	}
-	if err := testutils.CreateTimescaleDb(db); err != nil {
-		t.Fatalf("could not prepare db: %v", err)
-	}
+	require.NoError(t, testutils.DeleteTimescaleDb(db))
+	require.NoError(t, testutils.CreateTimescaleDb(db))
 	defer testutils.DeleteTimescaleDb(db)
-	if err := testutils.CreateNonAdminInTS("dumb", "dumber"); err != nil {
-		t.Fatalf("could not prepare db: %v", err)
-	}
+	require.NoError(t, testutils.CreateNonAdminInTS("dumb", "dumber"))
 
 	explorer := &defaultTableFinder{}
 	dbConnAdmin, err := testutils.OpenTSConn(db)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	dbConnAdmin.Exec(createTimescaleExtensionQuery)
 	dbConnAdmin.Close()
 
 	dbConn, err := testutils.OpenTsConnWithUser(db, "dumb", "dumber")
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	defer dbConn.Close()
 	metadataTable, err := explorer.metadataTableName(dbConn)
-	if err != nil {
-		t.Fatal("unexpected err: ", err)
-	}
+	require.NoError(t, err)
 
 	creator := defaultTableCreator{}
-	if creator.UpdateMetadata(dbConn, metadataTable) == nil {
-		t.Fatal("unexpected lack of error")
+	require.Error(t, creator.UpdateMetadata(dbConn, metadataTable))
+}
+
+func TestCreateTableWithCustomChunkInterval(t *testing.T) {
+	db := "test_create_table_with_custom_chunk_size"
+	require.NoError(t, testutils.DeleteTimescaleDb(db), "could not prepare db")
+	require.NoError(t, testutils.CreateTimescaleDb(db), "could not prepare db")
+	defer testutils.DeleteTimescaleDb(db)
+	creator := &defaultTableCreator{chunkTimeInterval: "1m"}
+	dbConn, err := testutils.OpenTSConn(db)
+	require.NoError(t, err)
+	defer dbConn.Close()
+	dataSet := &idrf.DataSet{
+		DataSetName: "name",
+		Columns: []*idrf.Column{
+			{Name: "col1", DataType: idrf.IDRFTimestamptz},
+			{Name: "col2", DataType: idrf.IDRFInteger64},
+		},
+		TimeColumn: "col1",
 	}
+	err = creator.CreateTable(dbConn, dataSet)
+	require.NoError(t, err)
+
+	expectedChunkInterval := int64(60000000)
+	getHypertableID := `SELECT id FROM _timescaledb_catalog.hypertable WHERE table_name='` + dataSet.DataSetName + `'`
+	rows, err := dbConn.Query(getHypertableID)
+	require.NoError(t, err)
+
+	var hypertableID int
+	require.True(t, rows.Next())
+	require.NoError(t, rows.Scan(&hypertableID))
+	require.NotZero(t, hypertableID)
+	rows.Close()
+
+	getChunkInterval := `SELECT interval_length FROM _timescaledb_catalog.dimension WHERE hypertable_id=` + strconv.Itoa(hypertableID)
+	rows2, err := dbConn.Query(getChunkInterval)
+	assert.NoError(t, err)
+	defer rows2.Close()
+	require.True(t, rows2.Next())
+	var chunkInterval int64
+	require.NoError(t, rows2.Scan(&chunkInterval))
+	require.Equal(t, expectedChunkInterval, chunkInterval)
 }

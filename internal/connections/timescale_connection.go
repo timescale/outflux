@@ -9,7 +9,7 @@ import (
 
 // TSConnectionService creates new timescale db connections
 type TSConnectionService interface {
-	NewConnection(connectionString string) (*pgx.Conn, error)
+	NewConnection(connectionString string) (PgxWrap, error)
 }
 
 type defaultTSConnectionService struct{}
@@ -19,7 +19,7 @@ func NewTSConnectionService() TSConnectionService {
 	return &defaultTSConnectionService{}
 }
 
-func (s *defaultTSConnectionService) NewConnection(connectionString string) (*pgx.Conn, error) {
+func (s *defaultTSConnectionService) NewConnection(connectionString string) (PgxWrap, error) {
 	log.Printf("Overriding PG environment variables for connection with: %s", connectionString)
 	envConnConfig, err := pgx.ParseEnvLibpq()
 	if err != nil {
@@ -38,5 +38,10 @@ func (s *defaultTSConnectionService) NewConnection(connectionString string) (*pg
 	}
 
 	connConfig = envConnConfig.Merge(connConfig)
-	return pgx.Connect(connConfig)
+	pgxConn, err := pgx.Connect(connConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewPgxWrapper(pgxConn), nil
 }

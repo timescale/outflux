@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx"
+	"github.com/timescale/outflux/internal/connections"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 )
 
 type tableDropper interface {
-	Drop(db *pgx.Conn, table string, cascade bool) error
+	Drop(db connections.PgxWrap, table string, cascade bool) error
 }
 
 type defaultTableDropper struct{}
@@ -21,7 +21,7 @@ type defaultTableDropper struct{}
 func newTableDropper() tableDropper {
 	return &defaultTableDropper{}
 }
-func (d *defaultTableDropper) Drop(db *pgx.Conn, table string, cascade bool) error {
+func (d *defaultTableDropper) Drop(db connections.PgxWrap, table string, cascade bool) error {
 	var query string
 	if cascade {
 		query = fmt.Sprintf(dropTableCascadeQueryTemplate, table)

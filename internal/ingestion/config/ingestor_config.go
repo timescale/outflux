@@ -14,6 +14,7 @@ type IngestorConfig struct {
 	CommitStrategy          CommitStrategy
 	SchemaStrategy          schemaconfig.SchemaStrategy
 	Schema                  string
+	ChunkTimeInterval       string
 }
 
 // CommitStrategy describes how the ingestor should handle the ingested data

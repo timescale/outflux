@@ -7,8 +7,8 @@ import (
 	"time"
 
 	influx "github.com/influxdata/influxdb/client/v2"
-	"github.com/jackc/pgx"
 	"github.com/timescale/outflux/internal/cli"
+	"github.com/timescale/outflux/internal/connections"
 
 	"github.com/spf13/cobra"
 	"github.com/timescale/outflux/internal/cli/flagparsers"
@@ -44,6 +44,7 @@ func initSchemaTransferCmd() *cobra.Command {
 	schemaTransferCmd.PersistentFlags().String(flagparsers.FieldsColumnFlag, flagparsers.DefaultFieldsColumn, "When "+flagparsers.FieldsAsJSONFlag+" is set, this column specifies the name of the JSON column for the fields")
 	schemaTransferCmd.PersistentFlags().String(flagparsers.OutputSchemaFlag, flagparsers.DefaultOutputSchema, "The schema of the output database that the data will be inserted into")
 	schemaTransferCmd.PersistentFlags().Bool(flagparsers.MultishardIntFloatCast, flagparsers.DefaultMultishardIntFloatCast, "If a field is Int64 in one shard, and Float64 in another, with this flag it will be cast to Float64 despite possible data loss")
+	schemaTransferCmd.PersistentFlags().String(flagparsers.ChunkTimeIntervalFlag, flagparsers.DefaultChunkTimeInterval, "chunk_time_interval of the hypertables created by Outflux")
 	return schemaTransferCmd
 }
 
@@ -101,7 +102,7 @@ func transfer(
 	inputDb string,
 	args *cli.MigrationConfig,
 	infConn influx.Client,
-	pgConn *pgx.Conn,
+	pgConn connections.PgxWrap,
 	measure string) error {
 
 	pipe, err := app.pipeService.Create(infConn, pgConn, measure, inputDb, args)

@@ -26,4 +26,5 @@ type MigrationConfig struct {
 	FieldsAsJSON                         bool
 	FieldsCol                            string
 	OnConflictConvertIntToFloat          bool
+	ChunkTimeInterval                    string
 }

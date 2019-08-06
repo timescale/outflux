@@ -40,6 +40,7 @@ func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*cli.Conn
 	}
 	outputSchema, _ := flags.GetString(OutputSchemaFlag)
 	intToFloat, _ := flags.GetBool(MultishardIntFloatCast)
+	chunkTimeInterval, _ := flags.GetString(ChunkTimeIntervalFlag)
 	return connectionArgs, &cli.MigrationConfig{
 		RetentionPolicy:             retentionPolicy,
 		OutputSchema:                outputSchema,
@@ -52,5 +53,6 @@ func FlagsToSchemaTransferConfig(flags *pflag.FlagSet, args []string) (*cli.Conn
 		FieldsAsJSON:                fieldsAsJSON,
 		FieldsCol:                   fieldsColumn,
 		OnConflictConvertIntToFloat: intToFloat,
+		ChunkTimeInterval:           chunkTimeInterval,
 	}, nil
 }

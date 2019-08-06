@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	influx "github.com/influxdata/influxdb/client/v2"
-	"github.com/jackc/pgx"
 
+	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/extraction"
 	"github.com/timescale/outflux/internal/ingestion"
 	"github.com/timescale/outflux/internal/pipeline"
@@ -17,7 +17,7 @@ const (
 
 // PipeService defines methods for creating pipelines
 type PipeService interface {
-	Create(infConn influx.Client, pgConn *pgx.Conn, measure, inputDb string, conf *MigrationConfig) (pipeline.Pipe, error)
+	Create(infConn influx.Client, pgConn connections.PgxWrap, measure, inputDb string, conf *MigrationConfig) (pipeline.Pipe, error)
 }
 
 type pipeService struct {
@@ -42,7 +42,7 @@ func NewPipeService(
 	}
 }
 
-func (s *pipeService) Create(infConn influx.Client, tsConn *pgx.Conn, measure, inputDb string, conf *MigrationConfig) (pipeline.Pipe, error) {
+func (s *pipeService) Create(infConn influx.Client, tsConn connections.PgxWrap, measure, inputDb string, conf *MigrationConfig) (pipeline.Pipe, error) {
 	pipeID := fmt.Sprintf(pipeIDTemplate, measure)
 	extractionConf := s.extractionConfCreator.create(pipeID, inputDb, measure, conf)
 	ingestionConf := s.ingestionConfCreator.create(pipeID, conf)

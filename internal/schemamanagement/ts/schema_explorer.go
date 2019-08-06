@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/jackc/pgx"
-
+	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/idrf"
 )
 
@@ -32,24 +31,24 @@ const (
 )
 
 type tableFinder interface {
-	tableExists(db *pgx.Conn, schemaName, tableName string) (bool, error)
-	metadataTableName(db *pgx.Conn) (string, error)
+	tableExists(db connections.PgxWrap, schemaName, tableName string) (bool, error)
+	metadataTableName(db connections.PgxWrap) (string, error)
 }
 
 type columnFinder interface {
-	fetchTableColumns(db *pgx.Conn, schemaName, tableName string) ([]*columnDesc, error)
+	fetchTableColumns(db connections.PgxWrap, schemaName, tableName string) ([]*columnDesc, error)
 }
 
 type hypertableChecker interface {
-	isHypertable(db *pgx.Conn, schemaName, tableName string) (bool, error)
+	isHypertable(db connections.PgxWrap, schemaName, tableName string) (bool, error)
 }
 
 type hypertableDimensionExplorer interface {
-	isTimePartitionedBy(db *pgx.Conn, schema, table, timeColumn string) (bool, error)
+	isTimePartitionedBy(db connections.PgxWrap, schema, table, timeColumn string) (bool, error)
 }
 
 type timescaleExistsChecker interface {
-	timescaleExists(db *pgx.Conn) (bool, error)
+	timescaleExists(db connections.PgxWrap) (bool, error)
 }
 
 type schemaExplorer interface {
@@ -98,7 +97,7 @@ func newSchemaExplorerWith(
 	}
 }
 
-func (f *defaultTableFinder) tableExists(db *pgx.Conn, schemaName, tableName string) (bool, error) {
+func (f *defaultTableFinder) tableExists(db connections.PgxWrap, schemaName, tableName string) (bool, error) {
 	if schemaName == "" {
 		schemaName = "public"
 	}
@@ -119,7 +118,7 @@ func (f *defaultTableFinder) tableExists(db *pgx.Conn, schemaName, tableName str
 	return exists, nil
 }
 
-func (f *defaultTableFinder) metadataTableName(db *pgx.Conn) (string, error) {
+func (f *defaultTableFinder) metadataTableName(db connections.PgxWrap) (string, error) {
 	oldTableExists, err := f.tableExists(db, timescaleCatalogSchema, installationMetadataTableName)
 	if err != nil {
 		return "", err
@@ -136,7 +135,7 @@ func (f *defaultTableFinder) metadataTableName(db *pgx.Conn) (string, error) {
 	return "", nil
 }
 
-func (f *defaultColumnFinder) fetchTableColumns(db *pgx.Conn, schemaName, tableName string) ([]*columnDesc, error) {
+func (f *defaultColumnFinder) fetchTableColumns(db connections.PgxWrap, schemaName, tableName string) ([]*columnDesc, error) {
 	if schemaName == "" {
 		schemaName = "public"
 	}
@@ -177,7 +176,7 @@ func (f *defaultColumnFinder) fetchTableColumns(db *pgx.Conn, schemaName, tableN
 	return columnsArray, nil
 }
 
-func (f *defaultHyptertableChecker) isHypertable(db *pgx.Conn, schemaName, tableName string) (bool, error) {
+func (f *defaultHyptertableChecker) isHypertable(db connections.PgxWrap, schemaName, tableName string) (bool, error) {
 	if schemaName == "" {
 		schemaName = "public"
 	}
@@ -200,7 +199,7 @@ func (f *defaultHyptertableChecker) isHypertable(db *pgx.Conn, schemaName, table
 	return exists, nil
 }
 
-func (f *defaultHypertableDimensionExplorer) isTimePartitionedBy(db *pgx.Conn, schema, table, timeColumn string) (bool, error) {
+func (f *defaultHypertableDimensionExplorer) isTimePartitionedBy(db connections.PgxWrap, schema, table, timeColumn string) (bool, error) {
 	if schema == "" {
 		schema = "public"
 	}
@@ -237,7 +236,7 @@ func (f *defaultHypertableDimensionExplorer) isTimePartitionedBy(db *pgx.Conn, s
 	return true, nil
 }
 
-func (d *defaultTimescaleExistsChecker) timescaleExists(db *pgx.Conn) (bool, error) {
+func (d *defaultTimescaleExistsChecker) timescaleExists(db connections.PgxWrap) (bool, error) {
 	rows, err := db.Query(timescaleCreatedQuery)
 	if err != nil {
 		return false, err

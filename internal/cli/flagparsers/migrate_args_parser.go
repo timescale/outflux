@@ -80,7 +80,7 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*cli.ConnectionC
 	outputSchema, _ := flags.GetString(OutputSchemaFlag)
 	rp, _ := flags.GetString(RetentionPolicyFlag)
 	intToFloat, _ := flags.GetBool(MultishardIntFloatCast)
-
+	chunkTimeInterval, _ := flags.GetString(ChunkTimeIntervalFlag)
 	migrateArgs := &cli.MigrationConfig{
 		RetentionPolicy:                      rp,
 		OutputSchemaStrategy:                 strategy,
@@ -100,6 +100,7 @@ func FlagsToMigrateConfig(flags *pflag.FlagSet, args []string) (*cli.ConnectionC
 		FieldsAsJSON:                         fieldsAsJSON,
 		FieldsCol:                            fieldsColumn,
 		OnConflictConvertIntToFloat:          intToFloat,
+		ChunkTimeInterval:                    chunkTimeInterval,
 	}
 
 	return connectionArgs, migrateArgs, nil

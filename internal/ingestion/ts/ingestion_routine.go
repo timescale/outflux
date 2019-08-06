@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/jackc/pgx"
+	"github.com/timescale/outflux/internal/connections"
 	"github.com/timescale/outflux/internal/idrf"
 	"github.com/timescale/outflux/internal/ingestion/config"
 	"github.com/timescale/outflux/internal/utils"
@@ -24,7 +25,7 @@ type ingestDataArgs struct {
 	// if an error occurred in another goroutine should a rollback be done
 	rollbackOnExternalError bool
 	// the database connection
-	dbConn *pgx.Conn
+	dbConn connections.PgxWrap
 	// column names
 	colNames []string
 	// name of table where inserts happen
