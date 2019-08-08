@@ -25,6 +25,8 @@ func pgTypeToIdrf(pgType string) idrf.DataType {
 		return idrf.IDRFJson
 	case "json":
 		return idrf.IDRFJson
+	case "boolean":
+		return idrf.IDRFBoolean
 	default:
 		return idrf.IDRFUnknown
 	}
