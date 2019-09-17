@@ -13,7 +13,7 @@ This repo contains code for exporting complete InfluxDB databases or selected me
   - [Before using it](#before-using-it)
   - [Connection params](#connection-params)
   - [Schema Transfer](#schema-transfer)
-  - [Migrate](#igrate)
+  - [Migrate](#migrate)
   - [Examples](#examples)
 3. [Connection](#connection)
   - [TimescaleDB connection params](#timescaledb-connection-params)
