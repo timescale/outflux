@@ -24,19 +24,25 @@ This repo contains code for exporting complete InfluxDB databases or selected me
 
 ### Installing from source
 
-Outflux is a Go project managed by `dep` (The go dependency management tool). To download the proper dependency versions, `dep` must be installed on your system. Instructions can be found on the [official documentation page](https://golang.github.io/dep/docs/installation.html). 
+Outflux is a Go project managed by `go modules`. You can download it 
+in any directory and on the first build it will download it's required dependencies.
+
+Depending on where you downloaded it and the go version you're using, you may 
+ need to set the `GO111MODULE` to `auto`, `on` or `off`. Learn about the `GO111MODULE` 
+ environment variable [here](https://golang.org/cmd/go/#hdr-Module_support).
 
 ```bash
-# Fetch the source code of Outflux
-$ go get github.com/timescale/outflux
-$ cd $GOPATH/src/github.com/timescale/outflux
+# Fetch the source code of Outflux in any directory
+$ git clone git@github.com:timescale/outflux.git
+$ cd ./outflux
 
-# Fetch the required dependencies
-$ dep ensure -v
+# Install the Outflux binary (will automaticly detect and download)
+# dependencies.
+$ cd cmd/outflux
+$ GO111MODULE=auto go install
 
-# Install the Outflux binary:
-$ cd cmd/outlux
-$ go install 
+# Building without installing will also fetch the required dependencies
+$ GO111MODULE=auto go build ./... 
 ```
 
 ### Binary releases
