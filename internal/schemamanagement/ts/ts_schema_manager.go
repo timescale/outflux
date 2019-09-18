@@ -190,7 +190,7 @@ func (sm *TSSchemaManager) updateMetadata() {
 
 	err = sm.creator.UpdateMetadata(sm.dbConn, metadataTableName)
 	if err != nil {
-		log.Println("could not update TimescaleDB metadata")
-		log.Println("reason:" + err.Error())
+		log.Println("WARN: could not update TimescaleDB metadata")
+		log.Println("WARN: reason:" + err.Error())
 	}
 }
