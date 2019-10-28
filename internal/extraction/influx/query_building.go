@@ -19,7 +19,8 @@ const (
 )
 
 func buildSelectCommand(config *config.MeasureExtraction, columns []*idrf.Column) string {
-	projection := buildProjection(columns)
+	//projection := buildProjection(columns)
+        projection := "*"
 	measurementName := buildMeasurementName(config.RetentionPolicy, config.Measure)
 	var command string
 	if config.From != "" && config.To != "" {
