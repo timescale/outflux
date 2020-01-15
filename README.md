@@ -61,7 +61,7 @@ It can generate large ammounts of data for and load them in influx.
 Data can be generated with [one command](https://github.com/timescale/tsbs#data-generation), just specify the format as 'influx', and then load it in with [another command](https://github.com/timescale/tsbs#data-generation).
 
 ### Connection params
-Detailed information about how to pass the connection parameters to Outflux can be found at the bottom of this document at the [Connection](section)
+Detailed information about how to pass the connection parameters to Outflux can be found at the bottom of this document at the [Connection](#connection) section.
 
 
 ### Schema Transfer
