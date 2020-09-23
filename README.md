@@ -170,7 +170,7 @@ Drop the existing '"two_week.cpu"' table in 'targetdb' if exists, create if not
 $ outflux migrate benchmark two_week.cpu \
 > --input-user=test \
 > --input-pass=test \
-> --output-con='dbname=targetdb user=test pass=test'\
+> --output-conn='dbname=targetdb user=test pass=test'\
 > --schema-strategy=DropAndCreate
 ```
 
@@ -190,7 +190,7 @@ $ ./outflux migrate benchmark cpu mem \
 
 The connection parameters to the TimescaleDB instance can be passed to Outflux in several ways. One is through the Postgres Environment Variables. Supported environment variables are: `PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, PGSSLMODE, PGSSLCERT, PGSSLKEY, PGSSLROOTCERT, PGAPPNAME, PGCONNECT_TIMEOUT`. If they are not specified defaults used are: host=localhost, dbname=postgres, pguser=$USER, and sslmode=disable.
 
-The values of the enviroment variables can be **OVERRIDEN** by specifying the '--output-con' flag when executing Outflux. 
+The values of the enviroment variables can be **OVERRIDEN** by specifying the '--output-conn' flag when executing Outflux. 
 
 The connection string can be in the format URI or DSN format:
 * example URI: "postgresql://username:password@host:port/dbname?connect_timeout=10"
