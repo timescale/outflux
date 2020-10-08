@@ -19,6 +19,7 @@ This repo contains code for exporting complete InfluxDB databases or selected me
   - [TimescaleDB connection params](#timescaledb-connection-params)
   - [InfluxDB connection params](#influxdb-connection-params)
 4. [Known limitations](#known-limitations)
+5. [License and contributing](#license-contrib)
 
 ## Installation
 
@@ -220,4 +221,10 @@ converted.
 
 This is also an issue even if you select a time interval in which a field has a consistent type, but exists as a different type
 in a shard outside of that interval. This is because the `SHOW FIELD KEYS FROM measurement_name` doesn't accept a time interval
-for which you would be asking
+for which you would be asking.
+
+## License and contributing
+
+Outflux resources in this repository are released under the [Apache 2.0 license](LICENSE).
+
+If you wish to make contributions to this project, please refer to [Contributor Instructions](CONTRIBUTING.md) for more information.
