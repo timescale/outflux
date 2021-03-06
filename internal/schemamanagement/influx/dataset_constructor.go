@@ -49,7 +49,7 @@ func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSet, error) 
 		return nil, fmt.Errorf("could not discover the fields of measure '%s'\n%v", measure, err)
 	}
 
-	idrfTimeColumn, _ := idrf.NewColumn("time", idrf.IDRFTimestamp)
+	idrfTimeColumn, _ := idrf.NewColumn("time", idrf.IDRFTimestamptz)
 	allColumns := []*idrf.Column{idrfTimeColumn}
 	allColumns = append(allColumns, idrfTags...)
 	allColumns = append(allColumns, idrfFields...)
