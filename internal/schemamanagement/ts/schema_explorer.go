@@ -14,9 +14,8 @@ const (
 	                             FROM information_schema.columns
 								 WHERE table_schema = $1 AND table_name = $2;`
 	isHypertableQueryTemplate = `SELECT EXISTS (
-		    						SELECT 1
-								 	FROM timescaledb_information.hypertable
-									 WHERE  table_schema = $1 AND table_name=$2)`
+									 SELECT 1 FROM _timescaledb_catalog.hypertable
+									 WHERE schema_name = $1 AND table_name=$2)`
 	hypertableDimensionsQueryTemplate = `SELECT column_name, column_type
                                          FROM _timescaledb_catalog.dimension d
               							 JOIN _timescaledb_catalog.hypertable h ON d.hypertable_id = h.id
