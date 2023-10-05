@@ -1,29 +1,29 @@
 language: go
 
 go:
-  - 1.11.x
-  - 1.12.x
   - 1.13.x
 services:
   - docker
 install: true
 script: 
-  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb:1.4.2-pg11
   - docker run -d --name influx1_0 -p 8086:8086 influxdb:1.0
   - GO111MODULE=on go test -race -tags=integration ./...
   - go clean -testcache
   - docker stop influx1_0 && docker rm influx1_0
   - docker stop ts1 && docker rm ts1
   - echo '- - - - -'
-  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
+  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb:1.4.2-pg11
   - docker run -d --name influx1_6 -p 8086:8086 influxdb:1.6
   - GO111MODULE=on go test -race -tags=integration ./...
   - go clean -testcache
   - docker stop influx1_6 && docker rm influx1_6
   - docker stop ts1 && docker rm ts1
   - echo '- - - - -'
-  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb
-  - docker run -d --name influx_l -p 8086:8086 influxdb
-  - GO111MODULE=on go test -race -tags=integration -coverprofile=coverage.txt -covermode=atomic ./...
+  - docker run -d --name ts1 -p 5433:5432 -e POSTGRES_PASSWORD=postgres timescale/timescaledb:1.4.2-pg11
+  - docker run -d --name influx1_8 -p 8086:8086 influxdb:1.8
+  - GO111MODULE=on go test -race -tags=integration ./...
+  - docker stop influx1_8 && docker rm influx1_8
+  - docker stop ts1 && docker rm ts1
 after_success:
   - bash <(curl -s https://codecov.io/bash)
