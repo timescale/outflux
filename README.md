@@ -29,8 +29,8 @@ can be found under [releases]. To use outflux, download the binary, extract the
 compressed tarball and run the executable.
 
 ```bash
-wget https://github.com/timescale/outflux/releases/download/0.2.0/outflux_0.2.0_Linux_x86_64.tar.gz
-tar xf outflux_0.2.0_Linux_x86_64.tar.gz
+wget https://github.com/timescale/outflux/releases/download/0.3.0/outflux_0.3.0_Linux_x86_64.tar.gz
+tar xf outflux_0.3.0_Linux_x86_64.tar.gz
 ./outflux --help
 ```
 
