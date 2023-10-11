@@ -93,3 +93,5 @@ $RECYCLE.BIN/
 Gopkg.lock
 .idea
 
+
+dist/
