@@ -22,6 +22,20 @@ This repo contains code for exporting complete InfluxDB databases or selected me
 
 ## Installation
 
+### Binary releases
+
+We provide binaries for GNU/Linux, Windows and MacOS with each release, these
+can be found under [releases]. To use outflux, download the binary, extract the
+compressed tarball and run the executable.
+
+```bash
+wget https://github.com/timescale/outflux/releases/download/0.2.0/outflux_0.2.0_Linux_x86_64.tar.gz
+tar xf outflux_0.2.0_Linux_x86_64.tar.gz
+./outflux --help
+```
+
+[releases]: https://github.com/timescale/outflux/releases
+
 ### Installing from source
 
 Outflux is a Go project managed by `go modules`. You can download it 
@@ -45,40 +59,52 @@ $ GO111MODULE=auto go install
 $ GO111MODULE=auto go build ./... 
 ```
 
-### Binary releases
-We upload prepackaged binaries available for GNU/Linux, Windows and MacOS in the [releases](https://github.com/timescale/outflux/releases).
-Just download the binary, extract the compressed tarball and run the executable
-
 ## How to use
 
-Outflux supports InfluxDB versions 1.0 and upwards. We explicitly test for compatibility for versions 1.0, 1.5, 1.6, 1.7 and the `latest` tag of the InfluxDB docker container.
+Outflux supports InfluxDB 1.x.
+
+Outflux should support using the 1.x query APIs for InfluxDB 2.x and 3.x. You
+will need to enable the 1.x APIs to use them. Consult the InfluxDB
+documentation for more details.
 
 ### Before using it
 
-It is recommended that you have some InfluxDB database with some data. 
-For testing purposes you can check out the [TSBS Data Loader Tool](https://github.com/timescale/tsbs) part of the Time Series Benchmark Suite. 
-It can generate large ammounts of data for and load them in influx. 
-Data can be generated with [one command](https://github.com/timescale/tsbs#data-generation), just specify the format as 'influx', and then load it in with [another command](https://github.com/timescale/tsbs#data-generation).
+It is recommended that you have and InfluxDB database with some data. For
+testing purposes you can check out the [TSBS Data Loader Tool], which is part
+of the Time Series Benchmark Suite. It can generate large amounts of data to
+load into influx. Data can be generated with [one command], just specify the
+format as 'influx', and then load it in with [another command].
+
+[TSBS Data Loader Tool]: https://github.com/timescale/tsbs
+[one command]: https://github.com/timescale/tsbs#data-generation
+[another command]: https://github.com/timescale/tsbs#data-generation
 
 ### Connection params
-Detailed information about how to pass the connection parameters to Outflux can be found at the bottom of this document at the [Connection](#connection) section.
 
+Detailed information about how to pass the connection parameters to Outflux can be found at the bottom of this document at the [Connection](#connection) section.
 
 ### Schema Transfer
 
-The Outflux CLI has two commands. The first one is `schema-transfer`. This command will discover the schema of a InfluxDB database, or specific measurements in a InfluxDB database, and depending on the strategy selected create or verify a TimescaleDB database that could hold the data.
+The Outflux CLI has two commands. The first one is `schema-transfer`. This
+command discoverx the schema of an InfluxDB database, or specific measurements
+in an InfluxDB database, and (depending on the strategy selected) create or
+verify a TimescaleDB database that could hold the data.
 
-The possible flags for the command can be seen by running 
+The possible flags for the command can be seen by running: 
 
 ```bash
 $ cd $GOPATH/bin/
 $ ./outflux schema-transfer --help
 ```
 
-Usage of the is `outflux schema-transfer database [measure1 measure2 ...] [flags]`. Where database is the name of the InfluxDB database you wish to export. `[measure1 ...] ` are optional and if specified will export only those measurements from the selected database. 
-Additionally you can specify the retention policy with the `retention-policy` flag.
+Usage is `outflux schema-transfer database [measure1 measure2 ...] [flags]`,
+where `database` is the name of the InfluxDB database you wish to export,
+`[measure1 ...] ` are optional and if specified will export only those
+measurements from the selected database. Additionally, you can specify the
+retention policy with the `retention-policy` flag.
 
-For example `outflux schema-transfer benchmark cpu mem` will discover the schema for the `cpu` and `mem` measurements from the `benchmark` database.
+For example `outflux schema-transfer benchmark cpu mem` will discover the
+schema for the `cpu` and `mem` measurements from the `benchmark` database.
 
 Available flags for schema-transfer are:
 
@@ -108,11 +134,18 @@ $ cd $GOPATH/bin/
 $ ./outflux migrate --help
 ```
 
-Usage of the command is `outflux migrate database [measure1 measure2 ...] [flags]`. Where database is the name of the `database` you wish to export. `[measure1 measure2 ...]` are optional and if specified will export only those measurements from the selected database. 
+Usage is `outflux migrate database [measure1 measure2 ...] [flags]`, where
+`database` is the name of the InfluxDB database you wish to export,
+`[measure1 measure2 ...]` are optional and if specified will export only those
+measurements from the selected database. 
 
-The retention policy can be specified with the `retention-policy` flag. By default the 'autogen' retention policy is used.
+The retention policy can be specified with the `retention-policy` flag. By
+default, the 'autogen' retention policy is used.
 
-For example `outflux migrate benchmark cpu mem` will export the `cpu` and `mem` measurements from the `benchmark` database. On the other hand `outflux migrate benchmark` will export all measurements in the `benchmark` database.
+For example `outflux migrate benchmark cpu mem` will export the `cpu` and `mem`
+measurements from the `benchmark` database. On the other hand
+`outflux migrate benchmark` will export all measurements in the `benchmark`
+database.
 
 Available flags are:
 
