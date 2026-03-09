@@ -16,6 +16,8 @@ const (
 	DropAndCreate
 	// DROP CASCADE existing table and create a new one
 	DropCascadeAndCreate
+	// Skip schema validation; adopt the existing table's column types for the transfer
+	AdoptExisting
 )
 
 func (s SchemaStrategy) String() string {
@@ -28,6 +30,8 @@ func (s SchemaStrategy) String() string {
 		return "DropCascadeAndCreate"
 	case DropAndCreate:
 		return "DropAndCreate"
+	case AdoptExisting:
+		return "AdoptExisting"
 	default:
 		panic("unknown type")
 	}
@@ -44,6 +48,8 @@ func ParseStrategyString(strategy string) (SchemaStrategy, error) {
 		return DropCascadeAndCreate, nil
 	case "DropAndCreate":
 		return DropAndCreate, nil
+	case "AdoptExisting":
+		return AdoptExisting, nil
 	default:
 		return ValidateOnly, fmt.Errorf("unknown schema strategy '%s'", strategy)
 	}

@@ -20,6 +20,7 @@ type MeasureExtraction struct {
 	SchemaOnly                  bool
 	RetentionPolicy             string
 	OnConflictConvertIntToFloat bool
+	TimeColumnName              string
 }
 
 // ValidateMeasureExtractionConfig validates the fields

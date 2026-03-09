@@ -18,7 +18,8 @@ func newDataSetConstructor(
 	db, rp string, onConflictConvertIntToFloat bool,
 	client influx.Client,
 	tagExplorer discovery.TagExplorer,
-	fieldExplorer discovery.FieldExplorer) dataSetConstructor {
+	fieldExplorer discovery.FieldExplorer,
+	timeColumnName string) dataSetConstructor {
 	return &defaultDSConstructor{
 		database:                    db,
 		rp:                          rp,
@@ -26,6 +27,7 @@ func newDataSetConstructor(
 		tagExplorer:                 tagExplorer,
 		fieldExplorer:               fieldExplorer,
 		onConflictConvertIntToFloat: onConflictConvertIntToFloat,
+		timeColumnName:              timeColumnName,
 	}
 }
 
@@ -36,6 +38,7 @@ type defaultDSConstructor struct {
 	tagExplorer                 discovery.TagExplorer
 	fieldExplorer               discovery.FieldExplorer
 	influxClient                influx.Client
+	timeColumnName              string
 }
 
 func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSet, error) {
@@ -49,10 +52,14 @@ func (d *defaultDSConstructor) construct(measure string) (*idrf.DataSet, error) 
 		return nil, fmt.Errorf("could not discover the fields of measure '%s'\n%v", measure, err)
 	}
 
-	idrfTimeColumn, _ := idrf.NewColumn("time", idrf.IDRFTimestamptz)
+	timeColName := d.timeColumnName
+	if timeColName == "" {
+		timeColName = "time"
+	}
+	idrfTimeColumn, _ := idrf.NewColumn(timeColName, idrf.IDRFTimestamptz)
 	allColumns := []*idrf.Column{idrfTimeColumn}
 	allColumns = append(allColumns, idrfTags...)
 	allColumns = append(allColumns, idrfFields...)
-	dataSet, err := idrf.NewDataSet(measure, allColumns, "time")
+	dataSet, err := idrf.NewDataSet(measure, allColumns, timeColName)
 	return dataSet, err
 }

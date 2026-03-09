@@ -58,4 +58,7 @@ const (
 	DefaultFieldsColumn            = "fields"
 	DefaultMultishardIntFloatCast  = false
 	DefaultChunkTimeInterval       = ""
+
+	TimeColumnFlag    = "time-column"
+	DefaultTimeColumn = "time"
 )

@@ -10,7 +10,7 @@ import (
 
 // SchemaManagerService defines methods for creating SchemaManagers
 type SchemaManagerService interface {
-	Influx(client influx.Client, db, rp string, onConflictConvertIntToFloat bool) SchemaManager
+	Influx(client influx.Client, db, rp string, onConflictConvertIntToFloat bool, timeColumnName string) SchemaManager
 	TimeScale(dbConn connections.PgxWrap, schema, chunkTimeInterval string) SchemaManager
 }
 
@@ -30,8 +30,8 @@ type schemaManagerService struct {
 }
 
 // Influx creates new schema manager that can discover influx data sets
-func (s *schemaManagerService) Influx(client influx.Client, db, rp string, onConflictConvertIntToFloat bool) SchemaManager {
-	return influxSchema.NewSchemaManager(client, db, rp, onConflictConvertIntToFloat, s.measureExplorer, s.tagExplorer, s.fieldExplorer)
+func (s *schemaManagerService) Influx(client influx.Client, db, rp string, onConflictConvertIntToFloat bool, timeColumnName string) SchemaManager {
+	return influxSchema.NewSchemaManager(client, db, rp, onConflictConvertIntToFloat, s.measureExplorer, s.tagExplorer, s.fieldExplorer, timeColumnName)
 }
 
 func (s *schemaManagerService) TimeScale(dbConn connections.PgxWrap, schema, chunkTimeInterval string) SchemaManager {

@@ -50,7 +50,12 @@ func buildMeasurementName(rp, measurement string) string {
 func buildProjection(columns []*idrf.Column) string {
 	columnNames := make([]string, len(columns))
 	for i, column := range columns {
-		columnNames[i] = fmt.Sprintf(`"%s"`, column.Name)
+		// InfluxDB always names the time column "time" regardless of the target column name
+		if column.DataType == idrf.IDRFTimestamptz || column.DataType == idrf.IDRFTimestamp {
+			columnNames[i] = `"time"`
+		} else {
+			columnNames[i] = fmt.Sprintf(`"%s"`, column.Name)
+		}
 	}
 
 	return strings.Join(columnNames, ", ")

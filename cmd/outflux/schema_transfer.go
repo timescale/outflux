@@ -37,7 +37,7 @@ func initSchemaTransferCmd() *cobra.Command {
 
 	flagparsers.AddConnectionFlagsToCmd(schemaTransferCmd)
 	schemaTransferCmd.PersistentFlags().String(flagparsers.RetentionPolicyFlag, flagparsers.DefaultRetentionPolicy, "The retention policy to select the fields and tags from")
-	schemaTransferCmd.PersistentFlags().String(flagparsers.SchemaStrategyFlag, flagparsers.DefaultSchemaStrategy.String(), "Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate")
+	schemaTransferCmd.PersistentFlags().String(flagparsers.SchemaStrategyFlag, flagparsers.DefaultSchemaStrategy.String(), "Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate, AdoptExisting")
 	schemaTransferCmd.PersistentFlags().Bool(flagparsers.TagsAsJSONFlag, flagparsers.DefaultTagsAsJSON, "If this flag is set to true, then the Tags of the influx measures being exported will be combined into a single JSONb column in Timescale")
 	schemaTransferCmd.PersistentFlags().String(flagparsers.TagsColumnFlag, flagparsers.DefaultTagsColumn, "When "+flagparsers.TagsAsJSONFlag+" is set, this column specifies the name of the JSON column for the tags")
 	schemaTransferCmd.PersistentFlags().Bool(flagparsers.FieldsAsJSONFlag, flagparsers.DefaultFieldsAsJSON, "If this flag is set to true, then the Fields of the influx measures being exported will be combined into a single JSONb column in Timescale")
@@ -45,6 +45,7 @@ func initSchemaTransferCmd() *cobra.Command {
 	schemaTransferCmd.PersistentFlags().String(flagparsers.OutputSchemaFlag, flagparsers.DefaultOutputSchema, "The schema of the output database that the data will be inserted into")
 	schemaTransferCmd.PersistentFlags().Bool(flagparsers.MultishardIntFloatCast, flagparsers.DefaultMultishardIntFloatCast, "If a field is Int64 in one shard, and Float64 in another, with this flag it will be cast to Float64 despite possible data loss")
 	schemaTransferCmd.PersistentFlags().String(flagparsers.ChunkTimeIntervalFlag, flagparsers.DefaultChunkTimeInterval, "chunk_time_interval of the hypertables created by Outflux")
+	schemaTransferCmd.PersistentFlags().String(flagparsers.TimeColumnFlag, flagparsers.DefaultTimeColumn, "Name of the time column in the target TimescaleDB table (use when it differs from 'time')")
 	return schemaTransferCmd
 }
 
@@ -93,7 +94,7 @@ func transferSchema(app *appContext, connArgs *cli.ConnectionConfig, args *cli.M
 }
 
 func discoverMeasures(app *appContext, influxConn influx.Client, db, rp string, onConflictConvertIntToFloat bool) ([]string, error) {
-	schemaManager := app.schemaManagerService.Influx(influxConn, db, rp, onConflictConvertIntToFloat)
+	schemaManager := app.schemaManagerService.Influx(influxConn, db, rp, onConflictConvertIntToFloat, "time")
 	return schemaManager.DiscoverDataSets()
 }
 

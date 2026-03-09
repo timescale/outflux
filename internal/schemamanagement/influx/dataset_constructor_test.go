@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewDataSetConstructor(t *testing.T) {
-	newDataSetConstructor("", "rp", true, nil, nil, nil)
+	newDataSetConstructor("", "rp", true, nil, nil, nil, "time")
 }
 
 func TestConstruct(t *testing.T) {

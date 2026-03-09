@@ -30,7 +30,7 @@ func (e *extractorService) InfluxExtractor(conn influx.Client, conf *config.Extr
 		return nil, fmt.Errorf("measure extraction config is not valid: %s", err.Error())
 	}
 
-	sm := e.schemaManagerService.Influx(conn, exConf.Database, exConf.RetentionPolicy, exConf.OnConflictConvertIntToFloat)
+	sm := e.schemaManagerService.Influx(conn, exConf.Database, exConf.RetentionPolicy, exConf.OnConflictConvertIntToFloat, exConf.TimeColumnName)
 	dataProducer := influxExtraction.NewDataProducer(conf.ExtractorID, conn)
 	return &influxExtraction.Extractor{
 		Config:       conf,

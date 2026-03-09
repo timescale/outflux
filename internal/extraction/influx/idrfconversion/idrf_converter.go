@@ -3,6 +3,7 @@ package idrfconversion
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/timescale/outflux/internal/idrf"
@@ -45,17 +46,45 @@ func convertByType(rawValue interface{}, expected idrf.DataType) interface{} {
 
 	switch {
 	case expected == idrf.IDRFInteger32:
-		valAsInt64, _ := rawValue.(json.Number).Int64()
-		return int32(valAsInt64)
+		switch v := rawValue.(type) {
+		case json.Number:
+			valAsInt64, _ := v.Int64()
+			return int32(valAsInt64)
+		case string:
+			valAsInt64, _ := strconv.ParseInt(v, 10, 64)
+			return int32(valAsInt64)
+		}
+		return nil
 	case expected == idrf.IDRFInteger64:
-		valAsInt64, _ := rawValue.(json.Number).Int64()
-		return valAsInt64
+		switch v := rawValue.(type) {
+		case json.Number:
+			valAsInt64, _ := v.Int64()
+			return valAsInt64
+		case string:
+			valAsInt64, _ := strconv.ParseInt(v, 10, 64)
+			return valAsInt64
+		}
+		return nil
 	case expected == idrf.IDRFDouble:
-		valAsFloat64, _ := rawValue.(json.Number).Float64()
-		return valAsFloat64
+		switch v := rawValue.(type) {
+		case json.Number:
+			valAsFloat64, _ := v.Float64()
+			return valAsFloat64
+		case string:
+			valAsFloat64, _ := strconv.ParseFloat(v, 64)
+			return valAsFloat64
+		}
+		return nil
 	case expected == idrf.IDRFSingle:
-		valAsFloat64, _ := rawValue.(json.Number).Float64()
-		return float32(valAsFloat64)
+		switch v := rawValue.(type) {
+		case json.Number:
+			valAsFloat64, _ := v.Float64()
+			return float32(valAsFloat64)
+		case string:
+			valAsFloat64, _ := strconv.ParseFloat(v, 64)
+			return float32(valAsFloat64)
+		}
+		return nil
 	case expected == idrf.IDRFTimestamptz || expected == idrf.IDRFTimestamp:
 		ts, _ := time.Parse(time.RFC3339, rawValue.(string))
 		return ts

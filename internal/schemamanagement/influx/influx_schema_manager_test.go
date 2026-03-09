@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewInfluxSchemaManager(t *testing.T) {
-	NewSchemaManager(nil, "", "", true, nil, nil, nil)
+	NewSchemaManager(nil, "", "", true, nil, nil, nil, "time")
 }
 
 func TestDiscoverDataSets(t *testing.T) {

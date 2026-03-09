@@ -27,6 +27,7 @@ func (d *defaultExtractionConfCreator) create(pipeID, db, measure string, conf *
 		SchemaOnly:                  conf.SchemaOnly,
 		RetentionPolicy:             conf.RetentionPolicy,
 		OnConflictConvertIntToFloat: conf.OnConflictConvertIntToFloat,
+		TimeColumnName:              conf.TimeColumn,
 	}
 
 	ex := &config.ExtractionConfig{

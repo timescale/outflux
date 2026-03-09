@@ -39,7 +39,7 @@ func initMigrateCmd() *cobra.Command {
 	}
 	flagparsers.AddConnectionFlagsToCmd(migrateCmd)
 	migrateCmd.PersistentFlags().String(flagparsers.RetentionPolicyFlag, flagparsers.DefaultRetentionPolicy, "The retention policy to select the data from")
-	migrateCmd.PersistentFlags().String(flagparsers.SchemaStrategyFlag, flagparsers.DefaultSchemaStrategy.String(), "Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate")
+	migrateCmd.PersistentFlags().String(flagparsers.SchemaStrategyFlag, flagparsers.DefaultSchemaStrategy.String(), "Strategy to use for preparing the schema of the output database. Valid options: ValidateOnly, CreateIfMissing, DropAndCreate, DropCascadeAndCreate, AdoptExisting")
 	migrateCmd.PersistentFlags().String(flagparsers.FromFlag, "", "If specified will export data with a timestamp >= of it's value. Accepted format: RFC3339")
 	migrateCmd.PersistentFlags().String(flagparsers.ToFlag, "", "If specified will export data with a timestamp <= of it's value. Accepted format: RFC3339")
 	migrateCmd.PersistentFlags().Uint64(flagparsers.LimitFlag, flagparsers.DefaultLimit, "If specified will limit the export points to it's value. 0 = NO LIMIT")
@@ -56,6 +56,7 @@ func initMigrateCmd() *cobra.Command {
 	migrateCmd.PersistentFlags().String(flagparsers.OutputSchemaFlag, flagparsers.DefaultOutputSchema, "The schema of the output database that the data will be inserted into")
 	migrateCmd.PersistentFlags().Bool(flagparsers.MultishardIntFloatCast, flagparsers.DefaultMultishardIntFloatCast, "If a field is Int64 in one shard, and Float64 in another, with this flag it will be cast to Float64 despite possible data loss")
 	migrateCmd.PersistentFlags().String(flagparsers.ChunkTimeIntervalFlag, flagparsers.DefaultChunkTimeInterval, "chunk_time_interval of the hypertables created by Outflux")
+	migrateCmd.PersistentFlags().String(flagparsers.TimeColumnFlag, flagparsers.DefaultTimeColumn, "Name of the time column in the target TimescaleDB table (use when it differs from 'time')")
 
 	return migrateCmd
 }

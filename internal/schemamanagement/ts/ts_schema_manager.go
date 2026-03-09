@@ -57,6 +57,8 @@ func (sm *TSSchemaManager) PrepareDataSet(dataSet *idrf.DataSet, strategy schema
 		preparationError = sm.prepareWithCreateIfMissing(dataSet, tableExists)
 	case schemaconfig.ValidateOnly:
 		preparationError = sm.validateOnly(dataSet, tableExists)
+	case schemaconfig.AdoptExisting:
+		preparationError = sm.adoptExistingSchema(dataSet, tableExists)
 	default:
 		panic("unexpected type")
 	}
@@ -173,6 +175,50 @@ func (sm *TSSchemaManager) validatePartitioning(dataSet *idrf.DataSet) error {
 
 	log.Printf("existing hypertable '%s' is partitioned properly", dataSet.DataSetName)
 	return nil
+}
+
+func (sm *TSSchemaManager) adoptExistingSchema(dataSet *idrf.DataSet, tableExists bool) error {
+	if !tableExists {
+		return fmt.Errorf("AdoptExisting strategy requires table '%s' to already exist", dataSet.DataSetName)
+	}
+
+	log.Printf("AdoptExisting: adopting column types from existing table %s", dataSet.DataSetName)
+	existingColumns, err := sm.explorer.fetchTableColumns(sm.dbConn, sm.schema, dataSet.DataSetName)
+	if err != nil {
+		return fmt.Errorf("could not fetch column info for table %s: %v", dataSet.DataSetName, err)
+	}
+
+	colTypeByName := make(map[string]idrf.DataType)
+	for _, col := range existingColumns {
+		colTypeByName[col.columnName] = pgTypeToIdrf(col.dataType)
+	}
+
+	for _, col := range dataSet.Columns {
+		if tsType, ok := colTypeByName[col.Name]; ok && tsType != idrf.IDRFUnknown {
+			if col.DataType != tsType {
+				log.Printf("AdoptExisting: overriding column '%s' type from %s to %s", col.Name, col.DataType, tsType)
+				col.DataType = tsType
+			}
+		}
+	}
+
+	timescaleExists, err := sm.explorer.timescaleExists(sm.dbConn)
+	if err != nil {
+		return fmt.Errorf("could not check if TimescaleDB is installed: %v", err)
+	}
+	if !timescaleExists {
+		return fmt.Errorf("timescaledb extension not installed in database")
+	}
+
+	isHypertable, err := sm.explorer.isHypertable(sm.dbConn, sm.schema, dataSet.DataSetName)
+	if err != nil {
+		return fmt.Errorf("could not check if table %s is hypertable", dataSet.DataSetName)
+	}
+	if !isHypertable {
+		return fmt.Errorf("existing table %s is not a hypertable", dataSet.DataSetName)
+	}
+
+	return sm.validatePartitioning(dataSet)
 }
 
 func (sm *TSSchemaManager) updateMetadata() {

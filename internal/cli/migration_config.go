@@ -27,4 +27,5 @@ type MigrationConfig struct {
 	FieldsCol                            string
 	OnConflictConvertIntToFloat          bool
 	ChunkTimeInterval                    string
+	TimeColumn                           string
 }
